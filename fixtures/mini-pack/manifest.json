@@ -1,0 +1,60 @@
+{
+  "formatVersion": 1,
+  "name": "English → German (test mini pack)",
+  "packs": [
+    {
+      "id": "words-en-de",
+      "version": "test",
+      "sources": [
+        "fixture"
+      ],
+      "licence": "CC BY-SA 4.0 / GPL (excerpt)",
+      "entryCount": 255,
+      "bytes": 15605,
+      "chunks": [
+        {
+          "file": "words-en-de.000.json.gz",
+          "bytes": 15605,
+          "rows": 255,
+          "sha256": "e9ac2da1d63381d1083989e64755a48f99c6e97288b463a75a590f50800de546"
+        }
+      ]
+    },
+    {
+      "id": "words-de-freedict",
+      "version": "test",
+      "sources": [
+        "fixture"
+      ],
+      "licence": "CC BY-SA 4.0 / GPL (excerpt)",
+      "entryCount": 3,
+      "bytes": 115,
+      "chunks": [
+        {
+          "file": "words-de-freedict.000.json.gz",
+          "bytes": 115,
+          "rows": 3,
+          "sha256": "24e3cf8af9517b1d26b5b6bbeb9366f691dce74b0a6f6de0baf12abf9534935e"
+        }
+      ]
+    },
+    {
+      "id": "forms-en",
+      "version": "test",
+      "sources": [
+        "fixture"
+      ],
+      "licence": "CC BY-SA 4.0 / GPL (excerpt)",
+      "entryCount": 1024,
+      "bytes": 4560,
+      "chunks": [
+        {
+          "file": "forms-en.000.json.gz",
+          "bytes": 4560,
+          "rows": 1024,
+          "sha256": "67595aaa1caa8ee6d6ab12ad6f6f77395eafd553ac60591ecb5c23922aa94065"
+        }
+      ]
+    }
+  ]
+}

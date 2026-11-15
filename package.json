@@ -1,0 +1,26 @@
+{
+  "name": "vocabfirst",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p tsconfig.json --noEmit && npm run -w apps/pwa check",
+    "dev": "npm run -w apps/pwa dev",
+    "build": "npm run -w apps/pwa build",
+    "preview": "npm run -w apps/pwa preview",
+    "e2e": "npm run -w apps/pwa e2e",
+    "build:packs": "npm run -w tools/build-word-packs build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "fake-indexeddb": "^6.2.8",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

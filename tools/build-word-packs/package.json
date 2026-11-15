@@ -1,0 +1,12 @@
+{
+  "name": "@vocabfirst/build-word-packs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "download": "tsx src/download.ts",
+    "build": "tsx src/download.ts && node --max-old-space-size=12000 --import tsx src/build.ts"
+  },
+  "dependencies": {
+    "@msgpack/msgpack": "^3.0.0"
+  }
+}
