@@ -131,10 +131,10 @@
     {/each}
   </div>
 
-  <label class="btn block import" class:primary={books.length === 0}>
+  {#if loaded}<label class="btn block import" class:primary={books.length === 0}>
     <input type="file" accept=".epub,application/epub+zip" onchange={pick} class="sr-only" data-testid="file-input" />
     ＋ Import EPUB
-  </label>
+  </label>{/if}
 </main>
 
 {#if analysing}

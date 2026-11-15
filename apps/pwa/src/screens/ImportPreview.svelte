@@ -153,5 +153,6 @@
   .num { font-variant-numeric: tabular-nums; }
   .sub { padding-left: 40px; }
   .levels { display: flex; flex-wrap: wrap; gap: 6px; }
-  .cta { position: sticky; bottom: calc(var(--safe-bottom) + 8px); margin-top: 16px; }
+  .cta { position: sticky; bottom: 0; margin: 16px -16px 0; padding: 12px 16px calc(var(--safe-bottom) + 8px);
+    background: linear-gradient(transparent, var(--bg) 30%); }
 </style>

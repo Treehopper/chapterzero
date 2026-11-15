@@ -36,7 +36,7 @@
     <section class="card-box hero">
       <Ring value={s.session.firstTryAccuracy} size={120} stroke={12} label={pct(s.session.firstTryAccuracy, 0)} sublabel="first try" color="var(--good)" />
       <div class="stack figures">
-        <div><strong data-testid="stat-reviewed">{s.session.reviewed}</strong> cards reviewed</div>
+        <div><strong data-testid="stat-reviewed">{s.session.reviewed}</strong> {s.session.reviewed === 1 ? 'card' : 'cards'} reviewed</div>
         {#if s.session.promoted}<div class="up"><strong>{s.session.promoted}</strong> {s.session.promoted === 1 ? 'card' : 'cards'} moved up a box</div>{/if}
         {#if s.session.removed}<div><strong>{s.session.removed}</strong> removed</div>{/if}
         <div class="muted small">{dur(s.session.durationSec)}</div>
@@ -98,5 +98,6 @@
   .medal span:first-child { font-size: 34px; }
   .medal.gold { border-color: var(--gold); } .medal.silver { border-color: var(--silver); } .medal.bronze { border-color: var(--bronze); }
   @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
-  .cta { position: sticky; bottom: calc(var(--safe-bottom) + 8px); margin-top: 20px; }
+  .cta { position: sticky; bottom: 0; margin: 20px -16px 0; padding: 12px 16px calc(var(--safe-bottom) + 8px);
+    background: linear-gradient(transparent, var(--bg) 30%); }
 </style>

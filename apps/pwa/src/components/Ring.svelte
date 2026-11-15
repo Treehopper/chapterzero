@@ -12,7 +12,7 @@
 <div class="ring" style:width="{size}px" style:height="{size}px" role="img" aria-label="{label} {sublabel}">
   <svg width={size} height={size} viewBox="0 0 {size} {size}">
     <circle cx={size / 2} cy={size / 2} {r} fill="none" stroke="var(--surface-2)" stroke-width={stroke} />
-    <circle cx={size / 2} cy={size / 2} {r} fill="none" stroke={color} stroke-width={stroke} stroke-linecap="round"
+    <circle cx={size / 2} cy={size / 2} {r} fill="none" stroke={color} stroke-width={stroke} stroke-linecap="round" opacity={v > 0 ? 1 : 0}
       stroke-dasharray="{c * v} {c}" transform="rotate(-90 {size / 2} {size / 2})" style="transition: stroke-dasharray .6s ease" />
     {#if mark !== undefined}
       <line x1={size / 2} y1={stroke / 2 - 3} x2={size / 2} y2={stroke * 1.5 + 2} stroke="var(--text)" stroke-width="2"

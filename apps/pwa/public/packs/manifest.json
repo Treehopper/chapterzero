@@ -1,0 +1,72 @@
+{
+  "formatVersion": 1,
+  "name": "English → German",
+  "packs": [
+    {
+      "id": "words-en-de",
+      "version": "2026-11-15",
+      "sources": [
+        "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
+        "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"
+      ],
+      "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
+      "entryCount": 75612,
+      "bytes": 2967087,
+      "chunks": [
+        {
+          "file": "words-en-de.000.json.gz",
+          "bytes": 1513813,
+          "rows": 37806,
+          "sha256": "e0da590c456c5268c7ecb8f03a20b59fb7a7a60307148cbcf32a91ce0126fa80",
+          "sha256Json": "da3edf69c05759796917cbd62565bb733a4770ffea735c8bba1197e5e6bc3bfb"
+        },
+        {
+          "file": "words-en-de.001.json.gz",
+          "bytes": 1453274,
+          "rows": 37806,
+          "sha256": "54f7aaa181973a418b907516ff9df097cc08aeb9396376f76ff35856e75923e5",
+          "sha256Json": "f353b386ba7ab6a52de17e7bff7f29646736fbecb1f0358eeb36ba1d64270459"
+        }
+      ]
+    },
+    {
+      "id": "words-de-freedict",
+      "version": "2026-11-15",
+      "sources": [
+        "https://download.freedict.org/dictionaries/eng-deu/1.9-fd1/freedict-eng-deu-1.9-fd1.src.tar.xz"
+      ],
+      "licence": "GPL-2.0-or-later (FreeDict eng-deu 1.9-fd1, from TU Chemnitz \"Ding\")",
+      "entryCount": 16589,
+      "bytes": 322503,
+      "chunks": [
+        {
+          "file": "words-de-freedict.000.json.gz",
+          "bytes": 322503,
+          "rows": 16589,
+          "sha256": "f26ca376b882cc5a5c40bfb68f69e0178336fadac9108c5e2c0fedbdf0c3fff6",
+          "sha256Json": "3fe7f6693d6e3f5d44ca79b8f0ca00e489964d5ec702d642cb7b3c29741edc9a"
+        }
+      ]
+    },
+    {
+      "id": "forms-en",
+      "version": "2026-11-15",
+      "sources": [
+        "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
+        "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"
+      ],
+      "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
+      "entryCount": 135234,
+      "bytes": 657059,
+      "chunks": [
+        {
+          "file": "forms-en.000.json.gz",
+          "bytes": 657059,
+          "rows": 135234,
+          "sha256": "4134a9255e7771f41c7f477f0f167bbfa11593da2dfb5d1c42f0621ad48d4872",
+          "sha256Json": "f54fc181dc2b047a7bfcb962cd54d07a06c9628109dfb735f9cb11bc3aacc1c4"
+        }
+      ]
+    }
+  ]
+}
