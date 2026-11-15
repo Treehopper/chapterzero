@@ -222,9 +222,12 @@ function writePack(id: string, rows: unknown[], meta: { sources: string[]; licen
   const chunks = planChunks(rows, (r) => gz(r).length, MAX_CHUNK);
   const out = chunks.map((c, i) => {
     const file = `${id}.${String(i).padStart(3, '0')}.json.gz`;
-    const data = gz(c);
+    const json = JSON.stringify(c);
+    const data = gzipSync(json, { level: 9 });
     writeFileSync(join(OUT_DIR, file), data);
-    return { file, bytes: data.length, rows: c.length, sha256: createHash('sha256').update(data).digest('hex') };
+    // sha256Json: some servers send .gz with Content-Encoding: gzip, so the client gets the JSON
+    return { file, bytes: data.length, rows: c.length, sha256: createHash('sha256').update(data).digest('hex'),
+      sha256Json: createHash('sha256').update(json).digest('hex') };
   });
   const bytes = out.reduce((n, c) => n + c.bytes, 0);
   log(`${id}: ${rows.length} rows, ${out.length} chunks, ${(bytes / 1024 / 1024).toFixed(2)} MB`);

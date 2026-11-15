@@ -20,8 +20,7 @@
     <div class="toast" role="status" aria-live="polite" data-testid="toast">
       <span>{ui.toast.text}</span>
       {#if ui.toast.action}
-        {@const a = ui.toast.action}
-        <button onclick={() => { ui.toast = undefined; a.run(); }}>{a.label}</button>
+        <button onclick={() => { const act = ui.toast?.action; ui.toast = undefined; act?.run(); }}>{ui.toast.action.label}</button>
       {/if}
     </div>
   </div>

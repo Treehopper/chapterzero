@@ -33,7 +33,9 @@ export function gestures(node: HTMLElement, handlers: GestureHandlers) {
   };
 
   function down(e: PointerEvent) {
-    if (id !== null || e.button > 0) return;
+    if (e.button > 0) return;
+    // a new touch always starts a new gesture, even if the end of the last one got lost
+    if (id !== null && e.pointerId === id) return;
     if ((e.target as Element).closest('a, button, input, textarea, select, [data-nogesture]')) return;
     id = e.pointerId;
     sx = e.clientX; sy = e.clientY; st = e.timeStamp;
@@ -85,15 +87,16 @@ export function gestures(node: HTMLElement, handlers: GestureHandlers) {
 
   node.addEventListener('pointerdown', down);
   node.addEventListener('pointermove', move);
-  node.addEventListener('pointerup', up);
-  node.addEventListener('pointercancel', cancel);
+  // the end of a gesture may land outside the stage (finger lifted off-screen)
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', cancel);
   return {
     update(next: GestureHandlers) { h = next; },
     destroy() {
       node.removeEventListener('pointerdown', down);
       node.removeEventListener('pointermove', move);
-      node.removeEventListener('pointerup', up);
-      node.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
     },
   };
 }

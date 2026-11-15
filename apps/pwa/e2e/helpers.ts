@@ -17,9 +17,9 @@ export async function swipe(page: Page, dx: number, dy: number, opts: { steps?: 
   const steps = opts.steps ?? 10;
   const ms = opts.ms ?? 200;
   await page.evaluate(async ({ from, dx, dy, steps, ms }) => {
-    const target = document.elementFromPoint(from.x, from.y) ?? document.body;
+    // hit-test every event like a real touch (cards are re-mounted while a finger is down)
     const fire = (type: string, x: number, y: number) =>
-      target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 7, pointerType: 'touch',
+      (document.elementFromPoint(x, y) ?? document.body).dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 7, pointerType: 'touch',
         isPrimary: true, clientX: x, clientY: y, button: type === 'pointermove' ? -1 : 0, buttons: type === 'pointerup' ? 0 : 1 }));
     const wait = (t: number) => new Promise((r) => setTimeout(r, t));
     fire('pointerdown', from.x, from.y);
@@ -68,4 +68,17 @@ export async function startStudy(page: Page) {
   await expect(page.getByTestId('card-word')).toBeVisible();
 }
 
-export const cardWord = (page: Page) => page.getByTestId('card-word').first().innerText();
+const stage = (page: Page) => page.getByTestId('study-stage');
+/** the current card's word, once no action is in flight */
+export async function cardWord(page: Page): Promise<string> {
+  await expect(stage(page)).toHaveAttribute('data-busy', 'false');
+  return (await stage(page).getAttribute('data-word')) ?? '';
+}
+export const expectCard = (page: Page, word: string, phase?: 'front' | 'back' | 'wrongReview') =>
+  Promise.all([
+    expect(stage(page)).toHaveAttribute('data-word', word),
+    phase ? expect(stage(page)).toHaveAttribute('data-phase', phase) : undefined,
+  ]);
+export const expectPhase = (page: Page, phase: 'front' | 'back' | 'wrongReview') => expect(stage(page)).toHaveAttribute('data-phase', phase);
+/** wait until no study action is in flight */
+export const settled = (page: Page) => expect(stage(page)).toHaveAttribute('data-busy', 'false');

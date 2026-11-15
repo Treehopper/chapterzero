@@ -62,11 +62,13 @@ rmSync(packDir, { recursive: true, force: true });
 mkdirSync(packDir, { recursive: true });
 const manifest = { formatVersion: 1, name: 'English → German (test mini pack)', packs: [] as unknown[] };
 for (const [id, rows] of [['words-en-de', wordRows], ['words-de-freedict', fd], ['forms-en', formRows]] as const) {
-  const data = gzipSync(JSON.stringify(rows));
+  const json = JSON.stringify(rows);
+  const data = gzipSync(json);
   const file = `${id}.000.json.gz`;
   writeFileSync(join(packDir, file), data);
   manifest.packs.push({ id, version: 'test', sources: ['fixture'], licence: 'CC BY-SA 4.0 / GPL (excerpt)', entryCount: rows.length,
-    bytes: data.length, chunks: [{ file, bytes: data.length, rows: rows.length, sha256: createHash('sha256').update(data).digest('hex') }] });
+    bytes: data.length, chunks: [{ file, bytes: data.length, rows: rows.length, sha256: createHash('sha256').update(data).digest('hex'),
+      sha256Json: createHash('sha256').update(json).digest('hex') }] });
 }
 writeFileSync(join(packDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 console.log(`fixture: ${wordRows.length} words, ${fd.length} freedict, ${formRows.length} forms`);

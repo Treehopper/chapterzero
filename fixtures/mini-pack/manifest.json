@@ -16,7 +16,8 @@
           "file": "words-en-de.000.json.gz",
           "bytes": 15605,
           "rows": 255,
-          "sha256": "e9ac2da1d63381d1083989e64755a48f99c6e97288b463a75a590f50800de546"
+          "sha256": "e9ac2da1d63381d1083989e64755a48f99c6e97288b463a75a590f50800de546",
+          "sha256Json": "f93d06168f85e23d014fb612d6788a3d77703487291042bcf281dd27475a0bee"
         }
       ]
     },
@@ -34,7 +35,8 @@
           "file": "words-de-freedict.000.json.gz",
           "bytes": 115,
           "rows": 3,
-          "sha256": "24e3cf8af9517b1d26b5b6bbeb9366f691dce74b0a6f6de0baf12abf9534935e"
+          "sha256": "24e3cf8af9517b1d26b5b6bbeb9366f691dce74b0a6f6de0baf12abf9534935e",
+          "sha256Json": "9b87360fe01ea03a4ca787b4bec513da2a5b1680c4db072949e70345a230a4cf"
         }
       ]
     },
@@ -52,7 +54,8 @@
           "file": "forms-en.000.json.gz",
           "bytes": 4560,
           "rows": 1024,
-          "sha256": "67595aaa1caa8ee6d6ab12ad6f6f77395eafd553ac60591ecb5c23922aa94065"
+          "sha256": "67595aaa1caa8ee6d6ab12ad6f6f77395eafd553ac60591ecb5c23922aa94065",
+          "sha256Json": "f7317d2e2dc4f6a236ae03f7e8eb56019a67bda79ba069c7182620b84b895d93"
         }
       ]
     }

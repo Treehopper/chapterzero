@@ -40,6 +40,10 @@ function resolvePath(base: string, href: string): { path: string; fragment?: str
   return { path: decodeURIComponent(u.pathname.slice(1)), fragment: frag ? decodeURIComponent(frag) : undefined };
 }
 
+/** B14: distributor boilerplate that is not part of the book (Project Gutenberg header/footer). */
+const BOILERPLATE = /(^|\s)(pg-boilerplate|pgheader|pgfooter)(\s|$)|^pg-(header|footer)$/;
+const isBoilerplate = (n: Element) => BOILERPLATE.test(n.attribs.class ?? '') || BOILERPLATE.test(n.attribs.id ?? '');
+
 const isExternal = (href: string) => /^[a-z][a-z0-9+.-]*:/i.test(href);
 const clean = (t: string) => t.replace(/[­​]/g, '').replace(/\s+/g, ' ').trim();
 
@@ -140,7 +144,7 @@ export class ZipEpubReader implements EpubReader {
       if (n.type === 'text') { text += (n as unknown as { data: string }).data; return; }
       if (!isEl(n)) return;
       const name = local(n.name);
-      if (SKIP_TAGS.has(name)) return;
+      if (SKIP_TAGS.has(name) || isBoilerplate(n)) return;
       if (name === 'br') { text += ' '; return; }
       const block = BLOCK_TAGS.has(name);
       if (block) flush();

@@ -2,7 +2,7 @@
 import type { PackInfo, PackInstaller, PackStatus, Progress, WordEntry, WordList } from '@vocabfirst/core';
 import type { VocabDb } from '@vocabfirst/storage-idb';
 
-export interface ManifestChunk { file: string; bytes: number; rows?: number; sha256: string }
+export interface ManifestChunk { file: string; bytes: number; rows?: number; sha256: string; sha256Json?: string }
 export interface ManifestPack extends PackInfo { chunks: ManifestChunk[] }
 export interface Manifest { formatVersion: 1; name?: string; packs: ManifestPack[] }
 
@@ -95,8 +95,11 @@ export class HttpPackInstaller implements PackInstaller {
       const bytes = new Uint8Array(got);
       let off = 0;
       for (const part of parts) { bytes.set(part, off); off += part.length; }
+      // gzip as published, or already decoded by a server that sent Content-Encoding: gzip
+      const gzipped = bytes[0] === 0x1f && bytes[1] === 0x8b;
+      const expected = gzipped ? c.sha256 : c.sha256Json;
       const sha = hex(await crypto.subtle.digest('SHA-256', bytes));
-      if (sha !== c.sha256) throw new Error(`Checksum mismatch for ${c.file}. Please try again.`);
+      if (!expected || sha !== expected) throw new Error(`Checksum mismatch for ${c.file}. Please try again.`);
       onProgress({ loaded: loaded + c.bytes, total, phase: 'installing' });
       const rows = (JSON.parse(await gunzip(bytes)) as unknown[][]).map((r) => toRow(p.id, r));
       const store = STORE[p.id];

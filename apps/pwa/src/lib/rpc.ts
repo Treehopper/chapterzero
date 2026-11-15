@@ -36,7 +36,9 @@ export function connect(worker: Worker, packsUrl: string, dbName = 'vocabfirst')
       let callback: ((v: unknown) => void) | undefined;
       const wire = args.map((a) => {
         if (typeof a === 'function') { callback = a as (v: unknown) => void; return { __callback: true }; }
-        return a;
+        if (a instanceof ArrayBuffer || a === undefined) return a;
+        // API arguments are plain JSON; this also unwraps Svelte $state proxies, which postMessage cannot clone
+        return JSON.parse(JSON.stringify(a));
       });
       pending.set(id, { resolve, reject, callback });
       const transfer = wire.filter((a): a is ArrayBuffer => a instanceof ArrayBuffer);

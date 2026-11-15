@@ -57,19 +57,23 @@
     }
   }
 
-  async function run(fn: () => Promise<SessionView>, opts: { newCard?: boolean } = {}) {
-    if (busy) return;
+  /** actions run one after another; a quick tap-then-swipe must not lose the swipe */
+  let chain: Promise<unknown> = Promise.resolve();
+  let pending = $state(0);
+  function enqueue(fn: () => Promise<void>) {
+    pending++;
     busy = true;
-    try {
+    chain = chain.then(fn).catch((e) => toast(e instanceof Error ? e.message : String(e))).finally(() => { if (--pending === 0) busy = false; });
+    return chain;
+  }
+
+  function run(fn: () => Promise<SessionView>, opts: { newCard?: boolean } = {}) {
+    return enqueue(async () => {
       const v = await fn();
       if (opts.newCard) cardKey++;
       view = v;
       await afterView(v);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e));
-    } finally {
-      busy = false;
-    }
+    });
   }
 
   function useHint(h: string) { if (!used.has(h)) used = new Set([...used, h]); }
@@ -78,37 +82,44 @@
     if (!view?.card || panel) return;
     useHint('tap');
     if (review) return continueReview();
-    void run(() => api.study.flip(view!.sessionId));
+    void run(() => (view!.phase === 'wrongReview' ? api.study.continueAfterReview(view!.sessionId) : api.study.flip(view!.sessionId)));
   }
 
   function continueReview() {
     void run(() => api.study.continueAfterReview(view!.sessionId), { newCard: true });
   }
 
-  async function grade(dir: 1 | -1) {
-    if (!view?.card || busy || panel) return;
-    if (review) { dx = 0; return continueReview(); }
-    if (view.phase === 'front' && view.requireFlip) {
-      dx = 0; nudge = true; setTimeout(() => (nudge = false), 400);
-      return;
-    }
-    useHint(dir === 1 ? 'right' : 'left');
-    busy = true;
-    fly = dir;
-    vibrate();
-    try {
-      const [v] = await Promise.all([api.study.grade(view.sessionId, dir === 1 ? 'known' : 'unknown'), new Promise((r) => setTimeout(r, 260))]);
-      if (v.phase !== 'wrongReview') cardKey++;
-      dx = 0;
-      fly = 0;
-      view = v;
-      if (v.canUndo) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
-      busy = false;
-      await afterView(v);
-    } catch (e) {
-      fly = 0; dx = 0; busy = false;
-      toast(e instanceof Error ? e.message : String(e));
-    }
+  function grade(dir: 1 | -1) {
+    if (!view?.card || panel) return;
+    return enqueue(async () => {
+      // decided on the state after any queued flip has landed
+      if (!view?.card) return;
+      if (view.phase === 'wrongReview') {
+        dx = 0;
+        const v = await api.study.continueAfterReview(view.sessionId);
+        cardKey++;
+        view = v;
+        await afterView(v);
+        return;
+      }
+      if (view.phase === 'front' && view.requireFlip) {
+        dx = 0; nudge = true; setTimeout(() => (nudge = false), 400);
+        return;
+      }
+      useHint(dir === 1 ? 'right' : 'left');
+      fly = dir;
+      vibrate();
+      try {
+        const [v] = await Promise.all([api.study.grade(view.sessionId, dir === 1 ? 'known' : 'unknown'), new Promise((r) => setTimeout(r, 260))]);
+        if (v.phase !== 'wrongReview') cardKey++;
+        view = v;
+        if (v.canUndo) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
+        await afterView(v);
+      } finally {
+        dx = 0;
+        fly = 0;
+      }
+    });
   }
 
   function showUndo(label: string) {
@@ -209,8 +220,8 @@
   </main>
 {:else if view?.card}
   {@const card = view.card}
-  <main class="stage" aria-label="Study" data-testid="study-stage"
-    use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!busy && !panel) dx = x; },
+  <main class="stage" aria-label="Study" data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
+    use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
 
     <div class="progress" class:show={showProgress} aria-hidden={!showProgress} data-testid="progress">

@@ -42,6 +42,8 @@ describe.skipIf(real.length === 0)('real EPUBs (fixtures/epub/downloaded)', () =
       const c = await new ZipEpubReader().read(load(join(dl, f)));
       expect(c.sections.length).toBeGreaterThan(2);
       expect(c.toc.length).toBeGreaterThan(2);
+      const text = c.sections.flatMap((s) => s.blocks.map((b) => b.text)).join(' ');
+      expect(text).not.toMatch(/START OF (THE|THIS) PROJECT GUTENBERG/);
       const r = await analyseContent(c, fixtureWordList());
       const inc = r.book.chapters.filter((ch) => ch.included);
       expect(inc.length).toBeGreaterThan(0);

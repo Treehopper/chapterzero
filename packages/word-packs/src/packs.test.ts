@@ -54,6 +54,18 @@ describe('HttpPackInstaller + IdbWordList', () => {
     expect((await new HttpPackInstaller(db, BASE, server({ offline: true }).fetchFn).status()).installed).toBe(true);
   });
 
+  it('accepts chunks a server already decompressed (Content-Encoding: gzip)', async () => {
+    const db = new VocabDb(`t${dbn++}`);
+    const { gunzipSync } = await import('node:zlib');
+    const fetchFn = (async (input: RequestInfo | URL) => {
+      const file = String(input).replace(BASE, '');
+      const body = readFileSync(join(packDir, file));
+      return new Response((file.endsWith('.gz') ? gunzipSync(body) : body) as BodyInit);
+    }) as typeof fetch;
+    await new HttpPackInstaller(db, BASE, fetchFn).install(() => undefined);
+    expect((await new IdbWordList(db).resolve(['strode'])).get('strode')).toBe('stride');
+  });
+
   it('rejects a corrupted chunk', async () => {
     const db = new VocabDb(`t${dbn++}`);
     const inst = new HttpPackInstaller(db, BASE, server({ corrupt: 'words-en-de.000.json.gz' }).fetchFn);
