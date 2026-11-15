@@ -1,0 +1,71 @@
+import { expect, type Locator, type Page } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
+
+export const FIXTURE_EPUB = fileURLToPath(new URL('../../../fixtures/epub/omnibus-fixture.epub', import.meta.url));
+export const realEpub = (name: string) => fileURLToPath(new URL(`../../../fixtures/epub/downloaded/${name}`, import.meta.url));
+
+/** Tap like a finger (WebKit's headless mouse input is unreliable, touch is not). */
+export const tap = (l: Locator) => l.tap();
+
+/**
+ * A finger drag as touch Pointer Events (what iOS Safari sends), with real timing so the
+ * recogniser sees a realistic velocity. `ms` is the total duration.
+ */
+export async function swipe(page: Page, dx: number, dy: number, opts: { steps?: number; ms?: number; from?: { x: number; y: number } } = {}) {
+  const vp = page.viewportSize()!;
+  const from = opts.from ?? { x: vp.width / 2, y: vp.height / 2 };
+  const steps = opts.steps ?? 10;
+  const ms = opts.ms ?? 200;
+  await page.evaluate(async ({ from, dx, dy, steps, ms }) => {
+    const target = document.elementFromPoint(from.x, from.y) ?? document.body;
+    const fire = (type: string, x: number, y: number) =>
+      target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 7, pointerType: 'touch',
+        isPrimary: true, clientX: x, clientY: y, button: type === 'pointermove' ? -1 : 0, buttons: type === 'pointerup' ? 0 : 1 }));
+    const wait = (t: number) => new Promise((r) => setTimeout(r, t));
+    fire('pointerdown', from.x, from.y);
+    for (let i = 1; i <= steps; i++) {
+      await wait(ms / steps);
+      fire('pointermove', from.x + (dx * i) / steps, from.y + (dy * i) / steps);
+    }
+    fire('pointerup', from.x + dx, from.y + dy);
+  }, { from, dx, dy, steps, ms });
+}
+
+export const swipeRight = (page: Page) => swipe(page, 220, 0);
+export const swipeLeft = (page: Page) => swipe(page, -220, 0);
+export const swipeDown = (page: Page) => swipe(page, 0, 160);
+export const swipeUp = (page: Page) => swipe(page, 0, -160);
+
+export async function tapCard(page: Page) {
+  const vp = page.viewportSize()!;
+  await page.touchscreen.tap(vp.width / 2, vp.height / 2);
+}
+
+/** First run with the miniature test pack: install guide → download → (skip) check → library. */
+export async function firstRun(page: Page, opts: { check?: 'skip' | 'none' } = { check: 'skip' }) {
+  await page.goto('/?packs=test');
+  await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+  if (opts.check === 'none') return;
+  await expect(page.getByTestId('check-word')).toBeVisible();
+  await tap(page.getByRole('button', { name: 'Skip' }));
+  await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
+}
+
+export async function importBook(page: Page, file = FIXTURE_EPUB) {
+  await page.getByTestId('file-input').setInputFiles(file);
+  await expect(page.getByTestId('preview-title')).toBeVisible({ timeout: 90_000 });
+}
+
+/** Import the fixture omnibus with the default selection and open it. */
+export async function importAndOpen(page: Page) {
+  await importBook(page);
+  await tap(page.getByTestId('create-cards'));
+  await expect(page.getByTestId('book-coverage')).toBeVisible();
+}
+
+export async function startStudy(page: Page) {
+  await tap(page.getByTestId('study-now'));
+  await expect(page.getByTestId('card-word')).toBeVisible();
+}
+
+export const cardWord = (page: Page) => page.getByTestId('card-word').first().innerText();

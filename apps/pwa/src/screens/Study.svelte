@@ -1,0 +1,357 @@
+<script lang="ts">
+  /** Full-screen study (C1–C18, §8.1 "Study"). Every action is persisted before the next card animates in. */
+  import { onDestroy, onMount } from 'svelte';
+  import type { SessionView, Settings } from '@vocabfirst/core';
+  import { api } from '../lib/api';
+  import { go, replace } from '../lib/router.svelte';
+  import { gestures } from '../lib/gestures';
+  import { announceUnlocks, banner, pct, toast } from '../lib/ui.svelte';
+  import { vibrate } from '../lib/platform';
+  import FlipCard from '../components/FlipCard.svelte';
+  import LookupLinks from '../components/LookupLinks.svelte';
+  import Sheet from '../components/Sheet.svelte';
+
+  let { bookId, chapter }: { bookId: string; chapter?: string } = $props();
+
+  let view = $state<SessionView>();
+  let settings = $state<Settings>();
+  let error = $state('');
+  let dx = $state(0);
+  let fly = $state<-1 | 0 | 1>(0);
+  let busy = $state(false);
+  let panel = $state(false);
+  let showProgress = $state(false);
+  let progressTimer: ReturnType<typeof setTimeout> | undefined;
+  let undoPill = $state<{ label: string; until: number }>();
+  let undoTimer: ReturnType<typeof setTimeout> | undefined;
+  let editing = $state(false);
+  let editList = $state<string[]>([]);
+  let used = $state<Set<string>>(new Set());
+  let nudge = $state(false);
+  let cardKey = $state(0);
+  let live = $state('');
+
+  const flipped = $derived(!!view?.phase && view.phase !== 'front');
+  const review = $derived(view?.phase === 'wrongReview');
+  const hintsOn = $derived(settings?.gestureHints === 'everySession' && !!view?.firstCard && !!view?.card);
+
+  onMount(async () => {
+    try {
+      settings = await api.settings.get();
+      const chapterIndex = chapter !== undefined && chapter !== '' ? Number(chapter) : undefined;
+      view = await api.study.resumeOrStart(bookId, chapterIndex !== undefined ? { chapterIndex } : undefined);
+      // the chapter choice starts a session once; a relaunch must resume it, not restart it (C5)
+      if (chapterIndex !== undefined) replace('study', bookId);
+      await afterView(view);
+    } catch (e) { error = e instanceof Error ? e.message : String(e); }
+  });
+  onDestroy(() => { clearTimeout(progressTimer); clearTimeout(undoTimer); });
+
+  async function afterView(v: SessionView) {
+    if (v.card) live = `${v.card.lemma}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
+    if (v.newAchievements.length) announceUnlocks(v.newAchievements, settings?.achievementPopups ?? true);
+    if (v.chapterReady) banner({ kind: 'chapter', title: `${v.chapterReady.title} is ready to read`, subtitle: pct(v.chapterReady.coverage) });
+    if (v.done && !v.nothingDue && v.sessionId) {
+      await api.study.finish(v.sessionId);
+      go('stats', v.sessionId);
+    }
+  }
+
+  async function run(fn: () => Promise<SessionView>, opts: { newCard?: boolean } = {}) {
+    if (busy) return;
+    busy = true;
+    try {
+      const v = await fn();
+      if (opts.newCard) cardKey++;
+      view = v;
+      await afterView(v);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e));
+    } finally {
+      busy = false;
+    }
+  }
+
+  function useHint(h: string) { if (!used.has(h)) used = new Set([...used, h]); }
+
+  function flip() {
+    if (!view?.card || panel) return;
+    useHint('tap');
+    if (review) return continueReview();
+    void run(() => api.study.flip(view!.sessionId));
+  }
+
+  function continueReview() {
+    void run(() => api.study.continueAfterReview(view!.sessionId), { newCard: true });
+  }
+
+  async function grade(dir: 1 | -1) {
+    if (!view?.card || busy || panel) return;
+    if (review) { dx = 0; return continueReview(); }
+    if (view.phase === 'front' && view.requireFlip) {
+      dx = 0; nudge = true; setTimeout(() => (nudge = false), 400);
+      return;
+    }
+    useHint(dir === 1 ? 'right' : 'left');
+    busy = true;
+    fly = dir;
+    vibrate();
+    try {
+      const [v] = await Promise.all([api.study.grade(view.sessionId, dir === 1 ? 'known' : 'unknown'), new Promise((r) => setTimeout(r, 260))]);
+      if (v.phase !== 'wrongReview') cardKey++;
+      dx = 0;
+      fly = 0;
+      view = v;
+      if (v.canUndo) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
+      busy = false;
+      await afterView(v);
+    } catch (e) {
+      fly = 0; dx = 0; busy = false;
+      toast(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  function showUndo(label: string) {
+    clearTimeout(undoTimer);
+    undoPill = { label, until: Date.now() + 3000 };
+    undoTimer = setTimeout(() => (undoPill = undefined), 3000);
+  }
+
+  function undo() {
+    if (!view?.canUndo) return;
+    clearTimeout(undoTimer);
+    undoPill = undefined;
+    void run(() => api.study.undo(view!.sessionId), { newCard: true });
+  }
+
+  function vertical(dir: 1 | -1) {
+    if (dir === 1) {
+      if (panel) { panel = false; return; }
+      useHint('down');
+      showProgress = true;
+      clearTimeout(progressTimer);
+      progressTimer = setTimeout(() => (showProgress = false), 3000);
+    } else {
+      useHint('up');
+      panel = true;
+    }
+  }
+
+  function openEdit() {
+    if (!view?.card) return;
+    editList = [...view.card.translations];
+    if (!editList.length) editList = [''];
+    panel = false;
+    editing = true;
+  }
+  async function saveEdit() {
+    await run(() => api.study.editCurrent(view!.sessionId, editList));
+    editing = false;
+  }
+  async function removeAs(as: 'removed' | 'known') {
+    editing = false;
+    const lemma = view?.card?.lemma;
+    await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true });
+    toast(as === 'known' ? `“${lemma}” marked as known` : `“${lemma}” removed`, { label: 'Undo', run: undo });
+  }
+  async function finish() {
+    panel = false;
+    if (!view) return;
+    await api.study.finish(view.sessionId);
+    go('stats', view.sessionId);
+  }
+  async function studyAhead() {
+    await run(() => api.study.resumeOrStart(bookId, { studyAhead: true }), { newCard: true });
+  }
+
+  function key(e: KeyboardEvent) {
+    if (editing || !view?.card) return;
+    if ((e.target as HTMLElement).closest('input, textarea')) return;
+    switch (e.key) {
+      case ' ': case 'Enter': e.preventDefault(); flip(); break;
+      case 'ArrowRight': e.preventDefault(); void grade(1); break;
+      case 'ArrowLeft': e.preventDefault(); void grade(-1); break;
+      case 'ArrowDown': e.preventDefault(); vertical(1); break;
+      case 'ArrowUp': e.preventDefault(); vertical(-1); break;
+      case 'z': case 'Z': undo(); break;
+      case 'Escape': panel = false; break;
+    }
+  }
+
+  /** the example sentence with the word's forms in bold */
+  function parts(example: string | undefined, forms: string[]): { t: string; b: boolean }[] {
+    if (!example) return [];
+    const esc = forms.filter(Boolean).sort((a, b) => b.length - a.length).map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (!esc.length) return [{ t: example, b: false }];
+    const re = new RegExp(`(?<![\\p{L}])(${esc.join('|')})(?:['’]s)?(?![\\p{L}])`, 'giu');
+    const out: { t: string; b: boolean }[] = [];
+    let last = 0;
+    for (const m of example.matchAll(re)) {
+      if (m.index! > last) out.push({ t: example.slice(last, m.index), b: false });
+      out.push({ t: m[0], b: true });
+      last = m.index! + m[0].length;
+    }
+    if (last < example.length) out.push({ t: example.slice(last), b: false });
+    return out;
+  }
+</script>
+
+<svelte:window onkeydown={key} />
+
+{#if error}
+  <main class="screen"><p class="error">{error}</p><button class="btn" onclick={() => go('book', bookId)}>Back</button></main>
+{:else if view?.nothingDue}
+  <main class="screen stack nothing" data-testid="nothing-due">
+    <h1>All done for now</h1>
+    <p class="muted">Nothing is due and today's new cards are used up. You can study ahead if you have time before reading.</p>
+    <button class="btn primary block" onclick={studyAhead}>Study ahead</button>
+    <button class="btn block" onclick={() => go('book', bookId)}>Back to the book</button>
+  </main>
+{:else if view?.card}
+  {@const card = view.card}
+  <main class="stage" aria-label="Study" data-testid="study-stage"
+    use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!busy && !panel) dx = x; },
+      onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
+
+    <div class="progress" class:show={showProgress} aria-hidden={!showProgress} data-testid="progress">
+      <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
+      <span>{view.progress.done} / {view.progress.total}</span>
+    </div>
+
+    <div class="cardpos" class:nudge>
+      {#key cardKey}
+        <FlipCard {flipped} {dx} {fly} dim={panel} {review} entering={!review} label="Card {card.lemma}">
+          {#snippet front()}
+            <div class="lvl small muted">{card.listLevel ? `Level ${card.listLevel}` : 'Added by hand'}</div>
+            <div class="word" data-testid="card-word">{card.lemma}</div>
+            {#if card.example}
+              <p class="ex">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
+            {/if}
+            <div class="foot small muted">{flipped || hintsOn ? '' : 'tap to flip'}</div>
+          {/snippet}
+          {#snippet back()}
+            <div class="row head">
+              <span class="small-word">{review ? '✗ ' : ''}{card.lemma}</span>
+              <span class="spacer"></span>
+              {#if card.pos.length}<span class="small muted">{card.pos.slice(0, 2).join(' · ')}</span>{/if}
+            </div>
+            <div class="tr" data-testid="card-back">
+              {#if card.translations.length}{card.translations.join(', ')}
+              {:else}<span class="en">EN</span> {card.definition}{/if}
+            </div>
+            {#if card.translations.length && card.definition}<p class="def">{card.definition}</p>{/if}
+            {#if card.example}
+              <p class="ex small">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
+            {/if}
+            {#if review}
+              <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
+              <div class="foot small muted">tap or swipe to continue</div>
+            {:else}
+              <div class="dots" aria-label="Box {card.box}">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}</div>
+            {/if}
+          {/snippet}
+        </FlipCard>
+      {/key}
+    </div>
+
+    {#if hintsOn}
+      <div class="hints" aria-hidden="true" data-testid="hints">
+        {#if !used.has('down')}<div class="h top">↓ progress</div>{/if}
+        {#if !flipped && !used.has('tap')}<div class="h mid">◉ tap to flip</div>{/if}
+        {#if flipped && !review}
+          {#if !used.has('left')}<div class="h left">✗<br />didn't<br />know</div>{/if}
+          {#if !used.has('right')}<div class="h right">✓<br />knew<br />it</div>{/if}
+        {/if}
+        {#if !used.has('up')}<div class="h bottom">↑ edit · finish</div>{/if}
+      </div>
+    {/if}
+
+    {#if undoPill && !panel}
+      <button class="undo" onclick={undo} data-testid="undo">{undoPill.label}</button>
+    {/if}
+
+    {#if panel}
+      <div class="panel" data-testid="panel">
+        <button class="pbtn" onclick={openEdit}>✎ Edit card</button>
+        <button class="pbtn" onclick={finish} data-testid="finish">◼ Finish session</button>
+      </div>
+    {/if}
+
+    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, down for progress, up to edit or finish.' : ''}</div>
+    <div class="sr-only">
+      <button onclick={flip}>Flip</button>
+      <button onclick={() => grade(1)}>Knew it</button>
+      <button onclick={() => grade(-1)}>Didn't know</button>
+      <button onclick={() => vertical(1)}>Show progress</button>
+      <button onclick={() => vertical(-1)}>Card options</button>
+      {#if view.canUndo}<button onclick={undo}>Undo</button>{/if}
+    </div>
+  </main>
+{:else if view && !view.done}
+  <main class="screen"><p class="muted">Loading…</p></main>
+{/if}
+
+{#if editing && view?.card}
+  <Sheet full label="Edit card" onclose={() => (editing = false)}>
+    <div class="stack">
+      <div class="row"><h2 class="spacer">{view.card.lemma}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      <div class="section-title">Translations</div>
+      {#each editList as _, i (i)}
+        <div class="row">
+          <input type="text" bind:value={editList[i]} aria-label="Translation {i + 1}" />
+          <button class="iconbtn" aria-label="Remove translation" onclick={() => (editList = editList.filter((__, j) => j !== i))}>×</button>
+        </div>
+      {/each}
+      {#if editList.length < 4}<button class="linkbtn" onclick={() => (editList = [...editList, ''])}>＋ Add translation</button>{/if}
+      {#if view.card.definition}<p class="small muted">{view.card.definition}</p>{/if}
+      <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">Save</button>
+      <div class="section-title">Other actions</div>
+      <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>
+      <button class="btn block" onclick={() => removeAs('known')}>Mark as known</button>
+    </div>
+  </Sheet>
+{/if}
+
+<style>
+  .stage { position: fixed; inset: 0; background: var(--stage); display: flex; align-items: center; justify-content: center;
+    touch-action: none; overscroll-behavior: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+  .cardpos { position: relative; }
+  .cardpos.nudge { animation: nudge 0.35s; }
+  @keyframes nudge { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .lvl { text-align: center; }
+  .word { font-family: var(--serif); font-size: clamp(32px, 10vw, 48px); font-weight: 700; text-align: center; margin: auto 0 12px; overflow-wrap: anywhere; }
+  .ex { font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--muted); text-align: center; margin: 0 0 auto; }
+  .ex b { color: var(--text); }
+  .ex.small { font-size: 15px; text-align: left; margin: 12px 0 0; }
+  .foot { text-align: center; margin-top: auto; padding-top: 8px; }
+  .head { margin-bottom: 12px; }
+  .small-word { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--muted); }
+  .tr { font-size: clamp(24px, 7vw, 32px); font-weight: 600; line-height: 1.25; margin-top: auto; }
+  .en { font-size: 12px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
+  .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
+  .links { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-top: auto; padding-top: 12px; }
+  .dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); }
+  .dots i.on { background: var(--good); }
+  .progress { position: absolute; top: calc(var(--safe-top) + 6px); left: 16px; right: 16px; display: flex; align-items: center; gap: 8px;
+    opacity: 0; transform: translateY(-12px); transition: opacity .3s, transform .3s; pointer-events: none; }
+  .progress.show { opacity: 1; transform: none; }
+  .track { flex: 1; height: 3px; background: color-mix(in srgb, var(--text) 15%, transparent); border-radius: 2px; overflow: hidden; }
+  .track div { height: 100%; background: var(--accent); }
+  .progress span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .hints { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.5) 75%); color: white; font-weight: 700; }
+  .h { position: absolute; text-align: center; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,.6); animation: pulse 1.6s ease-in-out infinite; }
+  .h.top { top: calc(var(--safe-top) + 16px); left: 0; right: 0; }
+  .h.bottom { bottom: calc(var(--safe-bottom) + 20px); left: 0; right: 0; }
+  .h.mid { top: 70%; left: 0; right: 0; }
+  .h.left { left: 4px; top: 45%; font-size: 13px; }
+  .h.right { right: 4px; top: 45%; font-size: 13px; }
+  @keyframes pulse { 50% { opacity: 0.55; } }
+  .undo { position: absolute; bottom: calc(var(--safe-bottom) + 28px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
+    padding: 10px 18px; min-height: 44px; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: var(--card-shadow); }
+  .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(var(--safe-bottom) + 16px); background: var(--surface);
+    border-radius: 20px 20px 0 0; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 8px; animation: up .2s ease-out; }
+  @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
+  .pbtn { min-height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); font-size: 17px; font-weight: 600; }
+  .nothing { justify-content: center; }
+</style>
