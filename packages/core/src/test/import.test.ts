@@ -179,3 +179,27 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
     expect(p2.coverageBefore).toBeCloseTo(1 - 3 / tokens, 9); // scythe ×2 + rampart
   });
 });
+
+describe('structure extensions', () => {
+  it('splits sections at TOC fragments and remaps links', async () => {
+    const { splitSectionsAtTocAnchors } = await import('../domain/structure.ts');
+    const c = splitSectionsAtTocAnchors(buildContent({
+      toc: [{ title: 'One', depth: 0, section: 0, anchorId: 'c1' }, { title: 'Two', depth: 0, section: 0, anchorId: 'c2' }],
+      sections: [[{ text: 'Chapter one', anchorIds: ['c1'] }, 'a', { text: 'Chapter two', anchorIds: ['c2'] }, { text: 'b', links: [{ section: 0, anchorId: 'c2' }] }]],
+    }));
+    expect(c.sections.map((s) => s.blocks.map((b) => b.text))).toEqual([['Chapter one', 'a'], ['Chapter two', 'b']]);
+    expect(c.toc.map((t) => t.section)).toEqual([0, 1]);
+    expect(c.sections[1].blocks[1].links[0].section).toBe(1);
+  });
+  it('three-level TOC: leaves are chapters, prefixed by their part', () => {
+    const c = buildContent({
+      toc: [{ title: 'Travels', depth: 0, section: 0 }, { title: 'Part I: Lilliput', depth: 1, section: 1 },
+        { title: 'Chapter I', depth: 2, section: 2 }, { title: 'Chapter II', depth: 2, section: 3 },
+        { title: 'Part II: Brobdingnag', depth: 1, section: 4 }, { title: 'Chapter I', depth: 2, section: 5 },
+        { title: 'Other Work', depth: 0, section: 6 }, { title: 'One', depth: 1, section: 7 }, { title: 'Two', depth: 1, section: 8 }],
+      sections: [['Travels'], ['Part I'], [filler(300)], [filler(300)], ['Part II'], [filler(300)], ['Other'], [filler(300)], [filler(300)]],
+    });
+    const s = buildStructure(c, c.sections.map((x) => x.blocks.map((b) => words(b.text).length)));
+    expect(s.chapters.map((x) => x.title)).toEqual(['Part I · Chapter I', 'Part I · Chapter II', 'Part II · Chapter I', 'One', 'Two']);
+  });
+});

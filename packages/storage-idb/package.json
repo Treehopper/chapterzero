@@ -1,0 +1,11 @@
+{
+  "name": "@vocabfirst/storage-idb",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "dexie": "^4.4.7"
+  }
+}

@@ -1,6 +1,6 @@
 /** Import steps 5–8 (README §7.1): tokenise, match, names, aggregate. */
 import type { WordList } from '../ports/index.ts';
-import { buildStructure, removeRepeatedBlocks } from './structure.ts';
+import { buildStructure, removeRepeatedBlocks, splitSectionsAtTocAnchors } from './structure.ts';
 import { cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
 import type { Chapter, EpubContent, ImportDraft } from './types.ts';
 
@@ -33,7 +33,7 @@ async function resolveAll(wordList: WordList, tokens: string[]): Promise<Map<str
 export async function analyseContent(
   raw: EpubContent, wordList: WordList, onProgress?: (done: number, total: number, phase: string) => void,
 ): Promise<AnalysisResult> {
-  const content = removeRepeatedBlocks(raw);
+  const content = splitSectionsAtTocAnchors(removeRepeatedBlocks(raw));
   onProgress?.(0, 1, 'tokenising');
   const tokenized: Sentence[][][] = content.sections.map((s) => s.blocks.map((b) => tokenizeBlock(b.text)));
   const blockTokens = tokenized.map((sec) =>

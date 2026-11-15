@@ -11,3 +11,4 @@ export type { WordRow, WordSuggestion, WordsTab } from './services/cardService.t
 export type { CalibrationView } from './services/calibrationService.ts';
 export type { ConfirmOptions } from './services/importService.ts';
 export type { DailyStats } from './services/progressService.ts';
+export { analyseContent } from './domain/analysis.ts';

@@ -21,8 +21,49 @@ export function removeRepeatedBlocks(content: EpubContent): EpubContent {
   };
 }
 
-const FRONT = /^(cover|title ?page|(table of )?contents|copyright.*|dedication|also by.*|imprint)$/i;
-const BACK = /^(about the author.*|acknowledge?ments|(an )?(extract|excerpt|preview) from.*|.* publication|newsletter.*|e-?book licen[cs]e.*)$/i;
+/**
+ * Many EPUBs put several chapters into one file and point at them with fragments. Before
+ * the chapter rules run, split such sections at the blocks the TOC points to, so each TOC
+ * entry starts a section of its own. Links and TOC entries are remapped.
+ */
+export function splitSectionsAtTocAnchors(content: EpubContent): EpubContent {
+  const cuts = new Map<number, Set<number>>();
+  for (const e of content.toc) {
+    if (!e.anchorId) continue;
+    const blocks = content.sections[e.section]?.blocks;
+    const at = blocks?.findIndex((b) => b.anchorIds.includes(e.anchorId!)) ?? -1;
+    if (at > 0) (cuts.get(e.section) ?? cuts.set(e.section, new Set()).get(e.section)!).add(at);
+  }
+  if (cuts.size === 0) return content;
+  const sections: EpubContent['sections'] = [];
+  /** old section → [first new index, block offsets] */
+  const map = new Map<number, { starts: number[]; base: number }>();
+  content.sections.forEach((sec, si) => {
+    const starts = [0, ...[...(cuts.get(si) ?? [])].sort((a, b) => a - b)];
+    map.set(si, { starts, base: sections.length });
+    starts.forEach((st, k) => sections.push({ blocks: sec.blocks.slice(st, starts[k + 1] ?? sec.blocks.length) }));
+  });
+  const locate = (section: number, anchorId?: string) => {
+    const m = map.get(section);
+    if (!m) return section;
+    if (!anchorId) return m.base;
+    const at = content.sections[section].blocks.findIndex((b) => b.anchorIds.includes(anchorId));
+    if (at < 0) return m.base;
+    let k = 0;
+    while (k + 1 < m.starts.length && m.starts[k + 1] <= at) k++;
+    return m.base + k;
+  };
+  return {
+    ...content,
+    toc: content.toc.map((e) => ({ ...e, section: locate(e.section, e.anchorId) })),
+    sections: sections.map((sec) => ({
+      blocks: sec.blocks.map((b) => ({ ...b, links: b.links.map((l) => ({ ...l, section: locate(l.section, l.anchorId) })) })),
+    })),
+  };
+}
+
+const FRONT = /^(cover|title ?page|(table of )?contents|copyright.*|dedication|also by.*|imprint|(list of )?illustrations)$/i;
+const BACK = /^(about the author.*|acknowledge?ments|(an )?(extract|excerpt|preview) from.*|.* publication|newsletter.*|e-?book licen[cs]e.*|.*\blicen[cs]e|(the )?(full )?project gutenberg.*|colophon|uncopyright)$/i;
 const NOTES = /^(foot|end)?notes$/i;
 
 export function chapterKind(title: string): Chapter['kind'] | 'notes' {
@@ -74,11 +115,29 @@ export function buildStructure(content: EpubContent, blockTokens: number[][]): S
 
   if (toc.length >= 3) {
     const top = Math.min(...toc.map((e) => e.depth));
-    const groups: { entry: (typeof toc)[number]; children: (typeof toc)[number][] }[] = [];
+    type Entry = (typeof toc)[number];
+    const groups: { entry: Entry; children: Entry[] }[] = [];
     for (const e of toc) {
       if (e.depth === top) groups.push({ entry: e, children: [] });
-      else if (e.depth === top + 1 && groups.length) groups[groups.length - 1].children.push(e);
-      // deeper entries: their sections join the chapter before them
+      else if (groups.length) groups[groups.length - 1].children.push(e);
+    }
+    // a single child is a subtitle ("ETYMOLOGY." › "(Supplied by a Late Consumptive Usher…)"), not a work
+    for (const g of groups) if (g.children.length === 1) g.children = [];
+    // deeper levels (book › part › chapter): the leaves are the chapters, titled "Part I · Chapter I"
+    for (const g of groups) {
+      if (!g.children.some((c) => c.depth > top + 1)) continue;
+      const leaves: Entry[] = [];
+      g.children.forEach((c, i) => {
+        const next = g.children[i + 1];
+        if (next && next.depth > c.depth) {
+          if (next.section > c.section) leaves.push(c); // a part's own opening pages
+          return;
+        }
+        const parent = [...g.children.slice(0, i)].reverse().find((p) => p.depth < c.depth && p.depth > top);
+        const prefix = parent ? parent.title.split(/[:.—–]/)[0].trim() : '';
+        leaves.push({ ...c, title: prefix && !c.title.startsWith(prefix) ? `${prefix} · ${c.title}` : c.title });
+      });
+      g.children = leaves;
     }
     const hasWorks = groups.some((g) => g.children.length > 0);
     if (!hasWorks) {
@@ -215,12 +274,14 @@ export function buildStructure(content: EpubContent, blockTokens: number[][]): S
       if (c.unit.kind !== 'story' || c.tokens >= MIN_CHAPTER_TOKENS) continue;
       const sameWork = list.filter((x) => x.unit.workKey === c.unit.workKey && x.unit.kind === 'story');
       if (sameWork.length <= 1) continue;
-      const next = list[i + 1];
-      const prev = list[i - 1];
-      if (next && next.unit.workKey === c.unit.workKey && next.unit.kind === 'story') {
+      // nearest story chapter of the same work: the next one, else the previous one
+      const story = (x: Pending | undefined) => x && x.unit.workKey === c.unit.workKey && x.unit.kind === 'story';
+      const next = list.slice(i + 1).find((x) => x.unit.workKey === c.unit.workKey && x.unit.kind === 'story');
+      const prev = [...list.slice(0, i)].reverse().find(story);
+      if (next) {
         next.order = [...c.order, ...next.order];
         next.tokens += c.tokens;
-      } else if (prev && prev.unit.workKey === c.unit.workKey && prev.unit.kind === 'story') {
+      } else if (prev) {
         prev.order = [...prev.order, ...c.order];
         prev.tokens += c.tokens;
       } else continue;
