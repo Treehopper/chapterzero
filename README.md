@@ -87,11 +87,11 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C4 | As a learner, I want cards I got right to come back after growing intervals (1, 2, 4, 8 … days) like jMemorize. | Must |
 | C5 | As a learner, I want to close the app at any moment and continue exactly where I was (same card, same side, same session counters) when I reopen it. | Must |
 | C6 | As a learner, I want to undo my last swipe in case I swiped by mistake (a short-lived "Undo" pill after each grade). | Should |
-| C7 | As a learner using VoiceOver or a keyboard, I want accessible actions for flip, knew it, didn't know, show progress and the card menu, because the screen has no visible buttons. | Must |
+| C7 | As a learner using VoiceOver or a keyboard, I want accessible actions for flip, knew it, didn't know and the card menu, because the card has no visible buttons. | Must |
 | C8 | As a learner, I want to choose a daily new-card limit so I'm not overwhelmed. | Should |
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
-| C11 | As a learner, I want to **swipe down** to reveal a thin progress bar for the current session, which hides again by itself. | Must |
+| C11 | As a learner, I want to always see a thin progress bar for the current session, and a visible *Finish* button next to it. | Must |
 | C12 | As a learner, I want to **swipe up** to reveal two buttons: *Edit card* and *Finish session*. | Must |
 | C13 | As a learner, I want *Edit card* to let me change the translation of the current card or remove it, and then continue studying. | Must |
 | C14 | As a learner, I want *Finish session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
@@ -110,13 +110,13 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 - The study screen shows only the card on a full-bleed background; no header, footer, or buttons are visible by default.
 - A gesture's direction is fixed after 10 px of travel by its dominant axis: horizontal = grade, vertical = overlays. A vertical swipe never grades a card.
 - Vertical swipes are only recognised if they start more than 44 px away from the top and bottom screen edges, so they don't fight iOS Notification/Control Center and the home indicator.
-- Swipe down: progress bar slides in at the top (below the safe area), stays 3 s, then fades out. Swiping down again while visible restarts the timer.
+- The progress bar ("12 / 40") and a *Finish* text button sit at the top, below the safe area, all the time. Swipe down only closes the panel.
 - Swipe up: a bottom panel with two large buttons slides in; the card dims. Swiping down or tapping the dimmed card closes the panel. The panel never grades or flips the card.
 - *Edit card* opens a full-screen sheet with the translations (editable), *Save*, *Remove card*, *Mark as known* and *Cancel*. Saving keeps the current card and its side. Remove/known take the card out of the session queue and show the next card. All changes are persisted atomically with the session.
 - *Finish session* marks the session finished; ungraded cards keep their due dates. Closing the app while the statistics screen is shown reopens the statistics, not the old session.
 
 **Acceptance criteria (C15)**
-- On the first card of each session, a translucent overlay shows five hints at the place where each gesture happens: tap (centre), swipe right ✓, swipe left ✗, swipe down = progress, swipe up = edit / finish.
+- On the first card of each session, a translucent overlay shows five hints at the place where each gesture happens: tap (centre), swipe right ✓, swipe left ✗, swipe up = edit card.
 - Before the first flip only *Tap to flip* plus the up/down hints are shown; after the flip, the left/right grading hints appear.
 - The overlay never blocks input. Each hint fades out once its gesture has been used. All hints are gone after the first card is graded.
 - Hints also appear when a session is resumed on a card that is still the session's first.
@@ -1175,7 +1175,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 ```
 
   Links are real `<a href target="_blank" rel="noopener noreferrer">` elements. The gesture recogniser ignores pointer-downs that start on a link.
-- **Swipe down** → a 3 px progress bar (session done/total, accent colour) plus a tiny "12 / 40" label slides in under the status bar and fades after 3 s.
+- **Top bar** → a 3 px progress bar (session done/total, accent colour), a tiny "12 / 40" label and a *Finish* text button (44 px), always visible under the status bar. User feedback: hidden progress and a hidden way out felt like no progress and no way out.
 - **Swipe up** → bottom panel with two 56 px-tall buttons, *Edit card* and *Finish session*; card dims to 40 %. Swipe down or tap the card to dismiss.
 - **Edit card sheet** → full-screen: word, translation chips (editable, add/remove), *Save*, then destructive actions *Remove card* and *Mark as known* (each confirmed via an undo toast rather than a dialog), *Cancel*.
 - **Gesture hints (C15)** on the first card of a session:
@@ -1183,7 +1183,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 ```
  Before flip                     After flip
 ┌───────────────────────┐       ┌───────────────────────┐
-│     ↓ progress        │       │     ↓ progress        │
+│━━━─────── 0/40 Finish │       │━━━─────── 0/40 Finish │
 │                       │       │                       │
 │  ┌─────────────────┐  │       │  ┌─────────────────┐  │
 │  │   relinquish    │  │    ✗ ◀│  │   aufgeben,     │  │▶ ✓
@@ -1191,13 +1191,13 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 │  │   ◉ tap to flip │  │   know│  │                 │  │ it
 │  └─────────────────┘  │       │  └─────────────────┘  │
 │                       │       │                       │
-│   ↑ edit · finish     │       │   ↑ edit · finish     │
+│     ↑ edit card       │       │     ↑ edit card       │
 └───────────────────────┘       └───────────────────────┘
 ```
 
   Short looping animations in white on a 50 % dark scrim around the card; the card itself stays fully visible. Hints are a UI-only concern: the UI decides from `SessionView.counters.reviewed === 0` and a setting.
 - **Gesture engine**: one Pointer Events recogniser on the stage (`touch-action: none`), axis locked after 10 px, vertical gestures ignored if they start within 44 px of the top or bottom edge. `prefers-reduced-motion` replaces flips/flings with fades.
-- **Accessibility (C7)**: the card is a VoiceOver element with custom actions (*Flip*, *Knew it*, *Didn't know*, *Show progress*, *Card options*); keyboard: Space = flip, ←/→ = grade, ↓ = progress, ↑ = panel, Z = undo.
+- **Accessibility (C7)**: the card is a VoiceOver element with custom actions (*Flip*, *Knew it*, *Didn't know*, *Card options*); keyboard: Space = flip, ←/→ = grade, ↑ = panel, ↓ = close panel, Z = undo.
 
 **Statistics (full screen, C14)** — scrollable, three sections:
 1. *This session*: big first-try accuracy ring, cards reviewed, "8 cards moved up a box" (animated), cards removed, time spent. If cards were retired at first sight: "14 words you already knew were removed".

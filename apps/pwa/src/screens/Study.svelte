@@ -22,8 +22,6 @@
   let fly = $state<-1 | 0 | 1>(0);
   let busy = $state(false);
   let panel = $state(false);
-  let showProgress = $state(false);
-  let progressTimer: ReturnType<typeof setTimeout> | undefined;
   let undoPill = $state<{ label: string; until: number }>();
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
   let editing = $state(false);
@@ -50,7 +48,7 @@
       await afterView(view);
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   });
-  onDestroy(() => { clearTimeout(progressTimer); clearTimeout(undoTimer); });
+  onDestroy(() => clearTimeout(undoTimer));
 
   async function afterView(v: SessionView) {
     if (v.card) live = `${headword(v.card.lemma, v.card.pos)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
@@ -155,11 +153,7 @@
 
   function vertical(dir: 1 | -1) {
     if (dir === 1) {
-      if (panel) { panel = false; return; }
-      useHint('down');
-      showProgress = true;
-      clearTimeout(progressTimer);
-      progressTimer = setTimeout(() => (showProgress = false), 3000);
+      panel = false;
     } else {
       useHint('up');
       panel = true;
@@ -242,9 +236,12 @@
     use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
 
-    <div class="progress" class:show={showProgress} aria-hidden={!showProgress} data-testid="progress">
-      <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
-      <span>{view.progress.done} / {view.progress.total}</span>
+    <div class="topbar">
+      <div class="progress" data-testid="progress" aria-label="{view.progress.done} of {view.progress.total} cards done">
+        <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
+        <span>{view.progress.done} / {view.progress.total}</span>
+      </div>
+      <button class="end" onclick={finish} data-testid="end-session">Finish</button>
     </div>
 
     <div class="cardpos" class:nudge>
@@ -296,12 +293,11 @@
       </div>
     {/if}
 
-    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, down for progress, up to edit or finish.' : ''}</div>
+    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, up to edit the card.' : ''}</div>
     <div class="sr-only">
       <button onclick={flip}>Flip</button>
       <button onclick={() => grade(1)}>Knew it</button>
       <button onclick={() => grade(-1)}>Didn't know</button>
-      <button onclick={() => vertical(1)}>Show progress</button>
       <button onclick={() => vertical(-1)}>Card options</button>
       {#if view.canUndo}<button onclick={undo}>Undo</button>{/if}
     </div>
@@ -355,9 +351,9 @@
   .dots { display: flex; gap: 6px; justify-content: center; flex: none; padding-top: 10px; }
   .dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); }
   .dots i.on { background: var(--good); }
-  .progress { position: absolute; top: calc(var(--safe-top) + 6px); left: 16px; right: 16px; display: flex; align-items: center; gap: 8px;
-    opacity: 0; transform: translateY(-12px); transition: opacity .3s, transform .3s; pointer-events: none; }
-  .progress.show { opacity: 1; transform: none; }
+  .topbar { position: absolute; top: var(--safe-top); left: 16px; right: 4px; display: flex; align-items: center; gap: 8px; }
+  .progress { flex: 1; display: flex; align-items: center; gap: 8px; pointer-events: none; }
+  .end { min-height: 44px; padding: 0 12px; border: none; background: none; color: var(--accent); font-size: 16px; font-weight: 600; }
   .track { flex: 1; height: 3px; background: color-mix(in srgb, var(--text) 15%, transparent); border-radius: 2px; overflow: hidden; }
   .track div { height: 100%; background: var(--accent); }
   .progress span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cardWord, expectCard, expectPhase, firstRun, importAndOpen, startStudy, swipe, swipeDown, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { cardWord, expectCard, expectPhase, firstRun, importAndOpen, startStudy, swipe, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 async function ready(page: Page) {
   await firstRun(page);
@@ -83,12 +83,10 @@ test.describe('study (C1–C18)', () => {
     const w = await cardWord(page);
     await tapCard(page);                          // flip the new card
     await expectCard(page, w, 'back');
-    await swipeDown(page);
     const progress = await page.getByTestId('progress').innerText();
     await page.reload();
     await expectCard(page, w, 'back');
     await expect(back(page)).toBeVisible();
-    await swipeDown(page);
     await expect(page.getByTestId('progress')).toHaveText(progress);
     // relaunching the app from the start URL resumes too
     await page.goto('/');
@@ -107,16 +105,19 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByText('tap or swipe to continue')).toHaveCount(0);
   });
 
-  test('swipe down shows progress for 3 s; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {
-    await swipeDown(page);
+  test('progress and Finish are always visible; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {
     const p = page.getByTestId('progress');
-    await expect(p).toHaveClass(/show/);
-    await expect(p).toContainText('0 / ');
-    await expect(p).not.toHaveClass(/show/, { timeout: 5000 });
-    // a vertical swipe starting at the top edge belongs to iOS
-    await swipe(page, 0, 160, { from: { x: 196, y: 20 } });
+    await expect(p).toBeVisible();
+    await expect(p).toHaveText(/^\s*0 \/ \d+$/);
+    await expect(page.getByTestId('end-session')).toBeVisible();
+    await tapCard(page);
+    await expectPhase(page, 'back');
+    await swipeRight(page);
+    await expect(p).toHaveText(/^\s*1 \/ \d+$/);
+    // a vertical swipe starting at the bottom edge belongs to iOS
+    await swipe(page, 0, -160, { from: { x: 196, y: page.viewportSize()!.height - 10 } });
     await page.waitForTimeout(200);
-    await expect(p).not.toHaveClass(/show/);
+    await expect(page.getByTestId('panel')).toHaveCount(0);
     await swipeUp(page);
     await expect(page.getByTestId('panel')).toBeVisible();
     // tapping the dimmed card closes the panel and does not flip
@@ -157,8 +158,7 @@ test.describe('study (C1–C18)', () => {
     await expectPhase(page, 'back');
     await swipeRight(page);
     await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');
-    await swipeUp(page);
-    await tap(page.getByTestId('finish'));
+    await tap(page.getByTestId('end-session'));
     await expect(page.getByTestId('statistics')).toBeVisible();
     await expect(page.getByTestId('stat-reviewed')).toHaveText('1');
     await expect(page.getByTestId('stat-known')).toContainText('1 word you already knew was removed');
