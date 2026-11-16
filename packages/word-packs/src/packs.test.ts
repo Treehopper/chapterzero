@@ -90,15 +90,16 @@ describe('the whole app on IndexedDB', () => {
     expect(book.cards).toBeGreaterThan(5);
     const v = await app.study.resumeOrStart(book.id);
     await app.study.flip(v.sessionId);
-    const g = await app.study.grade(v.sessionId, 'unknown');
-    expect(g.phase).toBe('wrongReview');
+    await app.study.grade(v.sessionId, 'unknown');
+    const g = await app.study.flip(v.sessionId);
+    expect(g.phase).toBe('back');
     // a failing transaction leaves no trace
     await expect(ports.uow.run(async (tx) => { await tx.knownWords.addMany(['zzz']); throw new Error('boom'); })).rejects.toThrow('boom');
     expect(await ports.uow.run((tx) => tx.knownWords.hasMany(['zzz']))).toEqual(new Set());
     // a fresh app over the same database resumes the session
     const app2 = createApp({ ...ports, uow: new IdbUnitOfWork(db) });
     const r = await app2.study.resumeOrStart(book.id);
-    expect(r).toMatchObject({ sessionId: v.sessionId, phase: 'wrongReview' });
+    expect(r).toMatchObject({ sessionId: v.sessionId, phase: 'back', card: { id: g.card!.id }, counters: { wrong: 1 } });
     const backup = await app2.backup.export();
     expect(backup.cards.length).toBe(book.cards);
     await app2.books.delete(book.id);

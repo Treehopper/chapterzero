@@ -56,18 +56,15 @@ describe('session queue and grading', () => {
     expect(await ports.uow.run((tx) => tx.knownWords.hasMany(['relinquish']))).toEqual(new Set());
   });
 
-  it('wrong answers show review mode with links, come back after the gap, and schedule normally', async () => {
+  it('wrong answers after a flip move on, come back after the gap, and schedule normally', async () => {
     const { app, book, cards, ports } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);
-    await app.study.flip(v0.sessionId);
-    const w = await app.study.grade(v0.sessionId, 'unknown');
-    expect(w.phase).toBe('wrongReview');
-    expect(w.card?.lemma).toBe('relinquish');
-    expect(w.lookupLinks.map((l) => l.name)).toContain('Wiktionary');
-    expect(w.counters).toMatchObject({ reviewed: 1, wrong: 1 });
-    // swipes in review mode never grade again
+    const b = await app.study.flip(v0.sessionId);
+    expect(b.lookupLinks.map((l) => l.name)).toContain('Wiktionary');  // links on every back
+    expect(v0.lookupLinks).toEqual([]);
     const again = await app.study.grade(v0.sessionId, 'unknown');
-    expect(again.counters.wrong).toBe(1);
+    expect(again.phase).toBe('front');
+    expect(again.counters).toMatchObject({ reviewed: 1, wrong: 1 });
     expect(again.card?.lemma).not.toBe('relinquish');
     // walk until relinquish comes back
     let v = again;
@@ -86,6 +83,19 @@ describe('session queue and grading', () => {
     expect(r.stats).toMatchObject({ correct: 1, wrong: 1, failStreak: 0 });
     const stats = await ports.uow.run((tx) => tx.achievements.getStats());
     expect(stats).toMatchObject({ correctStreak: 1, totalCorrect: 1 });
+  });
+
+  it('a wrong swipe on the front shows the back once, with links; swipes there never grade again', async () => {
+    const { app, book } = await imported();
+    await app.settings.update({ requireFlipBeforeGrade: false });
+    const v0 = await app.study.resumeOrStart(book.id);
+    const w = await app.study.grade(v0.sessionId, 'unknown');
+    expect(w.phase).toBe('wrongReview');
+    expect(w.card?.lemma).toBe(v0.card?.lemma);
+    expect(w.lookupLinks.map((l) => l.name)).toContain('Wiktionary');
+    const next = await app.study.grade(v0.sessionId, 'unknown');
+    expect(next.counters.wrong).toBe(1);
+    expect(next.phase).toBe('front');
   });
 
   it('resumes exactly where it was (C5): same card, same side, same counters', async () => {

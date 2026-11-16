@@ -96,7 +96,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C13 | As a learner, I want *Edit card* to let me change the translation of the current card or remove it, and then continue studying. | Must |
 | C14 | As a learner, I want *Finish session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
-| C16 | As a learner, when I answer a card wrong, I want its back side shown again with links to Wiktionary and other dictionaries. | Must |
+| C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries, and when I answer a card wrong without having turned it over, I want to see its back side. | Must |
 | C17 | As a learner, I want to choose which lookup sites appear as links. | Should |
 | C18 | As a learner, when I get a card right the very first time I see it, I want it retired for good, so words I already know cost me one swipe and never return. | Must |
 
@@ -123,7 +123,8 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 - Settings has *Gesture hints: Every session (default) / Off*. VoiceOver users get the same text as a spoken announcement.
 
 **Acceptance criteria (C16–C17)**
-- Swiping left grades the card *didn't know* immediately (persisted, re-queued, counters updated). Instead of flying off, the card swings back to the centre and shows its back side in **review mode**: translations, example sentence, plus a row of lookup links.
+- Every back side ends with a row of lookup links.
+- Swiping left grades the card *didn't know* immediately (persisted, re-queued, counters updated). After a flip the back has been seen, so the card flies off like a right swipe. Swiped left from the front (only with *Flip before grading* off), the card swings back to the centre and shows its back side once in **review mode**.
 - Default links: **Wiktionary**, **dict.cc**, **LEO**, **Linguee**, **Cambridge Dictionary**. Each opens the lemma's page in the system browser (in-app Safari sheet on iOS), so you come back to the same card.
 - To continue: tap the card outside the links, or swipe left or right. In review mode, swipes never grade again.
 - Undo still works in review mode and reverts the *didn't know* grade.
@@ -437,7 +438,7 @@ interface VocabApp {
     resumeOrStart(bookId: BookId, opts?: SessionOptions): Promise<SessionView>;
     flip(sessionId: SessionId): Promise<SessionView>;
     grade(sessionId: SessionId, result: 'known' | 'unknown'): Promise<SessionView>;
-    continueAfterReview(sessionId: SessionId): Promise<SessionView>;  // leaves wrongReview (C16)
+    continueAfterReview(sessionId: SessionId): Promise<SessionView>;  // leaves wrongReview (C16, wrong swipe on the front)
     undo(sessionId: SessionId): Promise<SessionView>;
     editCurrent(sessionId: SessionId, translations: string[]): Promise<SessionView>;    // C13
     removeCurrent(sessionId: SessionId, as: 'removed' | 'known'): Promise<SessionView>; // C13
@@ -484,7 +485,7 @@ interface WordSuggestion {
 
 `SessionView` (returned by every study call) contains the current card and phase, the counters, and:
 - `newAchievements: AchievementUnlock[]` — unlocks caused by that call (G4);
-- `lookupLinks: { name; url }[]` in `wrongReview` phase (C16);
+- `lookupLinks: { name; url }[]` in the `back` and `wrongReview` phases (C16);
 - `chapter: { index; title; coverage }` for the chapter new cards come from;
 - `chapterReady?: { index; title }` when that call made a chapter ready for the first time (I3);
 - `retired: boolean` when the call retired a card at first sight (C18).
@@ -1151,7 +1152,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 - **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots.
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
 - **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6); after a first-sight retirement it reads "Already known · Undo" (C18).
-- **Wrong-answer review (C16)** → after a left swipe the card swings back, already showing its back side, with a red edge and the link row:
+- **Lookup links (C16)** → every back side ends with the link row. A wrong swipe on the front (only with *Flip before grading* off) swings the card back, showing its back side with a red edge:
 
 ```
 ┌───────────────────────┐

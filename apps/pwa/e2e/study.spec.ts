@@ -56,31 +56,29 @@ test.describe('study (C1–C18)', () => {
     await expect(back(page)).toBeVisible();
   });
 
-  test('left swipe: review mode with lookup links, then continue (C16)', async ({ page }) => {
+  test('the back shows lookup links; a left swipe after the flip moves straight on (C16)', async ({ page }) => {
     const w = await cardWord(page);
+    await expect(page.getByRole('link', { name: 'Wiktionary ↗' })).toHaveCount(0);
     await tapCard(page);
     await expectPhase(page, 'back');
-    await swipeLeft(page);
-    await expectCard(page, w, 'wrongReview');
     const link = page.getByRole('link', { name: 'Wiktionary ↗' });
     await expect(link).toHaveAttribute('href', `https://en.wiktionary.org/wiki/${w}#English`);
     await expect(link).toHaveAttribute('target', '_blank');
     await expect(page.getByRole('link', { name: 'dict.cc ↗' })).toBeVisible();
-    await expect(page.getByText('tap or swipe to continue')).toBeVisible();
-    await expect(page.getByTestId('undo')).toHaveText('Undo');
-    // swiping in review mode does not grade again: it continues
-    await swipeRight(page);
+    const [a, face] = await Promise.all([link.boundingBox(), page.locator('.back').boundingBox()]);
+    expect(a!.y + a!.height).toBeLessThanOrEqual(face!.y + face!.height);
+    await swipeLeft(page);
     await expectPhase(page, 'front');
     expect(await cardWord(page)).not.toBe(w);
-    await expect(page.getByText('tap or swipe to continue')).toHaveCount(0);
+    await expect(page.getByTestId('undo')).toHaveText('Undo');
+    await tap(page.getByTestId('undo'));
+    await expectCard(page, w, 'back');
   });
 
   test('close and reopen: same card, same side, same counters (C5)', async ({ page }) => {
     await tapCard(page);
     await expectPhase(page, 'back');
     await swipeLeft(page);
-    await expectPhase(page, 'wrongReview');
-    await tapCard(page);                          // continue after review
     await expectPhase(page, 'front');
     const w = await cardWord(page);
     await tapCard(page);                          // flip the new card
@@ -97,13 +95,16 @@ test.describe('study (C1–C18)', () => {
     await expectCard(page, w, 'back');
   });
 
-  test('wrong review mode survives a reload', async ({ page }) => {
-    await tapCard(page);
-    await expectPhase(page, 'back');
+  test('review after a wrong swipe on the front survives a reload', async ({ page }) => {
     await swipeLeft(page);
+    await tap(page.getByRole('button', { name: "Yes, count it as “didn't know”" }));
     await expectPhase(page, 'wrongReview');
+    await expect(page.getByText('tap or swipe to continue')).toBeVisible();
     await page.reload();
     await expect(page.getByText('tap or swipe to continue')).toBeVisible();
+    await swipeRight(page);                       // swiping in review mode continues, never grades again
+    await expectPhase(page, 'front');
+    await expect(page.getByText('tap or swipe to continue')).toHaveCount(0);
   });
 
   test('swipe down shows progress for 3 s; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {
@@ -151,8 +152,6 @@ test.describe('study (C1–C18)', () => {
     await tapCard(page);
     await expectPhase(page, 'back');
     await swipeLeft(page);
-    await expectPhase(page, 'wrongReview');
-    await tapCard(page);
     await expectPhase(page, 'front');
     await tapCard(page);
     await expectPhase(page, 'back');
@@ -174,7 +173,7 @@ test.describe('study (C1–C18)', () => {
     await page.keyboard.press('Space');
     await expectPhase(page, 'back');
     await page.keyboard.press('ArrowLeft');
-    await expectPhase(page, 'wrongReview');
+    await expectPhase(page, 'front');
     await page.keyboard.press('z');
     await expectCard(page, w, 'back');
     await expect(page.getByRole('button', { name: 'Knew it' })).toBeAttached();

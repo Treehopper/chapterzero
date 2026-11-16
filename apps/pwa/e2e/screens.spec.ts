@@ -13,11 +13,9 @@ for (const scheme of ['light', 'dark'] as const) {
     await expectPhase(page, 'front');
     await shot('study-front');
     await tapCard(page); await expectPhase(page, 'back');
-    await shot('study-back');
-    await swipeLeft(page); await expectPhase(page, 'wrongReview');
     await page.waitForTimeout(400);
-    await shot('study-review');
-    await tapCard(page); await expectPhase(page, 'front');
+    await shot('study-back');
+    await swipeLeft(page); await expectPhase(page, 'front');
     await tapCard(page); await expectPhase(page, 'back');
     await swipeRight(page);
     await page.waitForTimeout(300);

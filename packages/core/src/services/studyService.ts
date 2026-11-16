@@ -100,7 +100,7 @@ export function studyService(ctx: Ctx) {
       progress: { done: doneCount, total: doneCount + remaining },
       firstCard: session.graded.length === 0 && session.counters.alreadyKnown === 0 && session.counters.removed === 0,
       canUndo: !!session.undo, undoKind: session.undo?.kind, requireFlip: settings.requireFlipBeforeGrade,
-      newAchievements: [], lookupLinks: session.current?.phase === 'wrongReview' && card ? links(card.lemma, settings) : [],
+      newAchievements: [], lookupLinks: session.current && session.current.phase !== 'front' && card ? links(card.lemma, settings) : [],
       chapter: ch && { index: ch.index, title: displayTitle(book, ch), coverage: chapterCoverage(ch, cards) },
       retired: false,
       ...extra,
@@ -297,12 +297,11 @@ export function studyService(ctx: Ctx) {
         };
         if (firstAttempt) session.graded.push(card.id);
         session.undo = { ...undo, logSeq };
-        if (result === 'unknown') {
-          session.queue.splice(Math.min(settings.scheduler.requeueGap, session.queue.length), 0, card.id);
-          session.current = { cardId: card.id, phase: 'wrongReview' };
-        } else {
-          advance(session);
-        }
+        const fromFront = session.current.phase === 'front';
+        if (result === 'unknown') session.queue.splice(Math.min(settings.scheduler.requeueGap, session.queue.length), 0, card.id);
+        // C16: the back was already seen when graded after a flip; only a wrong swipe on the front shows it
+        if (result === 'unknown' && fromFront) session.current = { cardId: card.id, phase: 'wrongReview' };
+        else advance(session);
         const r = await afterChange(tx, session, book, byId, settings, g.stats, graded, now);
         await tx.sessions.save(session);
         return view(session, book, byId, settings, { newAchievements: r.unlocks, chapterReady: r.chapterReady, bookFinished: r.bookFinished });

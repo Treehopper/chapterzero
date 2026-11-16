@@ -272,8 +272,8 @@
             {#if card.example}
               <p class="ex small">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
+            <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
             {#if review}
-              <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
               <div class="foot small muted">tap or swipe to continue</div>
             {:else}
               <div class="dots" aria-label="Box {card.box}">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}</div>
@@ -345,13 +345,14 @@
   .ex b { color: var(--text); }
   .ex.small { font-size: 15px; text-align: left; margin: 12px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
   .foot { text-align: center; margin-top: auto; padding-top: 8px; flex: none; }
+  .links + .foot { margin-top: 0; }
   .head { margin-bottom: 12px; }
   .small-word { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--muted); }
   .tr { font-size: clamp(24px, 7vw, 32px); font-weight: 600; line-height: 1.25; margin-top: auto; }
   .en { font-size: 12px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
   .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-  .links { flex: none; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
-  .dots { display: flex; gap: 6px; justify-content: center; margin-top: auto; padding-top: 12px; }
+  .links { flex: none; margin-top: auto; border-top: 1px solid var(--line); padding-top: 8px; }
+  .dots { display: flex; gap: 6px; justify-content: center; flex: none; padding-top: 10px; }
   .dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); }
   .dots i.on { background: var(--good); }
   .progress { position: absolute; top: calc(var(--safe-top) + 6px); left: 16px; right: 16px; display: flex; align-items: center; gap: 8px;

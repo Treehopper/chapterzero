@@ -32,9 +32,7 @@ test('nothing due → study ahead (C9)', async ({ page }) => {
   await tapCard(page);
   await expectPhase(page, 'back');
   await swipeLeft(page);
-  await expectPhase(page, 'wrongReview');
-  await tapCard(page);            // the only card comes back at once (queue is empty)
-  await expectPhase(page, 'front');
+  await expectPhase(page, 'front');   // the only card comes back at once (queue is empty)
   await tapCard(page);
   await expectPhase(page, 'back');
   await swipeRight(page);
