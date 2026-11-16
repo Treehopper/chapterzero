@@ -22,7 +22,7 @@ export default defineConfig({
     { name: 'android', use: { ...devices['Pixel 7'] }, grep: /@android/ },
   ],
   webServer: {
-    command: `npx vite build && npx vite preview --port ${PORT} --strictPort`,
+    command: `npx vite build && npx vite preview --host --port ${PORT} --strictPort`,
     port: PORT,
     reuseExistingServer: true,
     timeout: 120_000,

@@ -1,6 +1,7 @@
 /** Word-pack download (A2, A3) and the IndexedDB-backed WordList (README §6). */
 import type { PackInfo, PackInstaller, PackStatus, Progress, WordEntry, WordList } from '@vocabfirst/core';
 import type { VocabDb } from '@vocabfirst/storage-idb';
+import { sha256Hex } from './sha256';
 
 export interface ManifestChunk { file: string; bytes: number; rows?: number; sha256: string; sha256Json?: string }
 export interface ManifestPack extends PackInfo { chunks: ManifestChunk[] }
@@ -9,8 +10,6 @@ export interface Manifest { formatVersion: 1; name?: string; packs: ManifestPack
 const STORE: Record<string, 'words' | 'wordsFreedict' | 'forms'> = {
   'words-en-de': 'words', 'words-de-freedict': 'wordsFreedict', 'forms-en': 'forms',
 };
-
-const hex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 async function gunzip(bytes: Uint8Array): Promise<string> {
   if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes); // already decoded by the server
@@ -98,7 +97,7 @@ export class HttpPackInstaller implements PackInstaller {
       // gzip as published, or already decoded by a server that sent Content-Encoding: gzip
       const gzipped = bytes[0] === 0x1f && bytes[1] === 0x8b;
       const expected = gzipped ? c.sha256 : c.sha256Json;
-      const sha = hex(await crypto.subtle.digest('SHA-256', bytes));
+      const sha = await sha256Hex(bytes);
       if (!expected || sha !== expected) throw new Error(`Checksum mismatch for ${c.file}. Please try again.`);
       onProgress({ loaded: loaded + c.bytes, total, phase: 'installing' });
       const rows = (JSON.parse(await gunzip(bytes)) as unknown[][]).map((r) => toRow(p.id, r));

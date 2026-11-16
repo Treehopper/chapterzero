@@ -24,6 +24,15 @@ async function thumbnail(bytes: Uint8Array, mime: string): Promise<string | unde
 
 let app: ReturnType<typeof createApp> | undefined;
 
+/** RFC 4122 v4 id; `crypto.randomUUID` only exists in secure contexts (not plain http on the LAN). */
+function uuid(): string {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 function init(packsUrl: string, dbName: string) {
   const db = new VocabDb(dbName);
   const ports: Ports = {
@@ -32,7 +41,7 @@ function init(packsUrl: string, dbName: string) {
     packs: new HttpPackInstaller(db, packsUrl),
     epub: new ZipEpubReader({ makeThumbnail: thumbnail }),
     clock: { now: () => new Date() },
-    ids: { next: () => crypto.randomUUID() },
+    ids: { next: uuid },
     random: { next: () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32 },
   };
   app = createApp(ports);
