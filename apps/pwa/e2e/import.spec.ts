@@ -1,8 +1,30 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { firstRun, importBook, tap } from './helpers';
+import { FIXTURE_EPUB, firstRun, importBook, tap } from './helpers';
 
 test.describe('import (B1–B15, B7)', () => {
   test.beforeEach(async ({ page }) => { await firstRun(page); });
+
+  test('a long file name without spaces is cut with an ellipsis, not wider than the screen', async ({ page }) => {
+    // hold the analysis for a moment so the progress dialog can be measured
+    await page.evaluate(() => {
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (this: Worker, msg: { path?: string[] }, ...rest: never[]) {
+        if (msg?.path?.join('.') === 'books.analyse') setTimeout(() => post.call(this, msg, ...rest), 1500);
+        else post.call(this, msg, ...rest);
+      } as typeof post;
+    });
+    const name = 'Herman_Melville-Moby_Dick_or_The_Whale-Complete_Unabridged_Edition_with_Illustrations_2024.epub';
+    await page.getByTestId('file-input').setInputFiles({ name, mimeType: 'application/epub+zip', buffer: readFileSync(FIXTURE_EPUB) });
+    const label = page.getByTestId('analysing-name');
+    await expect(label).toHaveText(name);
+    const vw = page.viewportSize()!.width;
+    const box = (await page.getByTestId('analysing').locator('.card-box').boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(vw);
+    expect(await label.evaluate((e) => e.scrollWidth > e.clientWidth && getComputedStyle(e).textOverflow === 'ellipsis')).toBe(true);
+    await expect(page.getByTestId('preview-title')).toBeVisible();
+  });
 
   test('preview: works, default exclusions, live counts, create', async ({ page }) => {
     await importBook(page);

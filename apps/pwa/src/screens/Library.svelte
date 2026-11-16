@@ -140,7 +140,7 @@
 {#if analysing}
   <div class="busy" role="status" aria-live="polite" data-testid="analysing">
     <div class="card-box stack">
-      <strong>{analysing.name}</strong>
+      <strong class="filename" title={analysing.name} data-testid="analysing-name">{analysing.name}</strong>
       <span class="muted">{phaseLabel[analysing.phase] ?? 'Working…'}</span>
       <div class="progressbar"><div style:width="{analysing.total ? (analysing.loaded / analysing.total) * 100 : 0}%"></div></div>
     </div>
@@ -155,11 +155,12 @@
   .cover { width: 56px; height: 84px; border-radius: 6px; object-fit: cover; flex: none; background: var(--surface-2); }
   .placeholder { display: grid; place-items: center; font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--muted); }
   .meta { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-  .title { font-family: var(--serif); font-size: 18px; }
+  .title { font-family: var(--serif); font-size: 18px; overflow-wrap: anywhere; }
   .good { color: var(--good); font-weight: 600; }
   .empty { text-align: center; padding: 40px 8px; }
   .art { font-size: 56px; }
   .import { position: relative; }
-  .busy { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: grid; place-items: center; padding: 24px; z-index: 50; }
-  .busy .card-box { width: min(420px, 100%); }
+  .busy { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); display: grid; grid-template-columns: minmax(0, 420px); place-content: center; padding: 24px; z-index: 50; }
+  .busy .card-box { min-width: 0; }
+  .filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

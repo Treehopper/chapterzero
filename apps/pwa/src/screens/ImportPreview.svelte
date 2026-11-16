@@ -146,7 +146,7 @@
 </main>
 
 <style>
-  .title { font-family: var(--serif); font-size: 22px; }
+  .title { font-family: var(--serif); font-size: 22px; overflow-wrap: anywhere; }
   .cover { width: 48px; height: 72px; object-fit: cover; border-radius: 6px; }
   .big { font-size: 20px; font-weight: 700; }
   .grow { flex: 1; text-align: left; background: none; border: none; padding: 0; min-height: 28px; }
