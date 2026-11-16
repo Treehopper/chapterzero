@@ -115,7 +115,8 @@
       <button onclick={() => answer(true)} disabled={!flipped}>Knew it</button>
       <button onclick={() => answer(false)} disabled={!flipped}>Didn't know</button>
     </div>
-    <p class="explain small muted">A two-minute check: tap, then swipe right = knew it, left = didn't.</p>
+    <p class="explain small muted" data-testid="check-why">Two minutes, 60 words, so your cards skip the words you already know.<br />
+      Tap, then swipe right = knew it, left = didn't.</p>
   </main>
 {:else}
   <main class="screen stack">

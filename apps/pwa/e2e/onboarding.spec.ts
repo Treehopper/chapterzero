@@ -6,8 +6,17 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await page.goto('/?packs=test');
     await expect(page.getByRole('heading', { name: 'Install VocabFirst first' })).toBeVisible();
     await expect(page.getByText('Add to Home Screen')).toBeVisible();
+    const packRequests: string[] = [];
+    page.on('request', (r) => { if (r.url().includes('.json.gz')) packRequests.push(r.url()); });
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+    // the download waits for a tap (no accidental mobile-data use)
+    await expect(page.getByTestId('wifi-hint')).toContainText('Wi-Fi');
+    await expect(page.getByTestId('download-start')).toHaveText(/^Download \d+(\.\d)? [KM]B$/);
+    await page.waitForTimeout(500);
+    expect(packRequests).toEqual([]);
+    await tap(page.getByTestId('download-start'));
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
+    await expect(page.getByTestId('check-why')).toContainText('skip the words you already know');
 
     // a swipe before the flip does not answer
     const first = await page.getByTestId('check-word').innerText();
@@ -46,6 +55,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
   test('keyboard can run the check; adjusting the cutoff is saved as manual', async ({ page }) => {
     await page.goto('/?packs=test');
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+    await tap(page.getByTestId('download-start'));
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     for (let i = 0; i < 60; i++) {
       await page.keyboard.press('Space');
@@ -78,6 +88,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await page.route('**/test-packs/forms-en.000.json.gz', (route) => (fail ? route.fulfill({ status: 500, body: 'x' }) : route.continue()));
     await page.goto('/?packs=test');
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+    await tap(page.getByTestId('download-start'));
     await expect(page.getByRole('alert')).toContainText('Download failed');
     fail = false;
     await tap(page.getByRole('button', { name: 'Try again' }));

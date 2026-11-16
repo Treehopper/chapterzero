@@ -18,6 +18,7 @@ test.describe('real packs and books', () => {
     const t0 = Date.now();
     await page.goto('/?packs=real');
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+    await tap(page.getByTestId('download-start'));
     await expect(page.getByTestId('check-word')).toBeVisible({ timeout: 120_000 });
     const tInstall = Date.now() - t0;
     await tap(page.getByRole('button', { name: 'Skip' }));

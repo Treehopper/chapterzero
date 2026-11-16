@@ -45,6 +45,7 @@ export async function tapCard(page: Page) {
 export async function firstRun(page: Page, opts: { check?: 'skip' | 'none' } = { check: 'skip' }) {
   await page.goto('/?packs=test');
   await tap(page.getByRole('button', { name: 'Continue in the browser' }));
+  await tap(page.getByTestId('download-start'));
   if (opts.check === 'none') return;
   await expect(page.getByTestId('check-word')).toBeVisible();
   await tap(page.getByRole('button', { name: 'Skip' }));
