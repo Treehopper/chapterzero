@@ -18,9 +18,14 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     await expect(page.getByTestId('check-why')).toContainText('skip the words you already know');
 
-    // a swipe before the flip does not answer
+    // the first swipe before the flip asks once; "No" keeps flipping first, and is not asked again
     const first = await page.getByTestId('check-word').innerText();
     await swipeRight(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toContainText('Settings › Flip before grading');
+    await tap(page.getByRole('button', { name: "No, I'll flip first" }));
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
+    await swipeRight(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     await expect(page.getByTestId('check-word')).toHaveText(first);
 
@@ -122,6 +127,21 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     expect(row!.height).toBeGreaterThanOrEqual(a!.height - 0.5);
     expect(a!.height).toBeGreaterThanOrEqual(43.5); // 44 px, give or take the flip transform
     expect(a!.y + a!.height).toBeLessThanOrEqual(face!.y + face!.height);
+  });
+
+  test('grading from the front after the one-time confirmation; the setting follows', async ({ page }) => {
+    await firstRun(page, { check: 'none' });
+    await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
+    await swipeLeft(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toBeVisible();
+    await tap(page.getByRole('button', { name: "Yes, count it as “didn't know”" }));
+    await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
+    await swipeRight(page); // no question any more, no flip needed
+    await expect(page.getByTestId('check-counter')).toHaveText('3 / 60');
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
+    await tap(page.getByRole('button', { name: 'Skip' }));
+    await tap(page.getByRole('button', { name: 'Settings' }));
+    await expect(page.getByRole('checkbox', { name: 'Flip before grading' })).not.toBeChecked();
   });
 
   test('skipping the check sets level 5 and shows a dismissible hint', async ({ page }) => {

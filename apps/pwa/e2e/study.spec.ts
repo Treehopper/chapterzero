@@ -14,7 +14,11 @@ test.describe('study (C1–C18)', () => {
   test('tap flips; swipes only grade after the flip; short drags spring back @android', async ({ page }) => {
     const w = await cardWord(page);
     await expect(page.getByTestId('hints')).toContainText('tap to flip');
-    await swipeRight(page);                       // not flipped yet → no grade
+    await swipeRight(page);                       // not flipped yet → asks once, "No" → no grade
+    await tap(page.getByRole('button', { name: "No, I'll flip first" }));
+    await expectCard(page, w, 'front');
+    await swipeRight(page);                       // not asked again, still no grade
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await expectCard(page, w, 'front');
     await tapCard(page);
     await expectCard(page, w, 'back');
@@ -25,6 +29,18 @@ test.describe('study (C1–C18)', () => {
     await swipe(page, 0, 0);                      // a tap flips back
     await expectCard(page, w, 'front');
     await expect(page.getByTestId('card-word')).toBeVisible();
+  });
+
+  test('after "Yes" to the one-time question, a swipe on the front grades', async ({ page }) => {
+    const w = await cardWord(page);
+    await swipeRight(page);
+    await tap(page.getByRole('button', { name: 'Yes, count it as “knew it”' }));
+    await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');
+    const next = await cardWord(page);
+    expect(next).not.toBe(w);
+    await swipeLeft(page);                        // straight from the front, no question → shows the answer to review
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
+    await expectCard(page, next, 'wrongReview');
   });
 
   test('first-sight right swipe retires the card; undo brings it back (C18, C6)', async ({ page }) => {

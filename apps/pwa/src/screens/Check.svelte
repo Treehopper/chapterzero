@@ -9,6 +9,7 @@
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
+  import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
 
   let view = $state<CalibrationView>();
   let flipped = $state(false);
@@ -26,6 +27,13 @@
   function flip() { flipped = !flipped; useHint('tap'); }
   const showHints = $derived(hints && !['tap', 'left', 'right'].every((h) => used.has(h)));
 
+  // a swipe before the flip grades only when "Flip before grading" is off; the first one asks (once)
+  let requireFlip = $state(true);
+  let frontSwipeAsked = $state(true);
+  let askFront = $state<1 | -1>();
+  let nudge = $state(false);
+  const swipeable = $derived(flipped || !requireFlip || !frontSwipeAsked);
+
   let error = $state('');
   onMount(async () => {
     try {
@@ -33,13 +41,33 @@
       view = restart ? await api.calibration.restart() : await api.calibration.startOrResume();
       if (restart) history.replaceState(null, '', '#/check');
       books = (await api.books.list()).length;
-      hints = (await api.settings.get()).gestureHints === 'everySession';
+      const [settings, app] = await Promise.all([api.settings.get(), api.appState.get()]);
+      hints = settings.gestureHints === 'everySession';
+      requireFlip = settings.requireFlipBeforeGrade;
+      frontSwipeAsked = !!app.frontSwipeAsked;
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   });
 
-  async function answer(known: boolean) {
+  function swipe(dir: 1 | -1) {
+    if (flipped || !requireFlip) return void answer(dir === 1, true);
+    dx = 0;
+    if (!frontSwipeAsked) askFront = dir;
+    else { nudge = true; setTimeout(() => (nudge = false), 400); }
+  }
+
+  async function frontSwipeAnswer(yes: boolean) {
+    const dir = askFront!;
+    askFront = undefined;
+    frontSwipeAsked = true;
+    await api.appState.update({ frontSwipeAsked: true });
+    if (!yes) { nudge = true; setTimeout(() => (nudge = false), 400); return; }
+    requireFlip = (await api.settings.update({ requireFlipBeforeGrade: false })).requireFlipBeforeGrade;
+    await answer(dir === 1, true);
+  }
+
+  async function answer(known: boolean, fromFront = false) {
     if (busy || !view?.word) return;
-    if (!flipped) { flip(); return; }
+    if (!flipped && !(fromFront && !requireFlip)) { flip(); return; }
     useHint(known ? 'right' : 'left');
     busy = true;
     fly = known ? 1 : -1;
@@ -112,12 +140,13 @@
     {#if books}<p class="small muted center">Your existing books can be re-filtered from the library.</p>{/if}
   </main>
 {:else if view?.word}
-  <main class="stage" use:gestures={{ onTap: flip, onDragX: (x) => (dx = flipped ? x : 0), onSwipeX: (d) => (flipped ? answer(d === 1) : (dx = 0)),
+  <main class="stage" use:gestures={{ onTap: flip, onDragX: (x) => (dx = swipeable ? x : 0), onSwipeX: swipe,
     onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
     <header class="top">
       <span class="counter" data-testid="check-counter">{view.position + 1} / {view.total}</span>
       <button class="linkbtn" onclick={skip}>Skip</button>
     </header>
+    <div class="cardpos" class:nudge>
     {#key `${view.position}:${view.word?.lemma}`}
       <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
         {#snippet front()}
@@ -133,6 +162,7 @@
         {/snippet}
       </FlipCard>
     {/key}
+    </div>
     {#if showHints}<GestureHints {flipped} {used} />{/if}
     <div class="sr-only">
       <button onclick={() => (flipped = !flipped)}>Flip</button>
@@ -149,6 +179,7 @@
         Tap, then swipe right = knew it, left = didn't.</p>
     {/if}
   </main>
+  {#if askFront}<FrontSwipeConfirm dir={askFront} onanswer={frontSwipeAnswer} />{/if}
 {:else}
   <main class="screen stack">
     {#if error}<p class="error" role="alert">{error}</p><button class="btn" onclick={skip}>Skip the check</button>
@@ -167,6 +198,8 @@
   .de.long { font-size: 20px; }
   .def { text-align: center; margin: 12px 0 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; flex: none; }
   .replace { display: flex; flex-direction: column; align-items: center; }
+  .cardpos.nudge { animation: nudge 0.35s; }
+  @keyframes nudge { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
   .hint { text-align: center; margin-top: auto; font-size: 14px; flex: none; }
   .explain { position: absolute; bottom: calc(var(--safe-bottom) + 20px); padding: 0 24px; text-align: center; }
   .result .big { font-family: var(--serif); font-size: 32px; font-weight: 700; margin-top: 12px; }

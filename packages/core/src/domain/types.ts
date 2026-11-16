@@ -286,6 +286,8 @@ export interface AppState {
   lastRoute?: string;
   installGuideDismissed?: boolean;
   levelHintDismissed?: boolean;
+  /** the one-time question "grade without flipping?" was answered */
+  frontSwipeAsked?: boolean;
   lastExportAt?: string;
 }
 

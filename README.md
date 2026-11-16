@@ -688,7 +688,7 @@ interface Settings {
   retireOnFirstTry: boolean;        // true
   useEnglishDefinitions: boolean;   // true
   skipCognates: boolean;            // true
-  requireFlipBeforeGrade: boolean;  // true
+  requireFlipBeforeGrade: boolean;  // true; the first swipe on a front asks once whether to turn it off (study and check)
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;       // true
   lookupProviders: LookupProvider[];

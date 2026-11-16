@@ -10,6 +10,7 @@
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
+  import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
   import Sheet from '../components/Sheet.svelte';
 
   let { bookId, chapter }: { bookId: string; chapter?: string } = $props();
@@ -29,6 +30,8 @@
   let editList = $state<string[]>([]);
   let used = $state<Set<string>>(new Set());
   let nudge = $state(false);
+  let frontSwipeAsked = true;
+  let askFront = $state<1 | -1>();
   let cardKey = $state(0);
   let live = $state('');
 
@@ -39,6 +42,7 @@
   onMount(async () => {
     try {
       settings = await api.settings.get();
+      frontSwipeAsked = !!(await api.appState.get()).frontSwipeAsked;
       const chapterIndex = chapter !== undefined && chapter !== '' ? Number(chapter) : undefined;
       view = await api.study.resumeOrStart(bookId, chapterIndex !== undefined ? { chapterIndex } : undefined);
       // the chapter choice starts a session once; a relaunch must resume it, not restart it (C5)
@@ -86,6 +90,18 @@
     void run(() => (view!.phase === 'wrongReview' ? api.study.continueAfterReview(view!.sessionId) : api.study.flip(view!.sessionId)));
   }
 
+  /** answer to the one-time "grade without flipping?" question */
+  async function frontSwipeAnswer(yes: boolean) {
+    const dir = askFront!;
+    askFront = undefined;
+    frontSwipeAsked = true;
+    await api.appState.update({ frontSwipeAsked: true });
+    if (!yes) { nudge = true; setTimeout(() => (nudge = false), 400); return; }
+    settings = await api.settings.update({ requireFlipBeforeGrade: false });
+    if (view) view.requireFlip = false;
+    await grade(dir);
+  }
+
   function continueReview() {
     void run(() => api.study.continueAfterReview(view!.sessionId), { newCard: true });
   }
@@ -104,7 +120,8 @@
         return;
       }
       if (view.phase === 'front' && view.requireFlip) {
-        dx = 0; nudge = true; setTimeout(() => (nudge = false), 400);
+        dx = 0;
+        if (!frontSwipeAsked) askFront = dir; else { nudge = true; setTimeout(() => (nudge = false), 400); }
         return;
       }
       useHint(dir === 1 ? 'right' : 'left');
@@ -292,6 +309,8 @@
 {:else if view && !view.done}
   <main class="screen"><p class="muted">Loading…</p></main>
 {/if}
+
+{#if askFront}<FrontSwipeConfirm dir={askFront} onanswer={frontSwipeAnswer} />{/if}
 
 {#if editing && view?.card}
   <Sheet full label="Edit card" onclose={() => (editing = false)}>
