@@ -87,7 +87,7 @@ call is plain JSON, as §4.2 intends.
    `Card.edited`, `CardStats.firstReviewedAt` (daily new-card limit),
    `StudySession.graded / unlocks / statistics / studyAhead`, `counters.demoted / removed /
    firstAttempts`. The API adds `books.preview` (live counts while ticking chapters),
-   `books.get`, `study.get`, `study.statistics`, `calibration.restart`, `cards.words / counts /
+   `books.get`, `study.get`, `study.statistics`, `calibration.restart`, `calibration.replaceWord` (swap an unfair check word, uncounted), `cards.words / counts /
    setStatus` and `appState`.
 7. **Start level** = the level whose range contains the cutoff (cutoff 2,000 → level 1, as in
    the §7.8 table).

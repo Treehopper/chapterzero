@@ -73,6 +73,21 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByText('manual')).toBeVisible();
   });
 
+  test('a specialist word can be swapped out uncounted; the back explains and links the word', async ({ page }) => {
+    await firstRun(page, { check: 'none' });
+    await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
+    const word = await page.getByTestId('check-word').innerText();
+    await expect(page.getByTestId('check-replace')).toHaveCount(0);
+    await tapCard(page);
+    await expect(page.getByRole('link', { name: /Wiktionary/ })).toHaveAttribute('href', /wiktionary\.org/);
+    await tap(page.getByTestId('check-replace'));
+    await expect(page.getByTestId('check-word')).not.toHaveText(word);
+    await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
+    await tapCard(page);
+    await swipeRight(page);
+    await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
+  });
+
   test('skipping the check sets level 5 and shows a dismissible hint', async ({ page }) => {
     await firstRun(page);
     await expect(page.getByTestId('level-hint')).toBeVisible();

@@ -318,6 +318,22 @@ describe('calibration service (Epic H)', () => {
     expect((await app.calibration.profile())?.source).toBe('calibration');
     expect((await app.calibration.skip()).cutoffRank).toBe(8000);
   });
+
+  it('swaps a word that is no fair test for an uncounted one of the same level', async () => {
+    const { app } = setup();
+    const v = await app.calibration.startOrResume();
+    expect(v.word!.lookupLinks[0].name).toBe('Wiktionary');
+    const swapped = await app.calibration.replaceWord();
+    expect(swapped.position).toBe(v.position);
+    expect(swapped.word!.level).toBe(v.word!.level);
+    expect(swapped.word!.lemma).not.toBe(v.word!.lemma);
+    let w = swapped;
+    for (let n = 0; n < 60 && !w.result; n++) {
+      expect(w.word!.lemma).not.toBe(v.word!.lemma); // never drawn again
+      w = await app.calibration.answer(true);
+    }
+    expect(w.result).toBeDefined();
+  });
 });
 
 describe('backup (F1)', () => {

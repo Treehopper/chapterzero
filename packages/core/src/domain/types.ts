@@ -209,13 +209,15 @@ export interface VocabularyProfile {
   updatedAt: string;
 }
 
-export interface CalibrationItem { lemma: string; rank: number; level: number; de: string[]; pos?: string[]; known?: boolean }
+export interface CalibrationItem { lemma: string; rank: number; level: number; de: string[]; pos?: string[]; def?: string; known?: boolean }
 
 export interface CalibrationSession {
   items: CalibrationItem[];
   position: number;
   stage: 1 | 2;
   phase?: 'front' | 'back';
+  /** words swapped out as no fair test (H), never drawn again */
+  replaced?: string[];
 }
 
 export interface LearnerStats {

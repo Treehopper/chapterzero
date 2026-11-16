@@ -7,12 +7,13 @@
   import { gestures } from '../lib/gestures';
   import { fmt } from '../lib/ui.svelte';
   import FlipCard from '../components/FlipCard.svelte';
+  import LookupLinks from '../components/LookupLinks.svelte';
 
   let view = $state<CalibrationView>();
   let flipped = $state(false);
   let dx = $state(0);
   let fly = $state<-1 | 0 | 1>(0);
-  let busy = false;
+  let busy = $state(false);
   let result = $state<{ cutoffRank: number; level: number }>();
   let adjust = $state(false);
   let cutoff = $state(8000);
@@ -39,6 +40,17 @@
     view = next;
     if (next.result) { result = next.result; cutoff = next.result.cutoffRank; }
     busy = false;
+  }
+
+  /** a specialist term not even known in German: swap it for another word, uncounted */
+  async function replaceWord() {
+    if (busy) return;
+    busy = true;
+    try {
+      view = await api.calibration.replaceWord();
+      flipped = false; dx = 0;
+      if (view.result) { result = view.result; cutoff = view.result.cutoffRank; }
+    } finally { busy = false; }
   }
 
   async function skip() {
@@ -97,7 +109,7 @@
       <span class="counter" data-testid="check-counter">{view.position + 1} / {view.total}</span>
       <button class="linkbtn" onclick={skip}>Skip</button>
     </header>
-    {#key view.position}
+    {#key `${view.position}:${view.word?.lemma}`}
       <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
         {#snippet front()}
           <div class="word" data-testid="check-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
@@ -106,6 +118,8 @@
         {#snippet back()}
           <div class="word small-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
           <div class="de">{view?.word?.de.join(', ')}</div>
+          {#if view?.word?.def}<p class="def small muted">{view.word.def}</p>{/if}
+          <LookupLinks links={view?.word?.lookupLinks ?? []} />
           <div class="hint muted">Swipe right if you knew it, left if not</div>
         {/snippet}
       </FlipCard>
@@ -115,8 +129,15 @@
       <button onclick={() => answer(true)} disabled={!flipped}>Knew it</button>
       <button onclick={() => answer(false)} disabled={!flipped}>Didn't know</button>
     </div>
-    <p class="explain small muted" data-testid="check-why">Two minutes, 60 words, so your cards skip the words you already know.<br />
-      Tap, then swipe right = knew it, left = didn't.</p>
+    {#if flipped}
+      <div class="explain replace">
+        <button class="linkbtn" onclick={replaceWord} disabled={busy} data-testid="check-replace">Don't count this word</button>
+        <span class="small muted">for a specialist term you wouldn't know in German either</span>
+      </div>
+    {:else}
+      <p class="explain small muted" data-testid="check-why">Two minutes, 60 words, so your cards skip the words you already know.<br />
+        Tap, then swipe right = knew it, left = didn't.</p>
+    {/if}
   </main>
 {:else}
   <main class="screen stack">
@@ -132,7 +153,9 @@
   .counter { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
   .word { font-family: var(--serif); font-size: clamp(30px, 9vw, 44px); font-weight: 700; text-align: center; margin: auto 0 8px; overflow-wrap: anywhere; }
   .small-word { font-size: 22px; margin: 0 0 16px; color: var(--muted); }
-  .de { font-size: 26px; text-align: center; margin-bottom: auto; }
+  .de { font-size: 26px; text-align: center; }
+  .def { text-align: center; margin: 12px 0 8px; }
+  .replace { display: flex; flex-direction: column; align-items: center; }
   .hint { text-align: center; margin-top: auto; font-size: 14px; }
   .explain { position: absolute; bottom: calc(var(--safe-bottom) + 20px); padding: 0 24px; text-align: center; }
   .result .big { font-family: var(--serif); font-size: 32px; font-weight: 700; margin-top: 12px; }
