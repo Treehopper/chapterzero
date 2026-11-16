@@ -24,8 +24,24 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     await expect(page.getByTestId('check-word')).toHaveText(first);
 
-    // answer 30 words, then leave and come back: it resumes at the same word
-    for (let i = 0; i < 30; i++) {
+    // the check is where the gestures are learnt: hints stay until each gesture was used once
+    const hints = page.getByTestId('hints');
+    await expect(hints).toContainText('tap to flip');
+    await tapCard(page);
+    await expect(hints).not.toContainText('tap to flip');
+    await expect(page.getByTestId('hint-right')).toBeVisible();
+    await expect(page.getByTestId('hint-left')).toBeVisible();
+    await swipeRight(page);
+    await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
+    await tapCard(page);
+    await expect(page.getByTestId('hint-right')).toHaveCount(0);
+    await expect(page.getByTestId('hint-left')).toBeVisible();
+    await swipeLeft(page);
+    await expect(page.getByTestId('check-counter')).toHaveText('3 / 60');
+    await expect(hints).toHaveCount(0);
+
+    // answer up to 30 words, then leave and come back: it resumes at the same word
+    for (let i = 2; i < 30; i++) {
       await tapCard(page);
       if (i % 3 === 2) await swipeLeft(page); else await swipeRight(page);
       await expect(page.getByTestId('check-counter')).toHaveText(`${i + 2} / 60`);

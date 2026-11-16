@@ -8,6 +8,7 @@
   import { fmt } from '../lib/ui.svelte';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
+  import GestureHints from '../components/GestureHints.svelte';
 
   let view = $state<CalibrationView>();
   let flipped = $state(false);
@@ -18,6 +19,11 @@
   let adjust = $state(false);
   let cutoff = $state(8000);
   let books = $state(0);
+  // the check is the first place a learner swipes, so it shows the gesture hints until each gesture was used
+  let hints = $state(false);
+  let used = $state<Set<string>>(new Set());
+  const useHint = (h: string) => { if (!used.has(h)) used = new Set([...used, h]); };
+  function flip() { flipped = !flipped; useHint('tap'); }
 
   let error = $state('');
   onMount(async () => {
@@ -26,12 +32,14 @@
       view = restart ? await api.calibration.restart() : await api.calibration.startOrResume();
       if (restart) history.replaceState(null, '', '#/check');
       books = (await api.books.list()).length;
+      hints = (await api.settings.get()).gestureHints === 'everySession';
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   });
 
   async function answer(known: boolean) {
     if (busy || !view?.word) return;
-    if (!flipped) { flipped = true; return; }
+    if (!flipped) { flip(); return; }
+    useHint(known ? 'right' : 'left');
     busy = true;
     fly = known ? 1 : -1;
     const next = await api.calibration.answer(known);
@@ -67,7 +75,7 @@
   }
   function key(e: KeyboardEvent) {
     if (result) return;
-    if (e.key === ' ') { e.preventDefault(); flipped = !flipped; }
+    if (e.key === ' ') { e.preventDefault(); flip(); }
     else if (e.key === 'ArrowRight') void answer(true);
     else if (e.key === 'ArrowLeft') void answer(false);
   }
@@ -103,7 +111,7 @@
     {#if books}<p class="small muted center">Your existing books can be re-filtered from the library.</p>{/if}
   </main>
 {:else if view?.word}
-  <main class="stage" use:gestures={{ onTap: () => (flipped = !flipped), onDragX: (x) => (dx = flipped ? x : 0), onSwipeX: (d) => (flipped ? answer(d === 1) : (dx = 0)),
+  <main class="stage" use:gestures={{ onTap: flip, onDragX: (x) => (dx = flipped ? x : 0), onSwipeX: (d) => (flipped ? answer(d === 1) : (dx = 0)),
     onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
     <header class="top">
       <span class="counter" data-testid="check-counter">{view.position + 1} / {view.total}</span>
@@ -124,6 +132,7 @@
         {/snippet}
       </FlipCard>
     {/key}
+    {#if hints && !['tap', 'left', 'right'].every((h) => used.has(h))}<GestureHints {flipped} {used} />{/if}
     <div class="sr-only">
       <button onclick={() => (flipped = !flipped)}>Flip</button>
       <button onclick={() => answer(true)} disabled={!flipped}>Knew it</button>

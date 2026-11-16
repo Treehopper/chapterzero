@@ -9,6 +9,7 @@
   import { vibrate } from '../lib/platform';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
+  import GestureHints from '../components/GestureHints.svelte';
   import Sheet from '../components/Sheet.svelte';
 
   let { bookId, chapter }: { bookId: string; chapter?: string } = $props();
@@ -265,17 +266,7 @@
       {/key}
     </div>
 
-    {#if hintsOn}
-      <div class="hints" aria-hidden="true" data-testid="hints">
-        {#if !used.has('down')}<div class="h top">↓ progress</div>{/if}
-        {#if !flipped && !used.has('tap')}<div class="h mid">◉ tap to flip</div>{/if}
-        {#if flipped && !review}
-          {#if !used.has('left')}<div class="h left">✗<br />didn't<br />know</div>{/if}
-          {#if !used.has('right')}<div class="h right">✓<br />knew<br />it</div>{/if}
-        {/if}
-        {#if !used.has('up')}<div class="h bottom">↑ edit · finish</div>{/if}
-      </div>
-    {/if}
+    {#if hintsOn}<GestureHints {flipped} {used} grade={!review} extra />{/if}
 
     {#if undoPill && !panel}
       <button class="undo" onclick={undo} data-testid="undo">{undoPill.label}</button>
@@ -350,14 +341,6 @@
   .track { flex: 1; height: 3px; background: color-mix(in srgb, var(--text) 15%, transparent); border-radius: 2px; overflow: hidden; }
   .track div { height: 100%; background: var(--accent); }
   .progress span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
-  .hints { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.5) 75%); color: white; font-weight: 700; }
-  .h { position: absolute; text-align: center; font-size: 15px; text-shadow: 0 1px 4px rgba(0,0,0,.6); animation: pulse 1.6s ease-in-out infinite; }
-  .h.top { top: calc(var(--safe-top) + 16px); left: 0; right: 0; }
-  .h.bottom { bottom: calc(var(--safe-bottom) + 20px); left: 0; right: 0; }
-  .h.mid { top: 70%; left: 0; right: 0; }
-  .h.left { left: 4px; top: 45%; font-size: 13px; }
-  .h.right { right: 4px; top: 45%; font-size: 13px; }
-  @keyframes pulse { 50% { opacity: 0.55; } }
   .undo { position: absolute; bottom: calc(var(--safe-bottom) + 28px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
     padding: 10px 18px; min-height: 44px; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: var(--card-shadow); }
   .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(var(--safe-bottom) + 16px); background: var(--surface);
