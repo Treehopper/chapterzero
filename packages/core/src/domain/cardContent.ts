@@ -9,3 +9,6 @@ export function resolveCardContent(e: WordEntry, useEnglishDefinitions: boolean)
   if (e.def && useEnglishDefinitions) return { translations: [], definition: e.def, translationSource: 'definition' };
   return undefined;
 }
+
+/** The word as shown to the learner: verbs get "to" ("to brood"). pos[0] is the main part of speech (README §6.3). */
+export const headword = (lemma: string, pos: readonly string[] = []) => (pos[0] === 'verb' ? `to ${lemma}` : lemma);

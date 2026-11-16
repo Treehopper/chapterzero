@@ -4,34 +4,34 @@
   "packs": [
     {
       "id": "words-en-de",
-      "version": "2026-11-15",
+      "version": "2026-11-16",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
         "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"
       ],
       "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
       "entryCount": 75612,
-      "bytes": 2967087,
+      "bytes": 2970140,
       "chunks": [
         {
           "file": "words-en-de.000.json.gz",
-          "bytes": 1513813,
+          "bytes": 1515331,
           "rows": 37806,
-          "sha256": "e0da590c456c5268c7ecb8f03a20b59fb7a7a60307148cbcf32a91ce0126fa80",
-          "sha256Json": "da3edf69c05759796917cbd62565bb733a4770ffea735c8bba1197e5e6bc3bfb"
+          "sha256": "903a02b2f4b23c0d64d86e86a2e1a759ed06c716dd97a450e76242d9b841b9b7",
+          "sha256Json": "a3d92ae458d83b6540ddf90bd6fc0662f05ac7b30cb26ed3db71b0f60b18d338"
         },
         {
           "file": "words-en-de.001.json.gz",
-          "bytes": 1453274,
+          "bytes": 1454809,
           "rows": 37806,
-          "sha256": "54f7aaa181973a418b907516ff9df097cc08aeb9396376f76ff35856e75923e5",
-          "sha256Json": "f353b386ba7ab6a52de17e7bff7f29646736fbecb1f0358eeb36ba1d64270459"
+          "sha256": "c5a2f7cf2953de4bc6067393270a094d87e44dbf4f60e761415fd51c367448c5",
+          "sha256Json": "d4d5a2cdb18d34a5cfb291a4380f2ef88e349471eee92d6c72c033fdafbec965"
         }
       ]
     },
     {
       "id": "words-de-freedict",
-      "version": "2026-11-15",
+      "version": "2026-11-16",
       "sources": [
         "https://download.freedict.org/dictionaries/eng-deu/1.9-fd1/freedict-eng-deu-1.9-fd1.src.tar.xz"
       ],
@@ -50,7 +50,7 @@
     },
     {
       "id": "forms-en",
-      "version": "2026-11-15",
+      "version": "2026-11-16",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
         "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"

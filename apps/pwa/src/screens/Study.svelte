@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Full-screen study (C1–C18, §8.1 "Study"). Every action is persisted before the next card animates in. */
   import { onDestroy, onMount } from 'svelte';
-  import type { SessionView, Settings } from '@vocabfirst/core';
+  import { headword, type SessionView, type Settings } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
@@ -48,7 +48,7 @@
   onDestroy(() => { clearTimeout(progressTimer); clearTimeout(undoTimer); });
 
   async function afterView(v: SessionView) {
-    if (v.card) live = `${v.card.lemma}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
+    if (v.card) live = `${headword(v.card.lemma, v.card.pos)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
     if (v.newAchievements.length) announceUnlocks(v.newAchievements, settings?.achievementPopups ?? true);
     if (v.chapterReady) banner({ kind: 'chapter', title: `${v.chapterReady.title} is ready to read`, subtitle: pct(v.chapterReady.coverage) });
     if (v.done && !v.nothingDue && v.sessionId) {
@@ -234,7 +234,7 @@
         <FlipCard {flipped} {dx} {fly} dim={panel} {review} entering={!review} label="Card {card.lemma}">
           {#snippet front()}
             <div class="lvl small muted">{card.listLevel ? `Level ${card.listLevel}` : 'Added by hand'}</div>
-            <div class="word" data-testid="card-word">{card.lemma}</div>
+            <div class="word" data-testid="card-word">{headword(card.lemma, card.pos)}</div>
             {#if card.example}
               <p class="ex">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
@@ -242,7 +242,7 @@
           {/snippet}
           {#snippet back()}
             <div class="row head">
-              <span class="small-word">{review ? '✗ ' : ''}{card.lemma}</span>
+              <span class="small-word">{review ? '✗ ' : ''}{headword(card.lemma, card.pos)}</span>
               <span class="spacer"></span>
               {#if card.pos.length}<span class="small muted">{card.pos.slice(0, 2).join(' · ')}</span>{/if}
             </div>
@@ -305,7 +305,7 @@
 {#if editing && view?.card}
   <Sheet full label="Edit card" onclose={() => (editing = false)}>
     <div class="stack">
-      <div class="row"><h2 class="spacer">{view.card.lemma}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      <div class="row"><h2 class="spacer">{headword(view.card.lemma, view.card.pos)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
       <div class="section-title">Translations</div>
       {#each editList as _, i (i)}
         <div class="row">

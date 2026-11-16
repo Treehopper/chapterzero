@@ -57,7 +57,7 @@ test.describe('words (Epic D)', () => {
   test('remove an active card and restore it from Removed (D3, D4)', async ({ page }) => {
     await tap(page.getByRole('tab', { name: /Active/ }));
     const row = page.getByTestId('word-row').first();
-    const word = (await row.innerText()).split(/\s/)[0];
+    const word = (await row.getAttribute('data-word'))!;
     await tap(row);
     await tap(page.getByRole('button', { name: 'Remove card' }));
     await tap(page.getByRole('tab', { name: /Removed/ }));
@@ -65,6 +65,14 @@ test.describe('words (Epic D)', () => {
     await tap(page.getByTestId('word-row').first());
     await tap(page.getByRole('button', { name: 'Restore card' }));
     await expect(page.getByTestId('word-list')).toContainText('Nothing here.');
+  });
+
+  test('verbs show with "to"', async ({ page }) => {
+    await tap(page.getByRole('tab', { name: /Active/ }));
+    await page.getByRole('searchbox').fill('ponder');
+    await expect(page.locator('[data-word="ponder"]')).toContainText(/^to ponder/);
+    await tap(page.locator('[data-word="ponder"]'));
+    await expect(page.getByRole('heading', { name: 'to ponder' })).toBeVisible();
   });
 
   test('skipped words can be added as cards', async ({ page }) => {

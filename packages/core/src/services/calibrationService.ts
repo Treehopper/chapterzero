@@ -11,7 +11,7 @@ export const STAGE2_PER_LEVEL = 10;
 export const TOTAL = LEVELS.length * STAGE1_PER_LEVEL + STAGE2_LEVELS * STAGE2_PER_LEVEL;
 
 export interface CalibrationView {
-  word?: { lemma: string; de: string[]; level: number };
+  word?: { lemma: string; de: string[]; pos?: string[]; level: number };
   position: number;
   total: number;
   stage: 1 | 2;
@@ -28,7 +28,7 @@ export async function sampleLevel(wordList: WordList, random: Random, level: num
     const e = await wordList.firstAtOrAfter(rank, l.to);
     if (!e || !acceptable(e.lemma) || !e.de.length || e.cognate || taken.has(e.lemma)) continue;
     taken.add(e.lemma);
-    out.push({ lemma: e.lemma, rank: e.rank, level, de: e.de.slice(0, 3) });
+    out.push({ lemma: e.lemma, rank: e.rank, level, de: e.de.slice(0, 3), pos: e.pos });
   }
   return out;
 }
@@ -46,7 +46,7 @@ export function nearestLevels(r50: number, n = STAGE2_LEVELS): number[] {
 export function calibrationService(ctx: Ctx) {
   const view = (s: CalibrationSession, result?: CalibrationView['result']): CalibrationView => {
     const it = s.items[s.position];
-    return { word: it && !result ? { lemma: it.lemma, de: it.de, level: it.level } : undefined,
+    return { word: it && !result ? { lemma: it.lemma, de: it.de, pos: it.pos, level: it.level } : undefined,
       position: s.position, total: TOTAL, stage: s.stage, result };
   };
 

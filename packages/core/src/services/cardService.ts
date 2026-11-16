@@ -19,6 +19,7 @@ export interface WordRow {
   card?: CardView;
   translations?: string[];
   definition?: string;
+  pos?: string[];
   listLevel?: number;
   name?: boolean;
 }
@@ -111,14 +112,14 @@ export function cardService(ctx: Ctx) {
             const e = entries.get(r.lemma);
             const ch = firstChapter(r.occurrencesByChapter);
             return { lemma: r.lemma, kind: r.kind, occurrences: r.occurrences, example: r.example, chapterIndex: ch, chapterTitle: chapterTitle(book, ch),
-              translations: e ? resolveCardContent(e, true)?.translations : undefined, definition: e?.def, listLevel: e ? levelOfRank(e.rank) : undefined };
+              translations: e ? resolveCardContent(e, true)?.translations : undefined, definition: e?.def, pos: e?.pos, listLevel: e ? levelOfRank(e.rank) : undefined };
           });
         } else {
           const status = opts.tab === 'active' ? 'active' : opts.tab === 'known' ? 'known' : 'removed';
           out = cards.filter((c) => c.status === status && inChapter(c.occurrencesByChapter, c.chapterIndex) && matches(c.lemma, c.forms))
             .sort((a, b) => a.firstPosition - b.firstPosition)
             .map((c) => ({ lemma: c.lemma, kind: 'card' as const, occurrences: c.occurrences, example: c.example, chapterIndex: c.chapterIndex,
-              chapterTitle: chapterTitle(book, c.chapterIndex), card: cardView(c), translations: c.translations, definition: c.definition, listLevel: c.listLevel }));
+              chapterTitle: chapterTitle(book, c.chapterIndex), card: cardView(c), translations: c.translations, definition: c.definition, pos: c.pos, listLevel: c.listLevel }));
           if (opts.tab === 'known') {
             const withCard = new Set(cards.map((c) => c.lemma));
             out.push(...rows.filter((r) => r.kind === 'known' && !withCard.has(r.lemma) && inChapter(r.occurrencesByChapter) && matches(r.lemma, r.forms))

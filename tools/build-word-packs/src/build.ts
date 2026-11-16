@@ -35,7 +35,7 @@ const freq = new Map<string, number>();
 log(`wordfreq: ${freq.size} words`);
 
 // ---------------------------------------------------------------- 2. Wiktextract
-interface Lemma { pos: Set<string>; de: string[]; def?: string; forms: Set<string>; hasForms: Set<string> }
+interface Lemma { pos: Set<string>; mainPos?: string; de: string[]; def?: string; forms: Set<string>; hasForms: Set<string> }
 const lemmas = new Map<string, Lemma>();
 /** candidate (form → lemmas) pairs from form-of / alt-of entries and senses */
 const formOf = new Map<string, Set<string>>();
@@ -90,10 +90,14 @@ for await (const line of rl) {
   let l = lemmas.get(word);
   if (!l) lemmas.set(word, (l = { pos: new Set(), de: [], forms: new Set(), hasForms: new Set() }));
   l.pos.add(e.pos);
+  l.mainPos ??= e.pos;
   const trs = [...real.flatMap((s) => s.translations ?? []), ...(e.translations ?? [])].filter(isDe);
   for (const t of trs) {
     const w = t.word!.normalize('NFC').trim();
-    if (w && l.de.length < 6 && !l.de.includes(w)) l.de.push(w);
+    if (!w || l.de.length >= 6 || l.de.includes(w)) continue;
+    // the main part of speech is the one the first translation belongs to ("make" → verb: machen)
+    if (l.de.length === 0) l.mainPos = e.pos;
+    l.de.push(w);
   }
   if (trs.length) deSeen++;
   if (!l.def) l.def = cutDefinition(real[0].glosses![0]);
@@ -172,6 +176,8 @@ const freedict = new Map<string, string[]>();
 log(`FreeDict: ${freedict.size} list headwords`);
 
 // ---------------------------------------------------------------- 5. word table
+/** pos with the main part of speech first, the rest sorted */
+const mainFirst = (l: Lemma) => [l.mainPos!, ...[...l.pos].filter((p) => p !== l.mainPos).sort()];
 type WordRow = [string, number, string[], string[], string | null, number];
 const wordRows: WordRow[] = [];
 const freedictRows: [string, string[]][] = [];
@@ -181,7 +187,7 @@ for (const [lemma, r] of rank) {
   const fd = l.de.length === 0 ? freedict.get(lemma) : undefined;
   if (l.de.length === 0 && !fd && !l.def) continue; // rule 6
   const cognate = isCognate(lemma, l.de.length ? l.de : fd ?? []);
-  wordRows.push([lemma, r, [...l.pos].sort(), l.de, l.def ?? null, cognate ? 1 : 0]);
+  wordRows.push([lemma, r, mainFirst(l), l.de, l.def ?? null, cognate ? 1 : 0]);
   if (fd) freedictRows.push([lemma, fd]);
 }
 const listed = new Set(wordRows.map((w) => w[0]));

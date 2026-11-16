@@ -209,7 +209,7 @@ export interface VocabularyProfile {
   updatedAt: string;
 }
 
-export interface CalibrationItem { lemma: string; rank: number; level: number; de: string[]; known?: boolean }
+export interface CalibrationItem { lemma: string; rank: number; level: number; de: string[]; pos?: string[]; known?: boolean }
 
 export interface CalibrationSession {
   items: CalibrationItem[];

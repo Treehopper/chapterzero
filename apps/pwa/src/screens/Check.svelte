@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Vocabulary check (H1–H3): 60 words in the study card UI, then the result screen. */
   import { onMount } from 'svelte';
-  import { LEVELS, startLevel, type CalibrationView } from '@vocabfirst/core';
+  import { headword, LEVELS, startLevel, type CalibrationView } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
@@ -100,11 +100,11 @@
     {#key view.position}
       <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
         {#snippet front()}
-          <div class="word" data-testid="check-word">{view?.word?.lemma}</div>
+          <div class="word" data-testid="check-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
           <div class="hint muted">{flipped ? '' : 'Tap to see the translation'}</div>
         {/snippet}
         {#snippet back()}
-          <div class="word small-word">{view?.word?.lemma}</div>
+          <div class="word small-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
           <div class="de">{view?.word?.de.join(', ')}</div>
           <div class="hint muted">Swipe right if you knew it, left if not</div>
         {/snippet}

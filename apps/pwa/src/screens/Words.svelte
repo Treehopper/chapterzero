@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Words (Epic D): not in the lists / active / known / removed / skipped, search, chapter filter, add by hand. */
   import { onMount, untrack } from 'svelte';
-  import type { ChapterProgress, WordRow, WordsTab, WordSuggestion } from '@vocabfirst/core';
+  import { headword, type ChapterProgress, type WordRow, type WordsTab, type WordSuggestion } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { fmt, toast } from '../lib/ui.svelte';
@@ -168,9 +168,9 @@
   <div class="list" data-testid="word-list">
     {#each rows.slice(0, limit) as r (r.lemma)}
       <button class="list-row word" onclick={() => tapRow(r)} onpointerdown={(e) => rowDown(e, r)} onpointermove={rowMove} onpointerup={() => rowUp(r)}
-        onpointercancel={() => (swipe = undefined)} style:transform={swipe?.lemma === r.lemma ? `translateX(${swipe.x}px)` : ''} data-testid="word-row">
+        onpointercancel={() => (swipe = undefined)} style:transform={swipe?.lemma === r.lemma ? `translateX(${swipe.x}px)` : ''} data-testid="word-row" data-word={r.lemma}>
         <span class="stack grow">
-          <span class="row"><strong class="spacer">{r.lemma}{#if r.name} <span class="pill">name</span>{/if}</strong>
+          <span class="row"><strong class="spacer">{headword(r.lemma, r.pos)}{#if r.name} <span class="pill">name</span>{/if}</strong>
             {#if r.occurrences}<span class="muted small">×{r.occurrences}</span>{/if}
             {#if r.chapterTitle}<span class="muted small ch">{r.chapterTitle}</span>{/if}</span>
           {#if r.translations?.length || r.definition}<span class="small">{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
@@ -212,7 +212,7 @@
   {@const r = editingRow}
   <Sheet label="Card {r.lemma}" onclose={() => (editingRow = undefined)}>
     <div class="stack">
-      <h2>{r.lemma}</h2>
+      <h2>{headword(r.lemma, r.pos)}</h2>
       {#if r.card?.status === 'active'}
         <label class="stack small">Translations (comma separated)<input type="text" bind:value={editText} /></label>
         <button class="btn primary" onclick={saveTranslation}>Save</button>

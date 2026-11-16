@@ -4,7 +4,7 @@ import { grade, DEFAULT_SCHEDULER } from '../domain/scheduler.ts';
 import { onGrade, newUnlocks, ACHIEVEMENTS } from '../domain/achievements.ts';
 import { levelOfRank, startLevel } from '../domain/levels.ts';
 import { lookupLinks, isValidTemplate, DEFAULT_LOOKUP_PROVIDERS } from '../domain/lookup.ts';
-import { resolveCardContent } from '../domain/cardContent.ts';
+import { headword, resolveCardContent } from '../domain/cardContent.ts';
 import { nearestLevels } from '../services/calibrationService.ts';
 import { EMPTY_STATS } from '../domain/settings.ts';
 import { SeededRandom } from '../testing/memory.ts';
@@ -126,5 +126,14 @@ describe('resolveCardContent (§6.3)', () => {
     expect(resolveCardContent({ ...e, deFreedict: ['f'], def: 'D' }, true)?.translations).toEqual(['f']);
     expect(resolveCardContent({ ...e, def: 'D' }, true)).toEqual({ translations: [], definition: 'D', translationSource: 'definition' });
     expect(resolveCardContent({ ...e, def: 'D' }, false)).toBeUndefined();
+  });
+});
+
+describe('headword', () => {
+  it('prefixes "to" when the main part of speech is a verb', () => {
+    expect(headword('brood', ['verb', 'adj', 'noun'])).toBe('to brood');
+    expect(headword('cudgel', ['noun', 'verb'])).toBe('cudgel');
+    expect(headword('quaint', ['adj'])).toBe('quaint');
+    expect(headword('frobnicate', [])).toBe('frobnicate');
   });
 });

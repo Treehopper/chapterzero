@@ -753,7 +753,7 @@ Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two tr
 **Build rules — word table**
 1. From Wiktextract, keep English entries whose `pos` is one of noun, verb, adj, adv, intj, prep, conj, pron, det, num. Drop `name` entries and headwords containing spaces, digits or apostrophes. Hyphenated headwords are kept.
 2. An entry all of whose senses are "form of" or "alternative form of" another word is not a lemma; it only feeds the forms table (§6.4).
-3. Per lemma, merge all parts of speech: `pos` = union; `de` = the `word` of every `translations` item with language code `de`, in source order, de-duplicated, at most 6; `def` = first gloss of the first real sense, cut at 140 characters on a word boundary.
+3. Per lemma, merge all parts of speech: `pos` = union, with the main part of speech first (the one the first German translation belongs to, else the first entry's) and the rest sorted; `de` = the `word` of every `translations` item with language code `de`, in source order, de-duplicated, at most 6; `def` = first gloss of the first real sense, cut at 140 characters on a word boundary.
 4. Rank: map every form of the frequency list to its lemma using the forms table of §6.4, sum the frequencies per lemma, sort descending. Rank 1,001–100,000 go into the word table.
 5. FreeDict: parse TEI `entry` elements (headword `orth`, translations `cit[type=trans]/quote`, at most 6). Emit a `words-de-freedict` row for each list lemma with empty `de`.
 6. Drop list lemmas that have no `de`, no FreeDict translation and no `def`.
@@ -1148,7 +1148,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 └───────────────────┘   └───────────────────┘   └─┴───────────────┴─┘
 ```
 
-- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots.
+- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots.
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
 - **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6); after a first-sight retirement it reads "Already known · Undo" (C18).
 - **Wrong-answer review (C16)** → after a left swipe the card swings back, already showing its back side, with a red edge and the link row:
