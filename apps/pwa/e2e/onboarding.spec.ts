@@ -104,6 +104,26 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
   });
 
+  test('on a short screen, long card text does not squeeze the dictionary links', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 440 });
+    await firstRun(page, { check: 'none' });
+    await expect(page.getByTestId('check-word')).toBeVisible();
+    await tapCard(page);
+    await expect(page.getByTestId('check-replace')).toBeVisible();
+    await page.evaluate(() => {
+      const de = document.querySelector('.back .de')!;
+      de.textContent = 'Glücksspiel um hohe Einsätze, Hasardspiel, Zockerei';
+      de.classList.add('long');
+      const def = document.querySelector('.back .def') ?? de.insertAdjacentElement('afterend', Object.assign(document.createElement('p'), { className: 'def small muted' }))!;
+      def.textContent = 'A stake or wager placed by a gambler on the outcome of an uncertain event, especially in games of chance played for money.';
+    });
+    const link = page.getByRole('link', { name: /Wiktionary/ });
+    const [a, row, face] = await Promise.all([link.boundingBox(), link.locator('..').boundingBox(), page.locator('.back').boundingBox()]);
+    expect(row!.height).toBeGreaterThanOrEqual(a!.height - 0.5);
+    expect(a!.height).toBeGreaterThanOrEqual(43.5); // 44 px, give or take the flip transform
+    expect(a!.y + a!.height).toBeLessThanOrEqual(face!.y + face!.height);
+  });
+
   test('skipping the check sets level 5 and shows a dismissible hint', async ({ page }) => {
     await firstRun(page);
     await expect(page.getByTestId('level-hint')).toBeVisible();

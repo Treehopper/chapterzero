@@ -324,14 +324,14 @@
   .word { font-family: var(--serif); font-size: clamp(32px, 10vw, 48px); font-weight: 700; text-align: center; margin: auto 0 12px; overflow-wrap: anywhere; }
   .ex { font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--muted); text-align: center; margin: 0 0 auto; }
   .ex b { color: var(--text); }
-  .ex.small { font-size: 15px; text-align: left; margin: 12px 0 0; }
-  .foot { text-align: center; margin-top: auto; padding-top: 8px; }
+  .ex.small { font-size: 15px; text-align: left; margin: 12px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
+  .foot { text-align: center; margin-top: auto; padding-top: 8px; flex: none; }
   .head { margin-bottom: 12px; }
   .small-word { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--muted); }
   .tr { font-size: clamp(24px, 7vw, 32px); font-weight: 600; line-height: 1.25; margin-top: auto; }
   .en { font-size: 12px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
-  .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; }
-  .links { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .links { flex: none; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
   .dots { display: flex; gap: 6px; justify-content: center; margin-top: auto; padding-top: 12px; }
   .dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); }
   .dots i.on { background: var(--good); }

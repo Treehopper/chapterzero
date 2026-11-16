@@ -24,6 +24,7 @@
   let used = $state<Set<string>>(new Set());
   const useHint = (h: string) => { if (!used.has(h)) used = new Set([...used, h]); };
   function flip() { flipped = !flipped; useHint('tap'); }
+  const showHints = $derived(hints && !['tap', 'left', 'right'].every((h) => used.has(h)));
 
   let error = $state('');
   onMount(async () => {
@@ -121,18 +122,18 @@
       <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
         {#snippet front()}
           <div class="word" data-testid="check-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
-          <div class="hint muted">{flipped ? '' : 'Tap to see the translation'}</div>
+          <div class="hint muted">{flipped || showHints ? '' : 'Tap to see the translation'}</div>
         {/snippet}
         {#snippet back()}
           <div class="word small-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
-          <div class="de">{view?.word?.de.join(', ')}</div>
+          <div class="de" class:long={(view?.word?.de.join(', ').length ?? 0) > 24}>{view?.word?.de.join(', ')}</div>
           {#if view?.word?.def}<p class="def small muted">{view.word.def}</p>{/if}
           <LookupLinks links={view?.word?.lookupLinks ?? []} />
           <div class="hint muted">Swipe right if you knew it, left if not</div>
         {/snippet}
       </FlipCard>
     {/key}
-    {#if hints && !['tap', 'left', 'right'].every((h) => used.has(h))}<GestureHints {flipped} {used} />{/if}
+    {#if showHints}<GestureHints {flipped} {used} />{/if}
     <div class="sr-only">
       <button onclick={() => (flipped = !flipped)}>Flip</button>
       <button onclick={() => answer(true)} disabled={!flipped}>Knew it</button>
@@ -163,9 +164,10 @@
   .word { font-family: var(--serif); font-size: clamp(30px, 9vw, 44px); font-weight: 700; text-align: center; margin: auto 0 8px; overflow-wrap: anywhere; }
   .small-word { font-size: 22px; margin: 0 0 16px; color: var(--muted); }
   .de { font-size: 26px; text-align: center; }
-  .def { text-align: center; margin: 12px 0 8px; }
+  .de.long { font-size: 20px; }
+  .def { text-align: center; margin: 12px 0 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; flex: none; }
   .replace { display: flex; flex-direction: column; align-items: center; }
-  .hint { text-align: center; margin-top: auto; font-size: 14px; }
+  .hint { text-align: center; margin-top: auto; font-size: 14px; flex: none; }
   .explain { position: absolute; bottom: calc(var(--safe-bottom) + 20px); padding: 0 24px; text-align: center; }
   .result .big { font-family: var(--serif); font-size: 32px; font-weight: 700; margin-top: 12px; }
   .center { text-align: center; }
