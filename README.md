@@ -830,7 +830,7 @@ Runs in a Web Worker that hosts `core` + adapters; the UI only receives progress
 - still contains an apostrophe (contractions like "didn't", "they'd", dialect like "'em") → counted as a common word, never listed or unlisted;
 - written in capitals only, length ≥ 2 ("PDF") → name.
 
-**6. Match (B4).** `WordList.resolve` on the distinct tokens, in batches of 2,000. A hyphenated token that is not found as a whole is split at the hyphens and each part is matched as its own token; if no part is a list word and not all parts are common, the whole token is one unlisted word.
+**6. Match (B4).** `WordList.resolve` on the distinct tokens, in batches of 2,000. A hyphenated token that is not found as a whole is split at the hyphens and each part is matched as its own token; if no part is a list word and not all parts are common, the whole token is one unlisted word. A token (or part) that is not found gets one more try as its American spelling (`americanVariants`: -ise→-ize, -yse→-yze, -our→-or, -re→-er, -lled/-lling→-led/-ling); the forms table lacks many British -ise forms, so "realising" would otherwise be an unlisted word next to "realize".
 
 **7. Names (B5).** A lemma (listed or not) is a name if at least 90 % of its occurrences that are not sentence-initial are capitalised, with at least one such occurrence. Unlisted words seen only sentence-initially and capitalised are names too.
 

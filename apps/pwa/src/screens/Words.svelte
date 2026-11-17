@@ -150,7 +150,7 @@
   <div class="tabs" role="tablist">
     {#each TABS as t (t.id)}
       <button role="tab" aria-selected={tab === t.id} class:on={tab === t.id} onclick={() => setTab(t.id)}>
-        {t.label}{#if counts[t.id] !== undefined} <span class="c">{fmt(counts[t.id])}</span>{/if}
+        {t.label}{#if counts[t.id] !== undefined}{' '}<span class="c">{fmt(counts[t.id])}</span>{/if}
       </button>
     {/each}
   </div>

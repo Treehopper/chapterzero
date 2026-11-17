@@ -86,6 +86,6 @@ test.describe('import (B1–B15, B7)', () => {
     await page.getByLabel('Cutoff rank').fill('15000');
     await tap(page.getByRole('button', { name: 'Re-filter' }));
     await expect(page.getByTestId('toast')).toContainText('level 6'); // 15,000 is the top of level 6
-    expect(await cards()).toBeLessThan(before);
+    await expect.poll(cards).toBeLessThan(before);   // the count updates after the toast
   });
 });

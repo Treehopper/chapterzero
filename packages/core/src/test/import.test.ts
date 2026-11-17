@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { analyseContent } from '../domain/analysis.ts';
 import { buildStructure, chapterKind, removeRepeatedBlocks } from '../domain/structure.ts';
-import { normalizeToken, cutAround, words } from '../domain/text.ts';
+import { americanVariants, normalizeToken, cutAround, words } from '../domain/text.ts';
 import { buildContent } from '../testing/content.ts';
 import { fixtureWordList } from '../testing/fixture.ts';
+import { MemoryWordList } from '../testing/memory.ts';
 import { buf, filler, setup } from './helpers.ts';
 
 describe('tokens (§7.1 step 5)', () => {
@@ -142,6 +143,27 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
     expect(by.get('whisper')?.name).toBe(false);
     expect(r.common.some((c) => c.token === "didn't")).toBe(true);
     expect(by.get('relinquish')?.example).toBe("He didn't relinquish the lantern-light, nor the fooble-wock, nor the-man.");
+  });
+
+  it('British spellings fall back to the American entry (-ise, -yse, -our, -re, -lled)', async () => {
+    expect(americanVariants('realising')).toEqual(['realizing']);
+    expect(americanVariants('materialisation')).toEqual(['materialization']);
+    expect(americanVariants('analysed')).toEqual(['analyzed']);
+    expect(americanVariants('colourful')).toEqual(['colorful']);
+    expect(americanVariants('centres')).toEqual(['centers']);
+    expect(americanVariants('travelled')).toEqual(['traveled']);
+    expect(americanVariants('rise')).toEqual([]);
+    const entry = (lemma: string, rank: number) => ({ lemma, rank, pos: ['verb'], de: ['x'] });
+    const wl = new MemoryWordList([entry('realize', 3000), entry('materialize', 9000), entry('promise', 900)],
+      [['realizing', 'realize'], ['realized', 'realize'], ['materialized', 'materialize']]);
+    const r = await analyseContent(buildContent({ sections: [[
+      `She was realising it, then realizing it, and the plan materialised. She promised nothing. ${filler(40)}`,
+    ]] }), wl);
+    const by = new Map(r.lemmas.map((l) => [l.lemma, l]));
+    expect(by.get('realize')).toMatchObject({ listed: true, forms: ['realising', 'realizing'], occurrences: 2 });
+    expect(by.get('materialize')).toMatchObject({ listed: true, forms: ['materialised'] });
+    expect(by.has('realising')).toBe(false);
+    expect(by.has('materialised')).toBe(false);
   });
 
   it('preview counts add up and follow the classification table', async () => {

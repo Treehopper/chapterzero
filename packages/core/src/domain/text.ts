@@ -67,3 +67,18 @@ export function cutAround(text: string, at: number, max = 25): string {
   const to = ws[end].index + ws[end].raw.length;
   return (start > 0 ? '…' : '') + text.slice(from, to) + (end < ws.length - 1 ? '…' : '');
 }
+
+const AMERICAN: [RegExp, string][] = [
+  [/([a-z]{2})is(e|es|ed|ing|er|ers|ation|ations|able)$/, '$1iz$2'],   // realise → realize
+  [/([a-z]{2})ys(e|es|ed|ing|er|ers)$/, '$1yz$2'],                       // analyse → analyze
+  [/([a-z]{2})our(s|ed|ing|ful|less|able|ite|ites)?$/, '$1or$2'],        // colour → color
+  [/([a-z]{2}[^aeiou])re(s|d)?$/, '$1er$2'],                             // centre → center
+  [/([aeiou])ll(ed|ing|er|ers)$/, '$1l$2'],                              // travelled → traveled
+];
+
+/** American spellings to try for a word the word list doesn't know (British -ise, -our, -re, -lled…). */
+export function americanVariants(t: string): string[] {
+  const out = new Set<string>();
+  for (const [re, to] of AMERICAN) if (re.test(t)) out.add(t.replace(re, to));
+  return [...out];
+}

@@ -37,6 +37,7 @@ test.describe('words (Epic D)', () => {
     await expect(page.getByRole('link', { name: 'Wiktionary ↗' })).toHaveAttribute('href', /wiki\/stride/);
     await tap(page.getByTestId('add-card'));
     await expect(page.getByTestId('toast')).toContainText('“stride” added');
+    await expect(page.getByRole('tab', { name: /Active/ })).toHaveText(/^Active \d/);  // label and count apart
     await tap(page.getByRole('tab', { name: /Active/ }));
     await page.getByLabel('Search words').fill('stri');
     await expect(page.getByTestId('word-row')).toHaveCount(1);

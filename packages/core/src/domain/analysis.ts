@@ -1,7 +1,7 @@
 /** Import steps 5–8 (README §7.1): tokenise, match, names, aggregate. */
 import type { WordList } from '../ports/index.ts';
 import { buildStructure, removeRepeatedBlocks, splitSectionsAtTocAnchors } from './structure.ts';
-import { cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
+import { americanVariants, cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
 import type { Chapter, EpubContent, ImportDraft } from './types.ts';
 
 interface TokenStat {
@@ -21,11 +21,24 @@ export type AnalysisResult = Omit<ImportDraft, 'id' | 'createdAt'>;
 
 const BATCH = 2000;
 
-async function resolveAll(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
+async function resolveBatched(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   for (let i = 0; i < tokens.length; i += BATCH) {
     const r = await wordList.resolve(tokens.slice(i, i + BATCH));
     for (const [k, v] of r) out.set(k, v);
+  }
+  return out;
+}
+
+/** Resolves tokens; one the list doesn't know gets a second chance as its American spelling. */
+async function resolveAll(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
+  const out = await resolveBatched(wordList, tokens);
+  const variants = new Map<string, string[]>();
+  for (const t of tokens) if (!out.has(t)) { const v = americanVariants(t); if (v.length) variants.set(t, v); }
+  const r = await resolveBatched(wordList, [...new Set([...variants.values()].flat())]);
+  for (const [t, vs] of variants) {
+    const hit = vs.find((v) => r.has(v));
+    if (hit !== undefined) out.set(t, r.get(hit)!);
   }
   return out;
 }
