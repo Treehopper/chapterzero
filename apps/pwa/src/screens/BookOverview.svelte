@@ -20,8 +20,8 @@
   let refilter = $state(false);
   let cutoff = $state(8000);
   let error = $state('');
-  let active = $state<{ progress: { done: number; total: number }; endsAt?: string } | null>(null);
-  let starting = $state(false);
+  let active = $state<{ progress: { done: number; total: number }; endsAt?: string; chapterIndex?: number } | null>(null);
+  let starting = $state<{ chapter?: { index: number; title: string } }>();
 
   async function load() {
     try {
@@ -81,7 +81,7 @@
     </section>
 
     <div class="row actions">
-      <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = true))} data-testid="study-now">
+      <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
         {active ? `Continue · ${active.progress.done} / ${active.progress.total}` : `Study now${p.due ? ` · ${p.due} due` : ''}`}</button>
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
     </div>
@@ -139,7 +139,10 @@
         <button class="linkbtn small left" onclick={() => go('words', bookId, 'unlisted', String(c.index))} data-testid="chapter-unlisted">{c.unlisted.words} words not in the lists (not counted, nothing to do)</button>
       {/if}
       {#if c.included}
-        <button class="btn primary" onclick={() => go('study', bookId, String(c.index))} data-testid="study-chapter">Study this chapter</button>
+        {@const same = active?.chapterIndex === c.index}
+        <button class="btn primary" data-testid="study-chapter"
+          onclick={() => { if (same) go('study', bookId); else starting = { chapter: { index: c.index, title: c.displayTitle } }; sheet = undefined; }}>
+          {same && active ? `Continue · ${active.progress.done} / ${active.progress.total}` : 'Study this chapter'}</button>
       {/if}
     </div>
   </Sheet>
@@ -167,7 +170,7 @@
   </Sheet>
 {/if}
 
-{#if starting && p}<StartStudy {bookId} due={p.due} onclose={() => (starting = false)} />{/if}
+{#if starting && p}<StartStudy {bookId} due={p.due} chapter={starting.chapter} onclose={() => (starting = undefined)} />{/if}
 
 <style>
   .t { font-family: var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

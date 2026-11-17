@@ -13,7 +13,7 @@
   import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
   import Sheet from '../components/Sheet.svelte';
 
-  let { bookId, chapter }: { bookId: string; chapter?: string } = $props();
+  let { bookId, chapter, how: howParam }: { bookId: string; chapter?: string; how?: string } = $props();
 
   let view = $state<SessionView>();
   let settings = $state<Settings>();
@@ -41,11 +41,14 @@
     try {
       settings = await api.settings.get();
       frontSwipeAsked = !!(await api.appState.get()).frontSwipeAsked;
-      // the second parameter is a chapter index or a start choice from the start sheet (C19)
-      const how = /^(cards|min)-(\d+(?:\.\d+)?)$/.exec(chapter ?? '');  // decimals: short timed sessions in e2e
-      const chapterIndex = !how && chapter !== undefined && chapter !== '' ? Number(chapter) : undefined;
-      const opts = how ? (how[1] === 'cards' ? { cardLimit: Number(how[2]) } : { minutes: Number(how[2]) })
-        : chapterIndex !== undefined ? { chapterIndex } : undefined;
+      // params: [chapter index] [start choice from the start sheet (C19)], each optional
+      const choice = (x?: string) => /^(cards|min)-(\d+(?:\.\d+)?)$/.exec(x ?? '');  // decimals: short timed sessions in e2e
+      const how = choice(howParam) ?? choice(chapter);
+      const chapterIndex = chapter !== undefined && /^\d+$/.test(chapter) ? Number(chapter) : undefined;
+      const opts = how || chapterIndex !== undefined ? {
+        ...(chapterIndex !== undefined ? { chapterIndex } : {}),
+        ...(how ? (how[1] === 'cards' ? { cardLimit: Number(how[2]) } : { minutes: Number(how[2]) }) : {}),
+      } : undefined;
       view = await api.study.resumeOrStart(bookId, opts);
       // the choice starts a session once; a relaunch must resume it, not restart it (C5)
       if (opts) replace('study', bookId);

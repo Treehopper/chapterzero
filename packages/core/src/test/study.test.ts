@@ -103,7 +103,7 @@ describe('session queue and grading', () => {
     await app.settings.update({ dailyNewLimit: 2 });
     const quick = await app.study.resumeOrStart(book.id);
     expect(quick.progress.total).toBe(2);
-    expect(await app.study.active(book.id)).toMatchObject({ sessionId: quick.sessionId, progress: { done: 0, total: 2 } });
+    expect(await app.study.active(book.id)).toMatchObject({ sessionId: quick.sessionId, progress: { done: 0, total: 2 }, chapterIndex: undefined });
     const v = await app.study.resumeOrStart(book.id, { cardLimit: 5 });
     expect(v.sessionId).not.toBe(quick.sessionId);       // an explicit choice starts a new session
     expect(v.progress.total).toBe(5);
@@ -111,6 +111,15 @@ describe('session queue and grading', () => {
     for (let i = 0; i < 5; i++) { await app.study.flip(w.sessionId); w = await app.study.grade(w.sessionId, 'known'); }
     expect(w.done).toBe(true);
     expect(await app.study.active(book.id)).toBeNull();
+  });
+
+  it('start options combine with a chapter (I4 + C19)', async () => {
+    const { app, book } = await imported();
+    const ch = (await app.progress.book(book.id)).chapters.filter((c) => c.included).at(-1)!;
+    const v = await app.study.resumeOrStart(book.id, { chapterIndex: ch.index, cardLimit: 2 });
+    expect(v.progress.total).toBe(2);
+    expect(v.chapter?.index).toBe(ch.index);
+    expect(await app.study.active(book.id)).toMatchObject({ chapterIndex: ch.index });
   });
 
   it('a timed session ends after the card in hand once time is up', async () => {

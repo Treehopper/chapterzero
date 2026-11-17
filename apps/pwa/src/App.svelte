@@ -57,7 +57,7 @@
     {:else if router.route.name === 'check'}<Check />
     {:else if router.route.name === 'import'}<ImportPreview draftId={router.route.params[0]} />
     {:else if router.route.name === 'book'}<BookOverview bookId={router.route.params[0]} />
-    {:else if router.route.name === 'study'}<Study bookId={router.route.params[0]} chapter={router.route.params[1]} />
+    {:else if router.route.name === 'study'}<Study bookId={router.route.params[0]} chapter={router.route.params[1]} how={router.route.params[2]} />
     {:else if router.route.name === 'stats'}<Statistics sessionId={router.route.params[0]} />
     {:else if router.route.name === 'words'}<Words bookId={router.route.params[0]} tab={router.route.params[1]} chapter={router.route.params[2]} />
     {:else if router.route.name === 'achievements'}<Achievements />

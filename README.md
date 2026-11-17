@@ -99,7 +99,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries, and when I answer a card wrong without having turned it over, I want to see its back side. | Must |
 | C17 | As a learner, I want to choose which lookup sites appear as links. | Should |
 | C18 | As a learner, when I get a card right the very first time I see it, I want it retired for good, so words I already know cost me one swipe and never return. | Must |
-| C19 | As a learner, when I start studying, I want *Quick start* (due reviews, then today's new cards) or to choose a number of cards (10 / 20 / 50) or a time (5 / 10 / 20 min). An open session is continued instead of asking. | Should |
+| C19 | As a learner, when I start studying, I want *Quick start* (due reviews, then today's new cards) or to choose a number of cards (10 / 20 / 50) or a time (5 / 10 / 20 min). *Study this chapter* (I4) offers the same choices for that chapter. An open session is continued instead of asking (for a chapter: only its own). | Should |
 
 **Acceptance criteria (C2, C5)**
 - A swipe is committed when horizontal travel > 30 % of card width or velocity > 0.5 px/ms; otherwise the card springs back.
@@ -437,7 +437,7 @@ interface VocabApp {
   };
   study: {
     resumeOrStart(bookId: BookId, opts?: SessionOptions): Promise<SessionView>;
-    active(bookId: BookId): Promise<{ sessionId; progress; endsAt? } | null>;  // open session → "Continue" (C19)
+    active(bookId: BookId): Promise<{ sessionId; progress; endsAt?; chapterIndex? } | null>;  // open session → "Continue" (C19)
     flip(sessionId: SessionId): Promise<SessionView>;
     grade(sessionId: SessionId, result: 'known' | 'unknown'): Promise<SessionView>;
     continueAfterReview(sessionId: SessionId): Promise<SessionView>;  // leaves wrongReview (C16, wrong swipe on the front)
@@ -917,7 +917,7 @@ The cards of one book are loaded into memory for this (a few thousand objects), 
 4. Failed cards are re-inserted `requeueGap` positions later (or at the end if the queue is shorter). The session ends when the queue is empty or the user leaves.
 5. After every grade the coverage of the target chapter is recomputed. If it reached the target for the first time (`index ∉ book.chaptersAnnounced`), the index is added there and `SessionView.chapterReady` is set. Cards already in the queue stay; the next session picks a new target chapter.
 6. "Study ahead" (C9) adds not-yet-due cards with the nearest `dueAt`, and does **not** promote their level beyond the next interval twice in one day.
-7. **Start options (C19)**: *Quick start* is steps 1–6. *N cards*: at most N reviews, filled up to N with new cards **ignoring the daily limit**, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; refill ignores the daily limit; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
+7. **Start options (C19)**: *Quick start* is steps 1–6; with *Study this chapter* every option also sets `chapterIndex`. *N cards*: at most N reviews, filled up to N with new cards **ignoring the daily limit**, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; refill ignores the daily limit; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
 
 ### 7.4 Resume anywhere (C5)
 

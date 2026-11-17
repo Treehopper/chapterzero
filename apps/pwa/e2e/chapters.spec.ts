@@ -10,6 +10,8 @@ test('study a chosen chapter (I4); a relaunch resumes that session', async ({ pa
   await expect(page.getByRole('dialog')).toContainText(/% of the words known/);
   await expect(page.getByRole('dialog')).toContainText(/100 % = all \d+ cards learned/);
   await tap(page.getByTestId('study-chapter'));
+  await expect(page.getByTestId('start-chapter')).toHaveText('The Harbour · One');
+  await tap(page.getByTestId('quick-start'));
   await expect(page.getByTestId('card-word')).toBeVisible();
   const w = await page.getByTestId('study-stage').getAttribute('data-word');
   // a word of that chapter (§7.3: words first seen earlier but still unlearned count too, e.g. "tempest")
@@ -20,6 +22,29 @@ test('study a chosen chapter (I4); a relaunch resumes that session', async ({ pa
   expect(page.url()).toMatch(/#\/study\/[^/]+$/);
   await page.reload();
   await expect(page.getByTestId('study-stage')).toHaveAttribute('data-word', w!);
+});
+
+test('chapter study takes the same start options; its open session is continued (I4, C19)', async ({ page }) => {
+  await firstRun(page);
+  await importAndOpen(page);
+  const harbourOne = page.getByTestId('chapter-row').filter({ hasText: 'One' }).nth(1);
+  await tap(harbourOne);
+  await tap(page.getByTestId('study-chapter'));
+  await expect(page.getByTestId('start-study')).toContainText('Study this chapter');
+  await tap(page.getByTestId('start-cards-10'));
+  await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 10$/);
+  expect(page.url()).toMatch(/#\/study\/[^/]+$/);
+  await page.goBack();
+  await tap(harbourOne);
+  await expect(page.getByTestId('study-chapter')).toHaveText('Continue · 0 / 10');
+  await tap(page.getByTestId('study-chapter'));
+  await expect(page.getByTestId('start-study')).toHaveCount(0);
+  await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 10$/);
+  // another chapter still asks
+  await page.goBack();
+  await tap(page.getByTestId('chapter-row').filter({ hasText: 'One' }).first());
+  await tap(page.getByTestId('study-chapter'));
+  await expect(page.getByTestId('start-study')).toBeVisible();
 });
 
 test('nothing due → study ahead (C9)', async ({ page }) => {

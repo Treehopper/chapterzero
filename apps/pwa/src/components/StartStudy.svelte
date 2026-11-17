@@ -3,17 +3,23 @@
   import Sheet from './Sheet.svelte';
   import { go } from '../lib/router.svelte';
 
-  let { bookId, due = 0, onclose }: { bookId: string; due?: number; onclose: () => void } = $props();
+  let { bookId, due = 0, chapter, onclose }: {
+    bookId: string; due?: number; chapter?: { index: number; title: string }; onclose: () => void;
+  } = $props();
 
-  const start = (how?: string) => { onclose(); go('study', bookId, ...(how ? [how] : [])); };
+  const start = (how?: string) => {
+    go('study', bookId, ...(chapter ? [String(chapter.index)] : []), ...(how ? [how] : []));
+    onclose();   // after go: closing clears the props this reads
+  };
 </script>
 
 <Sheet label="Start studying" {onclose}>
   <div class="stack" data-testid="start-study">
-    <h2>Start studying</h2>
+    <h2>{chapter ? 'Study this chapter' : 'Start studying'}</h2>
+    {#if chapter}<p class="muted chapter" data-testid="start-chapter">{chapter.title}</p>{/if}
     <button class="btn primary block quick" onclick={() => start()} data-testid="quick-start">
       <strong>Quick start</strong>
-      <span class="small">{due ? `${due} due reviews, then` : 'Due reviews, then'} today's new cards</span>
+      <span class="small">{due ? `${due} due reviews, then` : 'Due reviews, then'} {chapter ? "this chapter's" : "today's"} new cards</span>
     </button>
 
     <div class="section-title">Number of cards</div>
@@ -37,6 +43,7 @@
   .quick { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; }
   .quick strong { font-size: 18px; }
   .quick span { opacity: 0.85; }
+  .chapter { margin: -8px 0 0; overflow-wrap: anywhere; }
   .choices { gap: 8px; }
   .choices .btn { flex: 1; min-height: 48px; }
 </style>

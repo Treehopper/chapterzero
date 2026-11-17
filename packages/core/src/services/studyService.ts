@@ -241,7 +241,7 @@ export function studyService(ctx: Ctx) {
         if (!a) return null;
         const { session, book, byId, settings } = await load(tx, a.id);
         const v = view(session, book, byId, settings);
-        return v.done ? null : { sessionId: v.sessionId, progress: v.progress, endsAt: v.endsAt };
+        return v.done ? null : { sessionId: v.sessionId, progress: v.progress, endsAt: v.endsAt, chapterIndex: session.targetChapter };
       }),
 
     get: (sessionId: string) =>
