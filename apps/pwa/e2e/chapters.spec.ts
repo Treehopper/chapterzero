@@ -7,6 +7,8 @@ test('study a chosen chapter (I4); a relaunch resumes that session', async ({ pa
   const harbourOne = page.getByTestId('chapter-row').filter({ hasText: 'One' }).nth(1);
   await tap(harbourOne);
   await expect(page.getByRole('dialog')).toContainText('The Harbour · One');
+  await expect(page.getByRole('dialog')).toContainText(/% of the words known/);
+  await expect(page.getByRole('dialog')).toContainText(/100 % = all \d+ cards learned/);
   await tap(page.getByTestId('study-chapter'));
   await expect(page.getByTestId('card-word')).toBeVisible();
   const w = await page.getByTestId('study-stage').getAttribute('data-word');
