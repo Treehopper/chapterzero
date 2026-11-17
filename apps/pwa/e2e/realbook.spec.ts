@@ -2,7 +2,7 @@
  *  and fixtures/epub/downloaded (see fixtures/README.md). */
 import { expect, test } from '@playwright/test';
 import { existsSync } from 'node:fs';
-import { realEpub, tap } from './helpers';
+import { realEpub, studyNow, tap } from './helpers';
 
 const books = [
   { file: 'pg2701.epub', title: 'Moby Dick' },
@@ -37,7 +37,7 @@ test.describe('real packs and books', () => {
       await tap(page.getByTestId('create-cards'));
       await expect(page.getByTestId('book-coverage')).toBeVisible({ timeout: 60_000 });
       report.push(`  chapters: ${await page.getByTestId('chapter-row').count()}, ${await page.getByTestId('book-coverage').innerText()}`);
-      await tap(page.getByTestId('study-now'));
+      await studyNow(page);
       await expect(page.getByTestId('card-word')).toBeVisible();
       report.push(`  first card: ${await page.getByTestId('study-stage').getAttribute('data-word')}`);
       await page.goto('/#/library');

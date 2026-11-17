@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cardWord, expectCard, expectPhase, firstRun, importAndOpen, startStudy, swipe, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { cardWord, expectCard, expectPhase, firstRun, importAndOpen, startStudy, studyNow, swipe, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 async function ready(page: Page) {
   await firstRun(page);
@@ -184,7 +184,7 @@ test.describe('study (C1–C18)', () => {
     await page.getByLabel('Cutoff rank').fill('20000');   // lifts the first chapter from 84 % past the 98 % target
     await tap(page.getByRole('button', { name: 'Re-filter' }));
     await expect(page.getByTestId('toast')).toBeVisible();
-    await tap(page.getByTestId('study-now'));
+    await studyNow(page);
     // the open card was filtered out: the session skips it (it used to hang on "Loading…")
     const end = page.getByTestId('end-session');
     await expect(end.or(page.getByTestId('statistics'))).toBeVisible();

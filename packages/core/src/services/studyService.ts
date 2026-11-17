@@ -11,7 +11,7 @@ import type { Repositories } from '../ports/index.ts';
 import { cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
 import { buildStatistics } from './statistics.ts';
 
-export interface SessionOptions { chapterIndex?: number; studyAhead?: boolean }
+export interface SessionOptions { chapterIndex?: number; studyAhead?: boolean; cardLimit?: number; minutes?: number }
 
 export interface SessionView {
   sessionId: string;
@@ -24,6 +24,9 @@ export interface SessionView {
   nothingDue: boolean;
   counters: StudySession['counters'];
   progress: { done: number; total: number };
+  startedAt: string;
+  /** timed session: when it ends (the card in hand is still finished) */
+  endsAt?: string;
   firstCard: boolean;
   canUndo: boolean;
   undoKind?: 'grade' | 'retire' | 'remove';
@@ -104,7 +107,7 @@ export function studyService(ctx: Ctx) {
       sessionId: session.id, bookId: book.id, bookTitle: book.title, state: session.state,
       card: card && cardView(card), phase: session.current?.phase,
       done: !session.current, nothingDue: false, counters: session.counters,
-      progress: { done: doneCount, total: doneCount + remaining },
+      progress: { done: doneCount, total: doneCount + remaining }, startedAt: session.startedAt, endsAt: session.endsAt,
       firstCard: session.graded.length === 0 && session.counters.alreadyKnown === 0 && session.counters.removed === 0,
       canUndo: !!session.undo, undoKind: session.undo?.kind, requireFlip: settings.requireFlipBeforeGrade,
       newAchievements: [], lookupLinks: session.current && session.current.phase !== 'front' && card ? links(card.lemma, settings) : [],
@@ -118,7 +121,8 @@ export function studyService(ctx: Ctx) {
   function refill(session: StudySession, book: Book, byId: Map<string, Card>, settings: Settings, now: Date) {
     const cards = [...byId.values()];
     const allowed = settings.dailyNewLimit - introducedToday(cards, now) - pendingNew(session, byId);
-    if (allowed <= 0 && !session.studyAhead) return;
+    if (session.cardLimit) return;
+    if (allowed <= 0 && !session.studyAhead && !session.endsAt) return;
     const exclude = new Set([...session.queue, ...session.graded, ...(session.current ? [session.current.cardId] : [])]);
     const start = session.targetChapter ?? targetChapter(book, cards, settings);
     const next = newCandidates(book, cards, start, exclude, 1);
@@ -163,6 +167,7 @@ export function studyService(ctx: Ctx) {
   }
 
   function advance(session: StudySession) {
+    if (session.endsAt && ctx.clock.now() >= new Date(session.endsAt)) { session.current = undefined; return; }
     const next = session.queue.shift();
     session.current = next ? { cardId: next, phase: 'front' } : undefined;
   }
@@ -184,9 +189,11 @@ export function studyService(ctx: Ctx) {
     let reviews = active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) <= now)
       .sort((a, b) => a.dueAt!.localeCompare(b.dueAt!));
     const start = opts?.chapterIndex ?? targetChapter(book, cards, settings);
-    const limit = settings.dailyNewLimit - introducedToday(cards, now);
+    if (opts?.cardLimit) reviews = reviews.slice(0, opts.cardLimit);
+    // an explicit number of cards is filled with new ones regardless of the daily limit
+    const limit = opts?.cardLimit ? opts.cardLimit - reviews.length : settings.dailyNewLimit - introducedToday(cards, now);
     let fresh = newCandidates(book, cards, start, new Set(reviews.map((c) => c.id)), limit);
-    if (opts?.studyAhead) {
+    if (opts?.studyAhead || (opts?.minutes && reviews.length + fresh.length === 0)) {
       const ahead = active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) > now)
         .sort((a, b) => a.dueAt!.localeCompare(b.dueAt!)).slice(0, 20);
       reviews = [...reviews, ...ahead];
@@ -200,7 +207,8 @@ export function studyService(ctx: Ctx) {
     const session: StudySession = {
       id: ctx.ids.next(), bookId, startedAt: now.toISOString(), queue, graded: [], unlocks: [],
       counters: { reviewed: 0, correct: 0, wrong: 0, promoted: 0, demoted: 0, alreadyKnown: 0, removed: 0, firstAttempts: 0, firstAttemptsCorrect: 0 },
-      targetChapter: opts?.chapterIndex, studyAhead: opts?.studyAhead,
+      targetChapter: opts?.chapterIndex, studyAhead: opts?.studyAhead, cardLimit: opts?.cardLimit,
+      endsAt: opts?.minutes ? new Date(now.getTime() + opts.minutes * 60_000).toISOString() : undefined,
       coverageAtStart: { book: bookCoverage(book.chapters, cards), chapter: ch ? chapterCoverage(ch, cards) : 1, chapterIndex: chIndex },
       state: 'active',
     };
@@ -217,13 +225,23 @@ export function studyService(ctx: Ctx) {
     resumeOrStart: (bookId: string, opts?: SessionOptions) =>
       ctx.uow.run(async (tx) => {
         const active = await tx.sessions.getActive(bookId);
-        const explicit = opts?.chapterIndex !== undefined || opts?.studyAhead;
+        const explicit = opts?.chapterIndex !== undefined || opts?.studyAhead || !!opts?.cardLimit || !!opts?.minutes;
         if (active && !explicit) {
           const { session, book, byId, settings } = await load(tx, active.id);
           return view(session, book, byId, settings);
         }
         if (active) await tx.sessions.save({ ...active, state: 'finished', finishedAt: ctx.clock.now().toISOString() });
         return startSession(tx, bookId, opts);
+      }),
+
+    /** the book's open session, if any: Study continues it instead of offering the start options */
+    active: (bookId: string) =>
+      ctx.uow.run(async (tx) => {
+        const a = await tx.sessions.getActive(bookId);
+        if (!a) return null;
+        const { session, book, byId, settings } = await load(tx, a.id);
+        const v = view(session, book, byId, settings);
+        return v.done ? null : { sessionId: v.sessionId, progress: v.progress, endsAt: v.endsAt };
       }),
 
     get: (sessionId: string) =>

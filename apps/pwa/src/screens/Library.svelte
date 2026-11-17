@@ -6,6 +6,7 @@
   import { go } from '../lib/router.svelte';
   import { fmt, pct, toast } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
+  import StartStudy from '../components/StartStudy.svelte';
 
   let books = $state<BookOverview[]>([]);
   let loaded = $state(false);
@@ -61,6 +62,11 @@
     await api.appState.update({ levelHintDismissed: true });
   }
   const phaseLabel: Record<string, string> = { reading: 'Reading the book…', tokenising: 'Finding the words…', matching: 'Matching the word lists…', done: 'Preparing preview…' };
+  let starting = $state<{ bookId: string; due: number }>();
+  /** an open session continues; otherwise the start options (C19) */
+  async function study(bookId: string, due = 0) {
+    if (await api.study.active(bookId)) go('study', bookId); else starting = { bookId, due };
+  }
 </script>
 
 <main class="screen">
@@ -126,7 +132,7 @@
           </div>
           <Ring value={b.coverage} size={64} stroke={7} label={(b.coverage * 100).toFixed(1)} sublabel="%" mark={0.98} />
         </button>
-        <button class="btn primary block" onclick={() => go('study', b.id)}>Study</button>
+        <button class="btn primary block" onclick={() => study(b.id, b.due)}>Study</button>
       </article>
     {/each}
   </div>
@@ -146,6 +152,8 @@
     </div>
   </div>
 {/if}
+
+{#if starting}<StartStudy bookId={starting.bookId} due={starting.due} onclose={() => (starting = undefined)} />{/if}
 
 <style>
   .note { margin-bottom: 12px; }

@@ -156,6 +156,9 @@ export interface StudySession {
   graded: CardId[];
   targetChapter?: number;
   studyAhead?: boolean;
+  /** chosen at start: a fixed number of cards (no refill) or an end time (refills past the daily limit) */
+  cardLimit?: number;
+  endsAt?: string;
   coverageAtStart: { book: number; chapter: number; chapterIndex: number };
   state: 'active' | 'finished';
   finishedAt?: string;

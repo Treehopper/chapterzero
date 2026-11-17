@@ -1,6 +1,6 @@
 /** Captures screens for visual review (test-results/shots). Run: npx playwright test screens */
 import { test } from '@playwright/test';
-import { expectPhase, firstRun, importAndOpen, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { expectPhase, firstRun, importAndOpen, studyNow, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`screenshots ${scheme}`, async ({ page }) => {
@@ -10,6 +10,10 @@ for (const scheme of ['light', 'dark'] as const) {
     await importAndOpen(page);
     await shot('book');
     await tap(page.getByTestId('study-now'));
+    await page.getByTestId('start-study').waitFor();
+    await page.waitForTimeout(300);
+    await shot('start-study');
+    await tap(page.getByTestId('quick-start'));
     await expectPhase(page, 'front');
     await shot('study-front');
     await tapCard(page); await expectPhase(page, 'back');

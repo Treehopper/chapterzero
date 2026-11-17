@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectPhase, firstRun, importAndOpen, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { expectPhase, firstRun, importAndOpen, studyNow, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 test('study a chosen chapter (I4); a relaunch resumes that session', async ({ page }) => {
   await firstRun(page);
@@ -29,7 +29,7 @@ test('nothing due → study ahead (C9)', async ({ page }) => {
   await page.getByLabel('New cards per day').press('Tab');
   await tap(page.getByRole('button', { name: 'Back', exact: true }));
   await importAndOpen(page);
-  await tap(page.getByTestId('study-now'));
+  await studyNow(page);
   await expectPhase(page, 'front');
   await tapCard(page);
   await expectPhase(page, 'back');
@@ -39,7 +39,7 @@ test('nothing due → study ahead (C9)', async ({ page }) => {
   await expectPhase(page, 'back');
   await swipeRight(page);
   await expect(page.getByTestId('statistics')).toBeVisible();
-  await tap(page.getByTestId('study-more'));
+  await studyNow(page, 'study-more');
   await expect(page.getByTestId('nothing-due')).toBeVisible();
   await tap(page.getByRole('button', { name: 'Study ahead' }));
   await expect(page.getByTestId('card-word')).toBeVisible();

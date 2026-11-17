@@ -64,8 +64,16 @@ export async function importAndOpen(page: Page) {
   await expect(page.getByTestId('book-coverage')).toBeVisible();
 }
 
+/** Study now: continues an open session, or takes Quick start from the start sheet (C19). */
+export async function studyNow(page: Page, button = 'study-now') {
+  await tap(page.getByTestId(button));
+  const quick = page.getByTestId('quick-start');
+  await expect(quick.or(page.getByTestId('study-stage')).or(page.getByTestId('nothing-due')).first()).toBeVisible();
+  if (await quick.isVisible()) await tap(quick);
+}
+
 export async function startStudy(page: Page) {
-  await tap(page.getByTestId('study-now'));
+  await studyNow(page);
   await expect(page.getByTestId('card-word')).toBeVisible();
 }
 

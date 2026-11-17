@@ -8,6 +8,7 @@
   import Ring from '../components/Ring.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Boxes from '../components/Boxes.svelte';
+  import StartStudy from '../components/StartStudy.svelte';
 
   let { bookId }: { bookId: string } = $props();
   let book = $state<BookOverview>();
@@ -19,10 +20,12 @@
   let refilter = $state(false);
   let cutoff = $state(8000);
   let error = $state('');
+  let active = $state<{ progress: { done: number; total: number }; endsAt?: string } | null>(null);
+  let starting = $state(false);
 
   async function load() {
     try {
-      [book, p, daily] = await Promise.all([api.books.get(bookId), api.progress.book(bookId), api.progress.daily(1)]);
+      [book, p, daily, active] = await Promise.all([api.books.get(bookId), api.progress.book(bookId), api.progress.daily(1), api.study.active(bookId)]);
       cutoff = book.cutoffRank;
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   }
@@ -78,7 +81,8 @@
     </section>
 
     <div class="row actions">
-      <button class="btn primary spacer" onclick={() => go('study', bookId)} data-testid="study-now">Study now{p.due ? ` · ${p.due} due` : ''}</button>
+      <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = true))} data-testid="study-now">
+        {active ? `Continue · ${active.progress.done} / ${active.progress.total}` : `Study now${p.due ? ` · ${p.due} due` : ''}`}</button>
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
     </div>
 
@@ -162,6 +166,8 @@
     </div>
   </Sheet>
 {/if}
+
+{#if starting && p}<StartStudy {bookId} due={p.due} onclose={() => (starting = false)} />{/if}
 
 <style>
   .t { font-family: var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

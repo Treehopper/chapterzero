@@ -41,14 +41,23 @@
     try {
       settings = await api.settings.get();
       frontSwipeAsked = !!(await api.appState.get()).frontSwipeAsked;
-      const chapterIndex = chapter !== undefined && chapter !== '' ? Number(chapter) : undefined;
-      view = await api.study.resumeOrStart(bookId, chapterIndex !== undefined ? { chapterIndex } : undefined);
-      // the chapter choice starts a session once; a relaunch must resume it, not restart it (C5)
-      if (chapterIndex !== undefined) replace('study', bookId);
+      // the second parameter is a chapter index or a start choice from the start sheet (C19)
+      const how = /^(cards|min)-(\d+(?:\.\d+)?)$/.exec(chapter ?? '');  // decimals: short timed sessions in e2e
+      const chapterIndex = !how && chapter !== undefined && chapter !== '' ? Number(chapter) : undefined;
+      const opts = how ? (how[1] === 'cards' ? { cardLimit: Number(how[2]) } : { minutes: Number(how[2]) })
+        : chapterIndex !== undefined ? { chapterIndex } : undefined;
+      view = await api.study.resumeOrStart(bookId, opts);
+      // the choice starts a session once; a relaunch must resume it, not restart it (C5)
+      if (opts) replace('study', bookId);
       await afterView(view);
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   });
-  onDestroy(() => clearTimeout(undoTimer));
+  // timed sessions (C19): the top bar counts down instead of counting cards
+  let now = $state(Date.now());
+  const tick = setInterval(() => (now = Date.now()), 1000);
+  const left = $derived(view?.endsAt ? Math.max(0, new Date(view.endsAt).getTime() - now) : undefined);
+  const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+  onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); });
 
   async function afterView(v: SessionView) {
     if (v.card) live = `${headword(v.card.lemma, v.card.pos)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
@@ -237,10 +246,18 @@
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
 
     <div class="topbar">
-      <div class="progress" data-testid="progress" aria-label="{view.progress.done} of {view.progress.total} cards done">
-        <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
-        <span>{view.progress.done} / {view.progress.total}</span>
-      </div>
+      {#if left !== undefined && view.endsAt}
+        {@const total = new Date(view.endsAt).getTime() - new Date(view.startedAt).getTime()}
+        <div class="progress" data-testid="progress" aria-label="{clock(left)} left">
+          <div class="track"><div style:width="{(1 - left / Math.max(1, total)) * 100}%"></div></div>
+          <span data-testid="time-left">{left > 0 ? `${clock(left)} left` : 'last card'}</span>
+        </div>
+      {:else}
+        <div class="progress" data-testid="progress" aria-label="{view.progress.done} of {view.progress.total} cards done">
+          <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
+          <span>{view.progress.done} / {view.progress.total}</span>
+        </div>
+      {/if}
       <button class="end" onclick={finish} data-testid="end-session">Finish</button>
     </div>
 

@@ -98,6 +98,36 @@ describe('session queue and grading', () => {
     expect(next.phase).toBe('front');
   });
 
+  it('a chosen number of cards: reviews first, filled with new ones past the daily limit, no refill', async () => {
+    const { app, book } = await imported();
+    await app.settings.update({ dailyNewLimit: 2 });
+    const quick = await app.study.resumeOrStart(book.id);
+    expect(quick.progress.total).toBe(2);
+    expect(await app.study.active(book.id)).toMatchObject({ sessionId: quick.sessionId, progress: { done: 0, total: 2 } });
+    const v = await app.study.resumeOrStart(book.id, { cardLimit: 5 });
+    expect(v.sessionId).not.toBe(quick.sessionId);       // an explicit choice starts a new session
+    expect(v.progress.total).toBe(5);
+    let w = v;
+    for (let i = 0; i < 5; i++) { await app.study.flip(w.sessionId); w = await app.study.grade(w.sessionId, 'known'); }
+    expect(w.done).toBe(true);
+    expect(await app.study.active(book.id)).toBeNull();
+  });
+
+  it('a timed session ends after the card in hand once time is up', async () => {
+    const { app, book, ports } = await imported();
+    await app.settings.update({ dailyNewLimit: 1 });
+    const v = await app.study.resumeOrStart(book.id, { minutes: 5 });
+    expect(new Date(v.endsAt!).getTime() - ports.clock.now().getTime()).toBe(5 * 60_000);
+    await app.study.flip(v.sessionId);
+    const w = await app.study.grade(v.sessionId, 'known');
+    expect(w.done).toBe(false);                          // keeps going past the daily limit
+    ports.clock.advanceMs(5 * 60_000);
+    expect((await app.study.get(v.sessionId)).card).toBeDefined();  // the card in hand stays
+    await app.study.flip(v.sessionId);
+    const end = await app.study.grade(v.sessionId, 'unknown');      // even a wrong one ends it
+    expect(end.done).toBe(true);
+  });
+
   it('resumes exactly where it was (C5): same card, same side, same counters', async () => {
     const { app, book } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);

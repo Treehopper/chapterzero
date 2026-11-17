@@ -8,12 +8,14 @@
   import Ring from '../components/Ring.svelte';
   import Boxes from '../components/Boxes.svelte';
   import Confetti from '../components/Confetti.svelte';
+  import StartStudy from '../components/StartStudy.svelte';
 
   let { sessionId }: { sessionId: string } = $props();
   let s = $state<SessionStatistics>();
   let revealed = $state(0);
   let fire = $state(0);
   let error = $state('');
+  let starting = $state(false);
 
   onMount(async () => {
     try {
@@ -79,11 +81,13 @@
     {/if}
 
     <div class="cta row">
-      <button class="btn spacer" onclick={() => go('study', s!.bookId)} data-testid="study-more">Study more</button>
+      <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">Study more</button>
       <button class="btn primary spacer" onclick={() => go('book', s!.bookId)} data-testid="done">Done</button>
     </div>
   {:else if !error}<p class="muted">Loading…</p>{/if}
 </main>
+
+{#if starting && s}<StartStudy bookId={s.bookId} due={s.book.due} onclose={() => (starting = false)} />{/if}
 
 <style>
   .title { font-family: var(--serif); font-size: 28px; margin: 12px 0 16px; }
