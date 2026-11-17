@@ -19,9 +19,9 @@ async function gunzip(bytes: Uint8Array): Promise<string> {
 
 const toRow = (packId: string, r: unknown[]) => {
   switch (STORE[packId]) {
-    case 'words': return { lemma: r[0], rank: r[1], pos: r[2], de: r[3], def: r[4], flags: r[5] };
+    case 'words': return { lemma: r[0], rank: r[1], pos: r[2], de: r[3], def: r[4], flags: r[5], ...(r[6] ? { senses: r[6] } : {}) };
     case 'wordsFreedict': return { lemma: r[0], de: r[1] };
-    default: return { form: r[0], lemma: r[1] };
+    default: return { form: r[0], lemma: r[1], ...(r[2] ? { pos: r[2] } : {}) };
   }
 };
 
@@ -134,13 +134,22 @@ export class IdbWordList implements WordList {
     });
   }
 
+  formPos(forms: string[]): Promise<Map<string, string>> {
+    return this.db.forms.bulkGet(forms).then((rows) => {
+      const out = new Map<string, string>();
+      forms.forEach((f, i) => { const p = rows[i]?.pos; if (p) out.set(f, p); });
+      return out;
+    });
+  }
+
   entries(lemmas: string[]): Promise<Map<string, WordEntry>> {
     return Promise.all([this.db.words.bulkGet(lemmas), this.db.wordsFreedict.bulkGet(lemmas)]).then(([ws, fd]) => {
       const out = new Map<string, WordEntry>();
       lemmas.forEach((l, i) => {
         const w = ws[i];
         if (!w) return;
-        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, de: w.de, deFreedict: fd[i]?.de ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1 });
+        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, de: w.de, deFreedict: fd[i]?.de ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1,
+          ...(w.senses ? { senses: w.senses.map(([pos, de, def]) => ({ pos, de, def: def ?? undefined })) } : {}) });
       });
       return out;
     });

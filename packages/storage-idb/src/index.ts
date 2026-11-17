@@ -7,9 +7,11 @@ import {
   type VocabularyProfile,
 } from '@vocabfirst/core';
 
-export type WordRow = { lemma: string; rank: number; pos: string[]; de: string[]; def: string | null; flags: number };
+export type WordRow = { lemma: string; rank: number; pos: string[]; de: string[]; def: string | null; flags: number;
+  /** other parts of speech: [pos, de, def] */
+  senses?: [string, string[], string | null][] };
 export type FreedictRow = { lemma: string; de: string[] };
-export type FormRow = { form: string; lemma: string };
+export type FormRow = { form: string; lemma: string; /** the form's only part of speech, if it has one */ pos?: string };
 export type PackChunkRow = { packId: string; file: string; sha256: string; version: string };
 type Meta = { key: string; value: unknown };
 type Known = { lemma: string };

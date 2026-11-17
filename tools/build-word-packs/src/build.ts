@@ -35,8 +35,18 @@ const freq = new Map<string, number>();
 log(`wordfreq: ${freq.size} words`);
 
 // ---------------------------------------------------------------- 2. Wiktextract
-interface Lemma { pos: Set<string>; mainPos?: string; de: string[]; def?: string; forms: Set<string>; hasForms: Set<string> }
+/** per part of speech: German translations and an English definition */
+interface PosSense { de: string[]; def?: string }
+interface Lemma { pos: Set<string>; mainPos?: string; senses: Map<string, PosSense>; forms: Set<string>; hasForms: Set<string> }
 const lemmas = new Map<string, Lemma>();
+/** (form, lemma) → the parts of speech that form belongs to ("chafed" → verb, "chafes" → noun + verb) */
+const pairPos = new Map<string, Set<string>>();
+const notePos = (form: string, lemma: string, pos: string) => {
+  const k = `${form}\t${lemma}`;
+  let s = pairPos.get(k);
+  if (!s) pairPos.set(k, (s = new Set()));
+  s.add(pos);
+};
 /** candidate (form → lemmas) pairs from form-of / alt-of entries and senses */
 const formOf = new Map<string, Set<string>>();
 /** pairs that only come from marginal spelling variants (obsolete, misspelling, …) */
@@ -82,28 +92,33 @@ for await (const line of rl) {
     if (spelled) spellings.push(normWord(spelled));
     const pointer = inflections.length + spellings.length > 0 || s.tags?.includes('form-of') || s.tags?.includes('alt-of');
     const marginal = !!s.tags?.some((t) => MARGINAL.has(t));
-    for (const t of inflections) if (t !== word) addPair(word, t, false);
+    for (const t of inflections) if (t !== word) { addPair(word, t, false); notePos(word, t, e.pos); }
     for (const t of spellings) if (t !== word) addPair(word, t, marginal);
     if (!pointer && g) real.push(s);
   }
   if (real.length === 0) continue; // rule 2: only feeds the forms table
+  // archaic, obsolete, rare… senses only when the entry has nothing current ("loom": utensil)
+  const current = real.filter((s) => !s.tags?.some((t) => MARGINAL.has(t)));
+  const use = current.length ? current : real;
   let l = lemmas.get(word);
-  if (!l) lemmas.set(word, (l = { pos: new Set(), de: [], forms: new Set(), hasForms: new Set() }));
+  if (!l) lemmas.set(word, (l = { pos: new Set(), senses: new Map(), forms: new Set(), hasForms: new Set() }));
   l.pos.add(e.pos);
   l.mainPos ??= e.pos;
-  const trs = [...real.flatMap((s) => s.translations ?? []), ...(e.translations ?? [])].filter(isDe);
+  let ps = l.senses.get(e.pos);
+  if (!ps) l.senses.set(e.pos, (ps = { de: [] }));
+  const trs = [...use.flatMap((s) => s.translations ?? []), ...(e.translations ?? [])].filter(isDe);
   for (const t of trs) {
     const w = t.word!.normalize('NFC').trim();
-    if (!w || l.de.length >= 6 || l.de.includes(w)) continue;
+    if (!w || ps.de.length >= 6 || ps.de.includes(w)) continue;
     // the main part of speech is the one the first translation belongs to ("make" → verb: machen)
-    if (l.de.length === 0) l.mainPos = e.pos;
-    l.de.push(w);
+    if (![...l.senses.values()].some((x) => x.de.length)) l.mainPos = e.pos;
+    ps.de.push(w);
   }
   if (trs.length) deSeen++;
-  if (!l.def) l.def = cutDefinition(real[0].glosses![0]);
+  ps.def ??= cutDefinition(use[0].glosses![0]);
   const fes = (e.forms ?? []).filter(usableFormEntry).filter((f) => normWord(f.form!) !== word);
   if (fes.length) l.hasForms.add(e.pos);
-  for (const f of fes) l.forms.add(normWord(f.form!));
+  for (const f of fes) { l.forms.add(normWord(f.form!)); notePos(normWord(f.form!), word, e.pos); }
 }
 log(`Wiktextract: ${lines} entries, ${lemmas.size} lemmas, ${deSeen} with German, ${formOf.size} form-of forms`);
 
@@ -128,7 +143,7 @@ for (const [w, l] of lemmas) {
   // skip a listed variant whose own entry calls it a marginal form of this lemma ("ere")
   for (const f of l.forms) if (!(lemmas.has(f) && altOnly.get(f)?.has(w))) cand(f, w);
   for (const p of ['noun', 'verb', 'adj']) {
-    if (l.pos.has(p) && !l.hasForms.has(p)) for (const f of regularForms(w, p)) if (freq.has(f)) cand(f, w);
+    if (l.pos.has(p) && !l.hasForms.has(p)) for (const f of regularForms(w, p)) if (freq.has(f)) { cand(f, w); notePos(f, w, p); }
   }
 }
 for (const [f, s] of candidates) if (s.size === 0) candidates.delete(f);
@@ -178,16 +193,26 @@ log(`FreeDict: ${freedict.size} list headwords`);
 // ---------------------------------------------------------------- 5. word table
 /** pos with the main part of speech first, the rest sorted */
 const mainFirst = (l: Lemma) => [l.mainPos!, ...[...l.pos].filter((p) => p !== l.mainPos).sort()];
-type WordRow = [string, number, string[], string[], string | null, number];
+const main = (l: Lemma): PosSense => l.senses.get(l.mainPos!) ?? { de: [] };
+/** row[6]: the other parts of speech that have their own translations or definition (README §6) */
+type OtherSense = [string, string[], string | null];
+type WordRow = [string, number, string[], string[], string | null, number, OtherSense[]?];
 const wordRows: WordRow[] = [];
 const freedictRows: [string, string[]][] = [];
 for (const [lemma, r] of rank) {
   if (r <= COMMON_MAX_RANK || r > LIST_MAX_RANK) continue;
   const l = lemmas.get(lemma)!;
-  const fd = l.de.length === 0 ? freedict.get(lemma) : undefined;
-  if (l.de.length === 0 && !fd && !l.def) continue; // rule 6
-  const cognate = isCognate(lemma, l.de.length ? l.de : fd ?? []);
-  wordRows.push([lemma, r, mainFirst(l), l.de, l.def ?? null, cognate ? 1 : 0]);
+  const m = main(l);
+  const fd = m.de.length === 0 ? freedict.get(lemma) : undefined;
+  if (m.de.length === 0 && !fd && !m.def) continue; // rule 6
+  const cognate = isCognate(lemma, m.de.length ? m.de : fd ?? []);
+  const others: OtherSense[] = mainFirst(l).slice(1).flatMap((p) => {
+    const s = l.senses.get(p);
+    return s && (s.de.length || s.def) ? [[p, s.de, s.def ?? null] as OtherSense] : [];
+  });
+  const row: WordRow = [lemma, r, mainFirst(l), m.de, m.def ?? null, cognate ? 1 : 0];
+  if (others.length) row.push(others);
+  wordRows.push(row);
   if (fd) freedictRows.push([lemma, fd]);
 }
 const listed = new Set(wordRows.map((w) => w[0]));
@@ -201,7 +226,8 @@ const listed = new Set(wordRows.map((w) => w[0]));
 }
 
 // ---------------------------------------------------------------- 6. forms table (§6.4)
-const formRows: [string, string][] = [];
+/** [form, lemma, pos?]: pos when the form belongs to one part of speech only ("chafed" → verb) */
+const formRows: ([string, string] | [string, string, string])[] = [];
 for (const [form, ls] of candidates) {
   let winner = '';
   let wr = Infinity;
@@ -212,7 +238,10 @@ for (const [form, ls] of candidates) {
   if (!winner) continue;
   if (wr <= COMMON_MAX_RANK) formRows.push([form, '']);
   else if (!listed.has(winner)) continue;
-  else if (form !== winner) formRows.push([form, winner]);
+  else if (form !== winner) {
+    const ps = pairPos.get(`${form}\t${winner}`);
+    formRows.push(ps?.size === 1 ? [form, winner, [...ps][0]] : [form, winner]);
+  }
 }
 
 // ---------------------------------------------------------------- 7. write packs

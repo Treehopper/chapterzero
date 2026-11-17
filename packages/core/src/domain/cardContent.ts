@@ -2,6 +2,14 @@ import type { Card, WordEntry } from './types.ts';
 
 export type CardContent = Pick<Card, 'translations' | 'definition' | 'translationSource'>;
 
+/** The entry as seen for one part of speech: its translations, definition, and pos[0] (README §6.3). */
+export function forPos(e: WordEntry, pos?: string): WordEntry {
+  if (!pos || pos === e.pos[0]) return e;
+  const s = e.senses?.find((x) => x.pos === pos);
+  if (!s || (!s.de.length && !s.def)) return e;
+  return { ...e, pos: [pos, ...e.pos.filter((p) => p !== pos)], de: s.de, deFreedict: [], def: s.def ?? e.def };
+}
+
 /** README §6.3 "Card content from a WordEntry". undefined = treat as not in the lists. */
 export function resolveCardContent(e: WordEntry, useEnglishDefinitions: boolean): CardContent | undefined {
   if (e.de.length) return { translations: e.de.slice(0, 4), definition: e.def, translationSource: 'list' };

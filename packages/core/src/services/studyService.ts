@@ -5,7 +5,7 @@ import { addDays, isSameDay, startOfDay } from '../domain/dates.ts';
 import { deepClone } from '../domain/clone.ts';
 import { grade as schedule, intervalDays } from '../domain/scheduler.ts';
 import type {
-  AchievementUnlock, Book, Card, CardId, Grade, LearnerStats, Settings, StudySession,
+  AchievementUnlock, Book, BookLemma, Card, CardId, Grade, LearnerStats, Settings, StudySession,
 } from '../domain/types.ts';
 import type { Repositories } from '../ports/index.ts';
 import { cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
@@ -353,6 +353,7 @@ export function studyService(ctx: Ctx) {
         byId.set(u.cardId, u.before.card);
         await tx.cards.saveMany([u.before.card]);
         if (u.addedKnownWord) await tx.knownWords.remove(u.addedKnownWord);
+        if (u.lemmaBefore) await tx.bookLemmas.saveMany([u.lemmaBefore]);
         if (u.logSeq !== undefined) await tx.reviewLog.remove(u.logSeq);
         // unlocks and finished books are never revoked
         await tx.achievements.saveStats({ ...u.statsBefore, booksFinished: stats.booksFinished });
@@ -379,16 +380,26 @@ export function studyService(ctx: Ctx) {
         return view(session, book, byId, settings);
       }),
 
-    removeCurrent: (sessionId: string, as: 'removed' | 'known') =>
+    /** 'unlisted': the translation makes no sense; the word joins those not in the lists (C13) */
+    removeCurrent: (sessionId: string, as: 'removed' | 'known' | 'unlisted') =>
       ctx.uow.run(async (tx) => {
         const { session, book, byId, settings, stats } = await load(tx, sessionId);
         const card = session.current && byId.get(session.current.cardId);
         if (!card) throw new Error('No current card');
         const now = ctx.clock.now();
         const undo = snapshot(session, card, stats, 'remove');
-        const changed: Card = { ...card, status: as };
-        byId.set(card.id, changed);
-        await tx.cards.saveMany([changed]);
+        const changed: Card = { ...card, status: as === 'unlisted' ? 'removed' : as };
+        let lemmaBefore: BookLemma | undefined;
+        if (as === 'unlisted') {
+          // gone from the cards; listed: false keeps a re-filter (B3) from bringing it back
+          lemmaBefore = await tx.bookLemmas.get(book.id, card.lemma);
+          if (lemmaBefore) await tx.bookLemmas.saveMany([{ ...lemmaBefore, listed: false, kind: 'unlisted', ignored: false }]);
+          byId.delete(card.id);
+          await tx.cards.deleteMany([card.id]);
+        } else {
+          byId.set(card.id, changed);
+          await tx.cards.saveMany([changed]);
+        }
         let addedKnownWord: string | undefined;
         if (as === 'known') {
           const had = await tx.knownWords.hasMany([card.lemma]);
@@ -396,7 +407,7 @@ export function studyService(ctx: Ctx) {
         }
         session.queue = session.queue.filter((id) => id !== card.id);
         session.counters = { ...session.counters, removed: session.counters.removed + 1 };
-        session.undo = { ...undo, addedKnownWord };
+        session.undo = { ...undo, addedKnownWord, lemmaBefore };
         session.current = undefined;
         refill(session, book, byId, settings, now);
         advance(session);

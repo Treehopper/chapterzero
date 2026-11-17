@@ -108,6 +108,8 @@ export interface WordList {
   info(): Promise<PackInfo[]>;
   /** token → lemma. '' = common word. Absent key = not in the lists. */
   resolve(tokens: string[]): Promise<Map<string, string>>;
+  /** form → its only part of speech, for forms that have one ("chafed" → verb); others are absent */
+  formPos(forms: string[]): Promise<Map<string, string>>;
   entries(lemmas: string[]): Promise<Map<string, WordEntry>>;
   firstAtOrAfter(rank: number, maxRank: number): Promise<WordEntry | undefined>;
 }

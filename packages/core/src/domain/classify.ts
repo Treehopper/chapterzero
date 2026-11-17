@@ -1,5 +1,5 @@
 /** Step 9 classification (README §7.1) and card construction. */
-import { resolveCardContent } from './cardContent.ts';
+import { forPos, resolveCardContent } from './cardContent.ts';
 import { levelOfRank } from './levels.ts';
 import type { BookLemma, Card, LemmaKind, Settings, WordEntry } from './types.ts';
 
@@ -27,11 +27,14 @@ export function firstIncludedChapter(byChapter: Record<number, number>, included
 
 export function cardFromLemma(bookId: string, row: Omit<BookLemma, 'bookId' | 'kind'>, entry: WordEntry,
   settings: Pick<Settings, 'useEnglishDefinitions'>, chapterIndex: number): Card {
-  const content = resolveCardContent(entry, settings.useEnglishDefinitions)!;
+  // the part of speech the book uses picks the translations ("chafed": scheuern, not Schürfwunde)
+  const e = forPos(entry, row.pos);
+  const own = resolveCardContent(e, settings.useEnglishDefinitions);
+  const content = own ?? resolveCardContent(entry, settings.useEnglishDefinitions)!;
   return {
     id: `${bookId}:${row.lemma}`, bookId, lemma: row.lemma, forms: row.forms, occurrences: row.occurrences,
     occurrencesByChapter: row.occurrencesByChapter, firstPosition: row.firstPosition, chapterIndex, example: row.example,
-    listLevel: levelOfRank(entry.rank), ...content, pos: entry.pos, origin: 'import', status: 'active', level: 0,
+    listLevel: levelOfRank(entry.rank), ...content, pos: own ? e.pos : entry.pos, origin: 'import', status: 'active', level: 0,
     stats: { correct: 0, wrong: 0, failStreak: 0 },
   };
 }

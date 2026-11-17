@@ -9,15 +9,15 @@
         "fixture"
       ],
       "licence": "CC BY-SA 4.0 / GPL (excerpt)",
-      "entryCount": 255,
-      "bytes": 15644,
+      "entryCount": 257,
+      "bytes": 19435,
       "chunks": [
         {
           "file": "words-en-de.000.json.gz",
-          "bytes": 15644,
-          "rows": 255,
-          "sha256": "5c3dc09fca6a8e02a61cea6bdf2490702ad54df3b6cebadc18db7f2ef3873667",
-          "sha256Json": "4515f0420f5f04bd8b81532465abea529f4cc37b11acabfe4917235b33b47efb"
+          "bytes": 19435,
+          "rows": 257,
+          "sha256": "229a05fd078d6ad14b84481c515719fa66d92de505fdc67ef39c62b2f21bdb58",
+          "sha256Json": "d322e5419fec586666dfb52735092e94493907d4b522b5a29f6b5d4ce4659d22"
         }
       ]
     },
@@ -29,14 +29,14 @@
       ],
       "licence": "CC BY-SA 4.0 / GPL (excerpt)",
       "entryCount": 3,
-      "bytes": 115,
+      "bytes": 101,
       "chunks": [
         {
           "file": "words-de-freedict.000.json.gz",
-          "bytes": 115,
+          "bytes": 101,
           "rows": 3,
-          "sha256": "24e3cf8af9517b1d26b5b6bbeb9366f691dce74b0a6f6de0baf12abf9534935e",
-          "sha256Json": "9b87360fe01ea03a4ca787b4bec513da2a5b1680c4db072949e70345a230a4cf"
+          "sha256": "d9a1bd0cc0bebd34200e9359cec5dd28b0d8eb76f66f3bb00056200ecd27317b",
+          "sha256Json": "f7e52af02b5c3a09ae1691135a6fb19689728980484fb4f07667d967cabbff8e"
         }
       ]
     },
@@ -47,15 +47,15 @@
         "fixture"
       ],
       "licence": "CC BY-SA 4.0 / GPL (excerpt)",
-      "entryCount": 1024,
-      "bytes": 4560,
+      "entryCount": 1013,
+      "bytes": 5059,
       "chunks": [
         {
           "file": "forms-en.000.json.gz",
-          "bytes": 4560,
-          "rows": 1024,
-          "sha256": "67595aaa1caa8ee6d6ab12ad6f6f77395eafd553ac60591ecb5c23922aa94065",
-          "sha256Json": "f7317d2e2dc4f6a236ae03f7e8eb56019a67bda79ba069c7182620b84b895d93"
+          "bytes": 5059,
+          "rows": 1013,
+          "sha256": "8fe0029c743003279df9fdb641e6c105443703975c1c9d2fd7b05e4a44aaa5a9",
+          "sha256Json": "4f03d2412507dd5afd445c26f2f775b2c6aebf79827d823e57c556fc187e6755"
         }
       ]
     }

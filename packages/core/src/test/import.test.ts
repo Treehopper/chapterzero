@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyseContent } from '../domain/analysis.ts';
+import { forPos } from '../domain/cardContent.ts';
 import { buildStructure, chapterKind, removeRepeatedBlocks } from '../domain/structure.ts';
 import { americanVariants, normalizeToken, cutAround, words } from '../domain/text.ts';
 import { buildContent } from '../testing/content.ts';
@@ -184,6 +185,37 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
     const cards = await ports.uow.run((tx) => tx.cards.listByBook(conf.id));
     expect(cards.map((x) => x.lemma).sort()).toEqual(rows.filter((r) => r.kind === 'card').map((r) => r.lemma).sort());
     expect(cards.find((x) => x.lemma === 'relinquish')).toMatchObject({ status: 'active', level: 0, translationSource: 'list', listLevel: 6 });
+  });
+
+  it('the part of speech the book uses picks the translations (forms and the word before)', async () => {
+    const { app, ports } = setup({ sections: [[
+      `The rope chafed his wrists, and the strap was chafing. ${filler(40)}`,
+      `They walked over the moor and the moor was wide. ${filler(40)}`,
+      `His hopes waned. They would wane. The wane of the moon came. ${filler(40)}`,
+      `The old loom stood in the corner. ${filler(40)}`,
+    ]] });
+    const p = await app.books.analyse(buf);
+    const conf = await app.books.confirm(p.draftId, { includedChapters: p.includedChapters, cutoffRank: 2000 });
+    const cards = await ports.uow.run((tx) => tx.cards.listByBook(conf.id));
+    const card = (l: string) => cards.find((c) => c.lemma === l)!;
+    expect(card('chafe').pos[0]).toBe('verb');                 // "chafed", "chafing": verb forms only
+    expect(card('chafe').translations).toContain('ärgern');
+    expect(card('chafe').translations).not.toContain('Schürfwunde');
+    expect(card('chafe').definition).toMatch(/^To /);
+    expect(card('moor').pos[0]).toBe('noun');                  // "the moor"
+    expect(card('moor').translations).toEqual(['Hochmoor']);
+    expect(card('wane').pos[0]).toBe('verb');                  // "waned", "would wane" vs "the wane": 2 to 1
+    expect(card('wane').translations).toContain('schwinden');
+    expect(card('loom').pos[0]).toBe('noun');                  // "the old loom": no cue right before → main
+  });
+
+  it('forPos: another part of speech replaces translations and definition; unknown ones keep the entry', () => {
+    const e = { lemma: 'moor', rank: 10060, pos: ['noun', 'verb'], de: ['Hochmoor'], deFreedict: ['x'], def: 'heath', cognate: false,
+      senses: [{ pos: 'verb', de: ['anlegen'], def: 'To cast anchor.' }] };
+    expect(forPos(e, 'verb')).toMatchObject({ pos: ['verb', 'noun'], de: ['anlegen'], deFreedict: [], def: 'To cast anchor.' });
+    expect(forPos(e, 'noun')).toBe(e);
+    expect(forPos(e, 'adj')).toBe(e);
+    expect(forPos(e)).toBe(e);
   });
 
   it('cards follow first occurrence; unticking chapters changes the counts', async () => {

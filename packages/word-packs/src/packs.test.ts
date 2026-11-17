@@ -47,6 +47,11 @@ describe('HttpPackInstaller + IdbWordList', () => {
     expect([...r]).toEqual([['strode', 'stride'], ['the', ''], ['relinquish', 'relinquish']]);
     const e = await wl.entries(['relinquish']);
     expect(e.get('relinquish')).toMatchObject({ rank: expect.any(Number), cognate: false });
+    // parts of speech: the form's own, and the other part of speech's translations
+    expect([...await wl.formPos(['chafed', 'chafes', 'strode'])]).toEqual([['chafed', 'verb'], ['strode', 'verb']]);
+    const chafe = (await wl.entries(['chafe'])).get('chafe')!;
+    expect(chafe.pos[0]).toBe('noun');
+    expect(chafe.senses?.find((x) => x.pos === 'verb')?.de).toContain('ärgern');
     expect((await wl.firstAtOrAfter(10001, 15000))!.rank).toBeGreaterThanOrEqual(10001);
     expect(await wl.firstAtOrAfter(99999, 100000)).toBeUndefined();
     expect(progress.length).toBeGreaterThan(0);

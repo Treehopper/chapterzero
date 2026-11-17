@@ -92,8 +92,8 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session, and a visible *Finish* button next to it. | Must |
-| C12 | As a learner, I want to **swipe up** to reveal two buttons: *Edit card* and *Finish session*. | Must |
-| C13 | As a learner, I want *Edit card* to let me change the translation of the current card or remove it, and then continue studying. | Must |
+| C12 | As a learner, I want to **swipe up** to reveal *Edit card*, *Translation makes no sense* and *Finish session*. | Must |
+| C13 | As a learner, I want *Edit card* to let me change the translation of the current card or remove it, and then continue studying. When a translation makes no sense, I want to move the word to the words not in the lists in one tap (undoable), where I can still add it by hand. | Must |
 | C14 | As a learner, I want *Finish session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
 | C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries, and when I answer a card wrong without having turned it over, I want to see its back side. | Must |
@@ -372,6 +372,7 @@ export interface WordList {
   /** token → lemma. '' means "common word, always known". Absent key = not in the lists.
    *  Looks in the forms table first, then in the word table (§6.4). */
   resolve(tokens: string[]): Promise<Map<string, string>>;
+  formPos(forms: string[]): Promise<Map<string, string>>;   // a form's only part of speech ("chafed" → verb)
   entries(lemmas: string[]): Promise<Map<string, WordEntry>>;
   /** The listed word with the smallest rank ≥ `rank` and ≤ `maxRank` (calibration sampling). */
   firstAtOrAfter(rank: number, maxRank: number): Promise<WordEntry | undefined>;
@@ -539,6 +540,7 @@ interface BookLemma {
   firstPosition: number;            // reading-order token index of the first occurrence
   example?: string;
   ignored?: boolean;                // hidden in "not in the lists" (D1)
+  pos?: string;                     // part of speech the book uses (step 8), picks the card's translations
 }
 
 interface Card {
@@ -751,9 +753,9 @@ Every listed word has a **rank** (1 = most common English lemma). Levels are ran
 
 | Pack | Licence | Chunk content (JSON array of rows, sorted by first element) | IndexedDB store |
 |---|---|---|---|
-| `words-en-de` | CC BY-SA | `[lemma, rank, pos[], de[], def \| null, flags]` — `flags` bit 0 = cognate | `words`, key `lemma`, index `rank` |
+| `words-en-de` | CC BY-SA | `[lemma, rank, pos[], de[], def \| null, flags, others?]` — `de`/`def` belong to `pos[0]`; `others` = `[pos, de[], def \| null][]` for the other parts of speech with their own translations or definition; archaic, obsolete and rare senses only when nothing else exists; `flags` bit 0 = cognate | `words`, key `lemma`, index `rank` |
 | `words-de-freedict` | GPL | `[lemma, de[]]` — only list lemmas whose Wiktionary `de` is empty | `wordsFreedict`, key `lemma` |
-| `forms-en` | CC BY-SA | `[form, lemma]` — `lemma` is `""` for forms of common words | `forms`, key `form` |
+| `forms-en` | CC BY-SA | `[form, lemma, pos?]` — `lemma` is `""` for forms of common words; `pos` when the form belongs to one part of speech only ("chafed" → verb, not "chafes") | `forms`, key `form` |
 
 Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two translation packs stay separate files and stores because their licences differ. Target size for all packs together: under 10 MB compressed (CI prints the real sizes; if exceeded, drop `def` for entries that have German translations).
 
@@ -840,7 +842,7 @@ Runs in a Web Worker that hosts `core` + adapters; the UI only receives progress
 
 **7. Names (B5).** A lemma (listed or not) is a name if at least 90 % of its occurrences that are not sentence-initial are capitalised, with at least one such occurrence. Unlisted words seen only sentence-initially and capitalised are names too.
 
-**8. Aggregate and preview.** Per lemma: forms, occurrences, `occurrencesByChapter`, `firstPosition` (reading-order token index, B10), example sentence (B9: the sentence of the first occurrence if it has 8–25 words, else the first such sentence, else the first occurrence cut to 25 words around the word). Common words are only counted. Build the `ImportPreview` by running the classification of step 9 without saving.
+**8. Aggregate and preview.** Per lemma: forms, occurrences, `occurrencesByChapter`, `firstPosition` (reading-order token index, B10), example sentence (B9: the sentence of the first occurrence if it has 8–25 words, else the first such sentence, else the first occurrence cut to 25 words around the word). Part of speech: each occurrence votes — a form with a `pos` in the forms table votes for it, and so does the word right before ("to", "would", "they" … → verb; "the", "his", "every" … → noun). With a two-thirds majority that part of speech is stored in `BookLemma.pos`, and the card takes its translations and definition (`forPos`); otherwise the card uses `pos[0]`. Common words are only counted. Build the `ImportPreview` by running the classification of step 9 without saving.
 
 **9. Confirm: classify and save.** For every lemma of the draft, the first matching rule decides `BookLemma.kind`:
 
@@ -1183,7 +1185,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 
   Links are real `<a href target="_blank" rel="noopener noreferrer">` elements. The gesture recogniser ignores pointer-downs that start on a link.
 - **Top bar** → a 3 px progress bar (session done/total, accent colour), a tiny "12 / 40" label and a *Finish* text button (44 px), always visible under the status bar. User feedback: hidden progress and a hidden way out felt like no progress and no way out.
-- **Swipe up** → bottom panel with two 56 px-tall buttons, *Edit card* and *Finish session*; card dims to 40 %. Swipe down or tap the card to dismiss.
+- **Swipe up** → bottom panel with 56 px-tall buttons, *Edit card*, *Translation makes no sense* (removes the card, sets the word's `listed: false` so a re-filter keeps it out, undo toast) and *Finish session*; card dims to 40 %. Swipe down or tap the card to dismiss.
 - **Edit card sheet** → full-screen: word, translation chips (editable, add/remove), *Save*, then destructive actions *Remove card* and *Mark as known* (each confirmed via an undo toast rather than a dialog), *Cancel*.
 - **Gesture hints (C15)** on the first card of a session:
 

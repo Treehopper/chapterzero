@@ -48,6 +48,8 @@ export interface BookLemma {
   firstPosition: number;
   example?: string;
   ignored?: boolean;
+  /** the part of speech the book uses, when its forms and context agree ("chafed" → verb) */
+  pos?: string;
 }
 
 export interface CardStats {
@@ -145,6 +147,8 @@ export interface StudySession {
     gradedBefore: CardId[];
     statsBefore: LearnerStats;
     addedKnownWord?: string;
+    /** the word's row before "translation makes no sense" moved it to the words not in the lists */
+    lemmaBefore?: BookLemma;
     logSeq?: number;
   };
   counters: {
@@ -303,6 +307,8 @@ export interface WordEntry {
   deFreedict: string[];
   def?: string;
   cognate: boolean;
+  /** other parts of speech with their own translations / definition (pos[0]'s are de and def) */
+  senses?: { pos: string; de: string[]; def?: string }[];
 }
 
 export interface PackInfo {

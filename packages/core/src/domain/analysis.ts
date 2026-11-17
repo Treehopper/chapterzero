@@ -5,7 +5,10 @@ import { americanVariants, cutAround, normalizeToken, tokenizeBlock, type Senten
 import type { Chapter, EpubContent, ImportDraft } from './types.ts';
 
 interface TokenStat {
+  token: string;
   count: number;
+  /** occurrences right after a verb cue ("to", "would", "they" …) or a noun cue ("the", "his" …) */
+  cues: { verb: number; noun: number };
   byChapter: Map<number, number>;
   firstPos: number;
   nonInitial: number;
@@ -20,6 +23,11 @@ interface TokenStat {
 export type AnalysisResult = Omit<ImportDraft, 'id' | 'createdAt'>;
 
 const BATCH = 2000;
+
+/** the word before tells the part of speech of ambiguous words ("to moor" / "the moor") */
+const VERB_CUES = new Set(['to', 'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must', 'did', 'does', 'do',
+  "didn't", "don't", "doesn't", "won't", "wouldn't", "can't", "couldn't", "shouldn't", "mustn't", 'i', 'we', 'they']);
+const NOUN_CUES = new Set(['the', 'a', 'an', 'his', 'its', 'their', 'my', 'your', 'our', 'this', 'these', 'those', 'every', 'each']);
 
 async function resolveBatched(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -43,6 +51,13 @@ async function resolveAll(wordList: WordList, tokens: string[]): Promise<Map<str
   return out;
 }
 
+/** the part of speech a clear majority (⅔) of the votes points to, else none */
+function bookPos(votes: Map<string, number>): string | undefined {
+  const total = [...votes.values()].reduce((a, b) => a + b, 0);
+  const [best] = [...votes.entries()].sort((a, b) => b[1] - a[1]);
+  return best && best[1] * 3 >= total * 2 ? best[0] : undefined;
+}
+
 export async function analyseContent(
   raw: EpubContent, wordList: WordList, onProgress?: (done: number, total: number, phase: string) => void,
 ): Promise<AnalysisResult> {
@@ -63,11 +78,14 @@ export async function analyseContent(
     for (const sent of tokenized[pb.section][pb.block]) {
       let wcache: number | undefined;
       let first = true;
+      let prev = '';
       for (const w of sent.words) {
         const t = normalizeToken(w.raw);
-        if (t.kind === 'digit') continue;
+        if (t.kind === 'digit') { prev = ''; continue; }
         const initial = first;
         first = false;
+        const before = prev;
+        prev = t.norm;
         chapterTokens[pb.chapter]++;
         const p = pos++;
         if (t.kind === 'contraction') {
@@ -79,11 +97,13 @@ export async function analyseContent(
         let st = stats.get(t.norm);
         if (!st) {
           wcache ??= sent.words.length;
-          st = { count: 0, byChapter: new Map(), firstPos: p, nonInitial: 0, nonInitialCap: 0, initial: 0, initialCap: 0, caps: 0,
+          st = { token: t.norm, count: 0, cues: { verb: 0, noun: 0 }, byChapter: new Map(), firstPos: p, nonInitial: 0, nonInitialCap: 0, initial: 0, initialCap: 0, caps: 0,
             first: { pos: p, text: sent.text, wc: wcache, at: w.index } };
           stats.set(t.norm, st);
         }
         st.count++;
+        if (VERB_CUES.has(before)) st.cues.verb++;
+        else if (NOUN_CUES.has(before)) st.cues.noun++;
         st.byChapter.set(pb.chapter, (st.byChapter.get(pb.chapter) ?? 0) + 1);
         if (t.allCaps) st.caps++;
         if (initial) { st.initial++; if (t.capitalized) st.initialCap++; }
@@ -110,6 +130,7 @@ export async function analyseContent(
   }
   const partResolved = await resolveAll(wordList, [...partTokens].filter((p) => !resolved.has(p)));
   const lookup = (t: string) => (resolved.has(t) ? resolved.get(t) : partResolved.get(t));
+  const formPos = await wordList.formPos(distinct.filter((t) => resolved.get(t)));
 
   // ---- aggregate per lemma (step 8)
   interface Agg { lemma: string; listed: boolean; forms: Set<string>; stats: TokenStat[] }
@@ -145,7 +166,13 @@ export async function analyseContent(
     const byChapter: Record<number, number> = {};
     let first = a.stats[0];
     let good: TokenStat['firstGood'];
+    const votes = new Map<string, number>();
+    const vote = (p: string, n: number) => { if (n) votes.set(p, (votes.get(p) ?? 0) + n); };
     for (const st of a.stats) {
+      const fp = formPos.get(st.token);
+      if (fp) vote(fp, st.count);                 // "chafed" can only be the verb
+      vote('verb', st.cues.verb);
+      vote('noun', st.cues.noun);
       count += st.count; nonInitial += st.nonInitial; nonInitialCap += st.nonInitialCap;
       initial += st.initial; initialCap += st.initialCap; caps += st.caps;
       for (const [c, n] of st.byChapter) byChapter[c] = (byChapter[c] ?? 0) + n;
@@ -159,7 +186,7 @@ export async function analyseContent(
     const f = first.first;
     const example = f.wc >= 8 && f.wc <= 25 ? f.text : good ? good.text : cutAround(f.text, f.at);
     lemmas.push({ lemma: a.lemma, listed: a.listed, name, forms: [...a.forms].sort(), occurrences: count,
-      occurrencesByChapter: byChapter, firstPosition: first.firstPos, example });
+      occurrencesByChapter: byChapter, firstPosition: first.firstPos, example, pos: bookPos(votes) });
   }
   lemmas.sort((x, y) => x.firstPosition - y.firstPosition);
 

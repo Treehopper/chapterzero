@@ -150,6 +150,26 @@ describe('session queue and grading', () => {
     expect(w.seenBack).toBe(false);
   });
 
+  it('"translation makes no sense": the word moves to those not in the lists, stays there on re-filter, undo restores it', async () => {
+    const { app, book, cards, ports } = await imported();
+    const v0 = await app.study.resumeOrStart(book.id);
+    const lemma = v0.card!.lemma;
+    const v = await app.study.removeCurrent(v0.sessionId, 'unlisted');
+    expect(v.card?.lemma).not.toBe(lemma);
+    expect((await cards()).some((c) => c.lemma === lemma)).toBe(false);
+    const row = () => ports.uow.run((tx) => tx.bookLemmas.get(book.id, lemma));
+    expect(await row()).toMatchObject({ kind: 'unlisted', listed: false });
+    expect((await app.cards.words(book.id, { tab: 'unlisted' })).map((r) => r.lemma)).toContain(lemma);
+    const u = await app.study.undo(v0.sessionId);
+    expect(u.card?.lemma).toBe(lemma);
+    expect(await row()).toMatchObject({ kind: 'card', listed: true });
+    expect((await cards()).find((c) => c.lemma === lemma)?.status).toBe('active');
+    // again, then a re-filter does not bring the card back
+    await app.study.removeCurrent(v0.sessionId, 'unlisted');
+    await app.books.reapplyFilter(book.id, { cutoffRank: 2000 });
+    expect((await cards()).some((c) => c.lemma === lemma)).toBe(false);
+  });
+
   it('resumes exactly where it was (C5): same card, same side, same counters', async () => {
     const { app, book } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);

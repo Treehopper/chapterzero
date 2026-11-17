@@ -9,18 +9,18 @@ import { join } from 'node:path';
 import { OUT_DIR, ROOT } from './sources.ts';
 import { levelOfRank } from './rules.ts';
 
-type WordRow = [string, number, string[], string[], string | null, number];
+type WordRow = [string, number, string[], string[], string | null, number, [string, string[], string | null][]?];
 const load = <T>(prefix: string): T[] =>
   readdirSync(OUT_DIR).filter((f) => f.startsWith(prefix)).sort().flatMap((f) => JSON.parse(gunzipSync(readFileSync(join(OUT_DIR, f))).toString()));
 const words = load<WordRow>('words-en-de.');
 const freedict = load<[string, string[]]>('words-de-freedict.');
-const forms = load<[string, string]>('forms-en.');
+const forms = load<[string, string, string?]>('forms-en.');
 
 /** Words the fixture books and tests use. */
 const WANTED = `stride relinquish melancholy scythe ephemeral saunter shelf mouse goose ox harbor encyclopedia
   gaunt brooding wistful lantern moor heather tempest solemn cottage parchment quill vexed sombre somber ominous
   dagger gallant forlorn rampart gale lurk dwindle haggard whisper cobblestone ember thicket vow wretch
-  ponder glimmer hearth bough meadow ravine sullen weary dusk tavern quiver loom ashen hollow kindle mire`.split(/\s+/).filter(Boolean);
+  ponder glimmer hearth bough meadow ravine sullen weary dusk tavern quiver loom ashen hollow kindle mire chafe wane`.split(/\s+/).filter(Boolean);
 
 const byLemma = new Map(words.map((w) => [w[0], w]));
 const chosen = new Map<string, WordRow>();

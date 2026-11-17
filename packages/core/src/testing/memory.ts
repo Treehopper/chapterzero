@@ -163,9 +163,10 @@ export class SeededRandom implements Random {
 export class MemoryWordList implements WordList {
   readonly words = new Map<string, WordEntry>();
   readonly forms = new Map<string, string>();
-  constructor(words: WordEntry[], forms: [string, string][]) {
+  readonly posOf = new Map<string, string>();
+  constructor(words: WordEntry[], forms: ([string, string] | [string, string, string?])[]) {
     for (const w of words) this.words.set(w.lemma, w);
-    for (const [f, l] of forms) this.forms.set(f, l);
+    for (const [f, l, p] of forms) { this.forms.set(f, l); if (p) this.posOf.set(f, p); }
   }
   async info() { return []; }
   async resolve(tokens: string[]) {
@@ -176,6 +177,9 @@ export class MemoryWordList implements WordList {
       else if (this.words.has(t)) out.set(t, t);
     }
     return out;
+  }
+  async formPos(forms: string[]) {
+    return new Map(forms.flatMap((f) => (this.posOf.has(f) ? [[f, this.posOf.get(f)!] as [string, string]] : [])));
   }
   async entries(lemmas: string[]) {
     const out = new Map<string, WordEntry>();
