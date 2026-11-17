@@ -1262,7 +1262,7 @@ Buttons at the bottom: *Study more* and *Done* (back to Book overview). Mileston
 - **List levels**: cards show their list level, and the statistics show "words learned per level", so rare words feel like harder trophies.
 - **Boxes visual**: cards physically move up shelves; promoted cards animate upward in the summary.
 - **Streak flame** and a **daily goal ring** (default 20 reviews).
-- **Milestone celebrations**: lightweight confetti (canvas, < 1 s) when a chapter becomes ready, when the whole book reaches the coverage target, at a new longest streak, and at the first 100 % accurate session.
+- **Milestone celebrations**: lightweight confetti (canvas, about 2 s, large pieces) when a chapter becomes ready, when the whole book reaches the coverage target, at a new longest streak, and at the first 100 % accurate session. Only for what the session itself did: a session ended without grading a card never celebrates, even if coverage rose meanwhile through a re-filter or the Words screen.
 - **Copy**: always positive and specific ("You know 412 of this book's 1,180 rare words").
 - Haptics: Android via `navigator.vibrate` (short tick on grade); iOS Safari doesn't support it, so visual feedback carries the effect there.
 

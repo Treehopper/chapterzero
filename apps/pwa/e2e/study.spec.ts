@@ -168,6 +168,33 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByTestId('book-coverage')).toBeVisible();
   });
 
+  test('finishing on the first card without grading anything does not celebrate', async ({ page }) => {
+    await expectPhase(page, 'front');
+    await tap(page.getByTestId('end-session'));
+    await expect(page.getByTestId('statistics')).toBeVisible();
+    await page.waitForTimeout(800);
+    await expect(page.getByTestId('confetti')).toHaveAttribute('data-fired', '0');
+  });
+
+  test('coverage gained outside the session (re-filter) is not celebrated when finishing without a grade', async ({ page }) => {
+    await expectPhase(page, 'front');
+    await page.goBack();
+    await tap(page.getByRole('button', { name: 'Book options' }));
+    await tap(page.getByRole('button', { name: 'Change level for this book…' }));
+    await page.getByLabel('Cutoff rank').fill('20000');   // lifts the first chapter from 84 % past the 98 % target
+    await tap(page.getByRole('button', { name: 'Re-filter' }));
+    await expect(page.getByTestId('toast')).toBeVisible();
+    await tap(page.getByTestId('study-now'));
+    // the open card was filtered out: the session skips it (it used to hang on "Loading…")
+    const end = page.getByTestId('end-session');
+    await expect(end.or(page.getByTestId('statistics'))).toBeVisible();
+    if (await end.isVisible()) await tap(end);
+    await expect(page.getByTestId('statistics')).toBeVisible();
+    await expect(page.getByTestId('stat-reviewed')).toHaveText('0');
+    await page.waitForTimeout(800);
+    await expect(page.getByTestId('confetti')).toHaveAttribute('data-fired', '0');
+  });
+
   test('keyboard: space flips, arrows grade, Z undoes (C7)', async ({ page }) => {
     const w = await cardWord(page);
     await page.keyboard.press('Space');

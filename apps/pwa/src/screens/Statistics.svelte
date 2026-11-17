@@ -18,7 +18,9 @@
   onMount(async () => {
     try {
       s = await api.study.statistics(sessionId);
-      const celebrate = s.perfect || s.achievements.some((a) => a.tier === 'gold') || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget);
+      // only what was done in this session: coverage gained elsewhere (re-filter, Words) is no reason
+      const graded = s.session.reviewed + s.session.alreadyKnown > 0;
+      const celebrate = graded && (s.perfect || s.achievements.some((a) => a.tier === 'gold') || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget));
       if (celebrate) setTimeout(() => fire++, 300);
       const t = setInterval(() => { if (!s || revealed >= s.achievements.length) clearInterval(t); else revealed++; }, 450);
     } catch (e) { error = e instanceof Error ? e.message : String(e); }

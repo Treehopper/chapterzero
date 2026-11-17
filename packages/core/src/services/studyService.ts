@@ -82,7 +82,14 @@ export function studyService(ctx: Ctx) {
     const book = await tx.books.get(session.bookId);
     if (!book) throw new Error('Book not found');
     const [cards, settings, stats] = await Promise.all([tx.cards.listByBook(book.id), tx.settings.get(), tx.achievements.getStats()]);
-    return { session, book, cards, settings, stats, byId: new Map(cards.map((c) => [c.id, c])) };
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    // cards deleted or retired outside the session (re-filter, Words screen) drop out of it
+    const ok = (id: string) => byId.get(id)?.status === 'active';
+    if (session.state === 'active') {
+      session.queue = session.queue.filter(ok);
+      if (session.current && !ok(session.current.cardId)) advance(session);
+    }
+    return { session, book, cards, settings, stats, byId };
   }
 
   function view(session: StudySession, book: Book, byId: Map<string, Card>, settings: Settings,
