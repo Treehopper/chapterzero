@@ -194,5 +194,13 @@ test('achievement pop-up after 5 correct answers in a row (G1, G4)', async ({ pa
     await tapCard(page);
     await swipeRight(page);
   }
-  await expect(page.getByTestId('banner')).toContainText('On a Roll · Bronze');
+  const b = page.getByTestId('banner');
+  await expect(b).toContainText('On a Roll · Bronze');
+  const box = (await b.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(80);       // big enough to notice
+  await page.waitForTimeout(3500);
+  await expect(b).toBeVisible();                       // stays a while…
+  await tap(b);
+  await expect(b).toHaveCount(0);                      // …unless tapped away
+  await expectPhase(page, 'front');                    // the tap does not reach the card
 });

@@ -19,14 +19,24 @@ export function toast(text: string, action?: Toast['action'], ms = 3000) {
 }
 export const hideToast = () => { ui.toast = undefined; };
 
+export const BANNER_MS = 5000;
 let showing = false;
+let bannerTimer: ReturnType<typeof setTimeout> | undefined;
 function pump() {
   if (showing) return;
   const b = ui.banners.shift();
   if (!b) return;
   showing = true;
   ui.banner = b;
-  setTimeout(() => { ui.banner = undefined; showing = false; setTimeout(pump, 250); }, 2500);
+  bannerTimer = setTimeout(dismissBanner, BANNER_MS);
+}
+
+/** ends the current pop-up early (tap) or on time; the next one follows */
+export function dismissBanner() {
+  clearTimeout(bannerTimer);
+  ui.banner = undefined;
+  showing = false;
+  setTimeout(pump, 250);
 }
 
 export function banner(b: Omit<Banner, 'id'>) {

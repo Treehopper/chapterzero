@@ -195,8 +195,8 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 - A book is *finished* the first time every one of its included chapters is ready to read (coverage ≥ target, I3). Later lapses or re-filtering can't un-finish it.
 - *Comeback*: a card's `failStreak` (consecutive *didn't know* on that card) is ≥ 3 at the moment it is graded *known*. Then `failStreak` resets to 0. Each card can trigger it more than once.
 - Achievements are never revoked once unlocked, even if the triggering grade is undone.
-- If a single grade unlocks several achievements, pop-ups are queued, each shown for 2.5 s.
-- The pop-up is a small banner sliding in from the top (below the safe area): tier-coloured medal icon, achievement name, tier. It doesn't take input. Gold unlocks also get a short shimmer. Full confetti is reserved for the statistics screen.
+- If a single grade unlocks several achievements, pop-ups are queued, each shown for 5 s; a tap dismisses one early.
+- The pop-up is a large banner sliding in from the top (below the safe area): big tier-coloured medal icon, achievement name and tier in large type, description. Its only input is a tap to dismiss it; the tap never reaches the card. Gold unlocks also get a short shimmer. Full confetti is reserved for the statistics screen.
 - Unlocks are persisted in the same transaction as the grade that caused them.
 
 ### Epic H – Personal vocabulary level
@@ -1206,7 +1206,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 
 Buttons at the bottom: *Study more* and *Done* (back to Book overview). Milestone celebrations (E5) play here, not during study.
 
-**Achievement pop-up** (G4) and **chapter-ready banner** (I3) — the same component, sliding in from the top for 2.5 s without taking input:
+**Achievement pop-up** (G4) and **chapter-ready banner** (I3) — the same component, sliding in from the top for 5 s; a tap dismisses it:
 
 ```
 ┌─────────────────────────────┐
