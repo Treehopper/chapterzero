@@ -20,6 +20,8 @@ export interface SessionView {
   state: StudySession['state'];
   card?: CardView;
   phase?: 'front' | 'back' | 'wrongReview';
+  /** the back of the current card was already shown (flipped there and back) */
+  seenBack: boolean;
   done: boolean;
   nothingDue: boolean;
   counters: StudySession['counters'];
@@ -105,7 +107,7 @@ export function studyService(ctx: Ctx) {
     const remaining = session.queue.length + (session.current && session.current.phase !== 'wrongReview' ? 1 : 0);
     return {
       sessionId: session.id, bookId: book.id, bookTitle: book.title, state: session.state,
-      card: card && cardView(card), phase: session.current?.phase,
+      card: card && cardView(card), phase: session.current?.phase, seenBack: !!session.current?.seenBack,
       done: !session.current, nothingDue: false, counters: session.counters,
       progress: { done: doneCount, total: doneCount + remaining }, startedAt: session.startedAt, endsAt: session.endsAt,
       firstCard: session.graded.length === 0 && session.counters.alreadyKnown === 0 && session.counters.removed === 0,
@@ -255,6 +257,7 @@ export function studyService(ctx: Ctx) {
         const { session, book, byId, settings } = await load(tx, sessionId);
         if (session.current && session.current.phase !== 'wrongReview') {
           session.current.phase = session.current.phase === 'front' ? 'back' : 'front';
+          if (session.current.phase === 'back') session.current.seenBack = true;
           await tx.sessions.save(session);
         }
         return view(session, book, byId, settings);
@@ -270,7 +273,7 @@ export function studyService(ctx: Ctx) {
           await tx.sessions.save(session);
           return view(session, book, byId, settings);
         }
-        if (session.current.phase === 'front' && settings.requireFlipBeforeGrade) throw new Error('Flip the card before grading');
+        if (session.current.phase === 'front' && !session.current.seenBack && settings.requireFlipBeforeGrade) throw new Error('Flip the card before grading');
         const card = byId.get(session.current.cardId);
         if (!card) throw new Error('Card not found');
         const undo = snapshot(session, card, stats, 'grade');
@@ -322,10 +325,10 @@ export function studyService(ctx: Ctx) {
         };
         if (firstAttempt) session.graded.push(card.id);
         session.undo = { ...undo, logSeq };
-        const fromFront = session.current.phase === 'front';
+        const neverFlipped = session.current.phase === 'front' && !session.current.seenBack;
         if (result === 'unknown') session.queue.splice(Math.min(settings.scheduler.requeueGap, session.queue.length), 0, card.id);
-        // C16: the back was already seen when graded after a flip; only a wrong swipe on the front shows it
-        if (result === 'unknown' && fromFront) session.current = { cardId: card.id, phase: 'wrongReview' };
+        // C16: the back was already seen after a flip; only a wrong swipe on a never-flipped front shows it
+        if (result === 'unknown' && neverFlipped) session.current = { cardId: card.id, phase: 'wrongReview' };
         else advance(session);
         const r = await afterChange(tx, session, book, byId, settings, g.stats, graded, now);
         await tx.sessions.save(session);

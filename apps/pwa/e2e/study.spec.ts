@@ -43,6 +43,19 @@ test.describe('study (C1–C18)', () => {
     await expectCard(page, next, 'wrongReview');
   });
 
+  test('flipped and turned back to the front: a swipe grades without asking', async ({ page }) => {
+    const w = await cardWord(page);
+    await tapCard(page);
+    await expectPhase(page, 'back');
+    await tapCard(page);
+    await expectPhase(page, 'front');
+    await swipeLeft(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
+    await expectPhase(page, 'front');                 // seen already: straight on, no review step
+    expect(await cardWord(page)).not.toBe(w);
+    await expect(page.getByTestId('undo')).toHaveText('Undo');
+  });
+
   test('first-sight right swipe retires the card; undo brings it back (C18, C6)', async ({ page }) => {
     const w = await cardWord(page);
     await tapCard(page);

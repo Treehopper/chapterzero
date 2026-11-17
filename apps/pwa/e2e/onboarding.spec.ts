@@ -144,6 +144,21 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByRole('checkbox', { name: 'Flip before grading' })).not.toBeChecked();
   });
 
+  test('in the check, a word flipped and turned back is graded by a swipe without asking', async ({ page }) => {
+    await firstRun(page, { check: 'none' });
+    await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
+    await tapCard(page);
+    await expect(page.getByTestId('check-replace')).toBeVisible();
+    await tapCard(page);
+    await expect(page.getByTestId('check-replace')).toHaveCount(0);
+    await swipeRight(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
+    await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
+    // the next word starts unseen again: a front swipe asks
+    await swipeRight(page);
+    await expect(page.getByTestId('front-swipe-confirm')).toBeVisible();
+  });
+
   test('skipping the check sets level 5 and shows a dismissible hint', async ({ page }) => {
     await firstRun(page);
     await expect(page.getByTestId('level-hint')).toBeVisible();

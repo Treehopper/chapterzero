@@ -24,7 +24,9 @@
   let hints = $state(false);
   let used = $state<Set<string>>(new Set());
   const useHint = (h: string) => { if (!used.has(h)) used = new Set([...used, h]); };
-  function flip() { flipped = !flipped; useHint('tap'); }
+  /** the back of this word was shown once: a swipe on the front grades (no question, no nudge) */
+  let seen = $state(false);
+  function flip() { flipped = !flipped; if (flipped) seen = true; useHint('tap'); }
   const showHints = $derived(hints && !['tap', 'left', 'right'].every((h) => used.has(h)));
 
   // a swipe before the flip grades only when "Flip before grading" is off; the first one asks (once)
@@ -32,7 +34,7 @@
   let frontSwipeAsked = $state(true);
   let askFront = $state<1 | -1>();
   let nudge = $state(false);
-  const swipeable = $derived(flipped || !requireFlip || !frontSwipeAsked);
+  const swipeable = $derived(flipped || seen || !requireFlip || !frontSwipeAsked);
 
   let error = $state('');
   onMount(async () => {
@@ -49,7 +51,7 @@
   });
 
   function swipe(dir: 1 | -1) {
-    if (flipped || !requireFlip) return void answer(dir === 1, true);
+    if (flipped || seen || !requireFlip) return void answer(dir === 1, true);
     dx = 0;
     if (!frontSwipeAsked) askFront = dir;
     else { nudge = true; setTimeout(() => (nudge = false), 400); }
@@ -67,13 +69,13 @@
 
   async function answer(known: boolean, fromFront = false) {
     if (busy || !view?.word) return;
-    if (!flipped && !(fromFront && !requireFlip)) { flip(); return; }
+    if (!flipped && !seen && !(fromFront && !requireFlip)) { flip(); return; }
     useHint(known ? 'right' : 'left');
     busy = true;
     fly = known ? 1 : -1;
     const next = await api.calibration.answer(known);
     await new Promise((r) => setTimeout(r, 180));
-    fly = 0; dx = 0; flipped = false;
+    fly = 0; dx = 0; flipped = false; seen = false;
     view = next;
     if (next.result) { result = next.result; cutoff = next.result.cutoffRank; }
     busy = false;
@@ -85,7 +87,7 @@
     busy = true;
     try {
       view = await api.calibration.replaceWord();
-      flipped = false; dx = 0;
+      flipped = false; seen = false; dx = 0;
       if (view.result) { result = view.result; cutoff = view.result.cutoffRank; }
     } finally { busy = false; }
   }
@@ -166,8 +168,8 @@
     {#if showHints}<GestureHints {flipped} {used} />{/if}
     <div class="sr-only">
       <button onclick={() => (flipped = !flipped)}>Flip</button>
-      <button onclick={() => answer(true)} disabled={!flipped}>Knew it</button>
-      <button onclick={() => answer(false)} disabled={!flipped}>Didn't know</button>
+      <button onclick={() => answer(true)} disabled={!flipped && !seen}>Knew it</button>
+      <button onclick={() => answer(false)} disabled={!flipped && !seen}>Didn't know</button>
     </div>
     {#if flipped}
       <div class="explain replace">

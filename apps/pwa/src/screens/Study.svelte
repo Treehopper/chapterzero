@@ -129,7 +129,7 @@
         await afterView(v);
         return;
       }
-      if (view.phase === 'front' && view.requireFlip) {
+      if (view.phase === 'front' && view.requireFlip && !view.seenBack) {
         dx = 0;
         if (!frontSwipeAsked) askFront = dir; else { nudge = true; setTimeout(() => (nudge = false), 400); }
         return;

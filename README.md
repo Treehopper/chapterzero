@@ -600,7 +600,7 @@ interface StudySession {
   bookId: BookId;
   startedAt: string;
   queue: CardId[];                  // remaining, in order
-  current?: { cardId: CardId; phase: 'front' | 'back' | 'wrongReview' };
+  current?: { cardId: CardId; phase: 'front' | 'back' | 'wrongReview'; seenBack?: boolean };
   undo?: { cardId: CardId; before: CardSnapshot; queueBefore: CardId[];
            statsBefore: LearnerStats; addedKnownWord?: string };
   counters: { reviewed: number; correct: number; wrong: number; promoted: number;
@@ -695,6 +695,7 @@ interface Settings {
   useEnglishDefinitions: boolean;   // true
   skipCognates: boolean;            // true
   requireFlipBeforeGrade: boolean;  // true; the first swipe on a front asks once whether to turn it off (study and check)
+                                    // a card flipped once and turned back counts as flipped (session.current.seenBack)
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;       // true
   lookupProviders: LookupProvider[];

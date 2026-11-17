@@ -137,6 +137,19 @@ describe('session queue and grading', () => {
     expect(end.done).toBe(true);
   });
 
+  it('flipped and turned back: a swipe on the front grades, even with Flip before grading', async () => {
+    const { app, book } = await imported();
+    const v0 = await app.study.resumeOrStart(book.id);
+    await expect(app.study.grade(v0.sessionId, 'known')).rejects.toThrow('Flip the card');
+    await app.study.flip(v0.sessionId);
+    const front = await app.study.flip(v0.sessionId);
+    expect(front).toMatchObject({ phase: 'front', seenBack: true });
+    const w = await app.study.grade(v0.sessionId, 'unknown');
+    expect(w.phase).toBe('front');                       // seen already: no review step
+    expect(w.card?.lemma).not.toBe(v0.card?.lemma);
+    expect(w.seenBack).toBe(false);
+  });
+
   it('resumes exactly where it was (C5): same card, same side, same counters', async () => {
     const { app, book } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);

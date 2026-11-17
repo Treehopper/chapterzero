@@ -133,7 +133,8 @@ export interface StudySession {
   bookId: BookId;
   startedAt: string;
   queue: CardId[];
-  current?: { cardId: CardId; phase: 'front' | 'back' | 'wrongReview' };
+  /** seenBack: the back was shown once, so a swipe on the front grades even with requireFlipBeforeGrade */
+  current?: { cardId: CardId; phase: 'front' | 'back' | 'wrongReview'; seenBack?: boolean };
   undo?: {
     kind: 'grade' | 'retire' | 'remove';
     cardId: CardId;
