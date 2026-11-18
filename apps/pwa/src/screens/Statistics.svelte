@@ -25,7 +25,11 @@
       const celebrate = graded && (s.perfect || (ui.achievements && s.achievements.some((a) => a.tier === 'gold')) || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget));
       if (celebrate) setTimeout(() => fire++, 300);
       const t = setInterval(() => { if (!s || revealed >= s.achievements.length) clearInterval(t); else revealed++; }, 450);
-    } catch (e) { error = e instanceof Error ? e.message : String(e); }
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+      // a relaunch must not come back to a dead end
+      void api.appState.update({ lastRoute: '' });   // not undefined: that would not survive the trip to the worker
+    }
   });
 
   const dur = (sec: number) => (sec < 60 ? `${sec} s` : `${Math.floor(sec / 60)} min ${sec % 60} s`);
@@ -34,7 +38,7 @@
 
 <Confetti {fire} />
 <main class="screen stats" data-testid="statistics">
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error">{error}</p><button class="btn" onclick={() => go('library')} data-testid="stats-back">To the library</button>{/if}
   {#if s}
     <h1 class="title">Session complete</h1>
     {#if ui.achievements}

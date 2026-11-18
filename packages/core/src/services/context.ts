@@ -28,7 +28,7 @@ export const links = (lemma: string, s: Settings) => lookupLinks(lemma, s.lookup
 export interface BookOverview {
   id: string; title: string; author?: string; coverDataUrl?: string; importedAt: string; cutoffRank: number;
   level: number; coverage: number; learningChapter?: BookProgress['learningChapter']; due: number;
-  cards: number; finishedAt?: string; worksCount: number; chaptersCount: number;
+  cards: number; finishedAt?: string; ready: boolean; coverageTarget: number; worksCount: number; chaptersCount: number;
 }
 
 export function bookOverview(book: Book, p: BookProgress): BookOverview {
@@ -36,7 +36,7 @@ export function bookOverview(book: Book, p: BookProgress): BookOverview {
     id: book.id, title: book.title, author: book.author, coverDataUrl: book.coverDataUrl, importedAt: book.importedAt,
     cutoffRank: book.cutoffRank, level: startLevel(book.cutoffRank), coverage: p.coverage,
     learningChapter: p.learningChapter, due: p.due, cards: p.cards.active, finishedAt: book.finishedAt,
-    worksCount: book.works.length, chaptersCount: book.chapters.filter((c) => c.included).length,
+    ready: p.ready, coverageTarget: p.coverageTarget, worksCount: book.works.length, chaptersCount: book.chapters.filter((c) => c.included).length,
   };
 }
 

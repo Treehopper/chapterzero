@@ -125,15 +125,15 @@
             {#if b.author}<span class="small muted">{b.author}</span>{/if}
             {#if b.learningChapter}
               <span class="small">{b.learningChapter.displayTitle} · {pct(b.learningChapter.coverage)}</span>
-            {:else if b.finishedAt}<span class="small good">Ready to read</span>{/if}
+            {:else if b.ready}<span class="small good">Ready to read</span>{/if}
             <span class="row small">
               {#if b.due}<span class="pill accent" data-testid="due-badge">{b.due} due</span>{/if}
               <span class="pill">Level {b.level}</span><span class="pill">{fmt(b.cards)} cards</span>
             </span>
           </div>
-          <Ring value={b.coverage} size={64} stroke={7} label={(b.coverage * 100).toFixed(1)} sublabel="%" mark={0.98} />
+          <Ring value={b.coverage} size={64} stroke={7} label={(b.coverage * 100).toFixed(1)} sublabel="%" mark={b.coverageTarget} />
         </button>
-        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.finishedAt ? 'Review' : 'Get ready for reading'}</button>
+        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.ready ? 'Review' : 'Get ready for reading'}</button>
       </article>
     {/each}
   </div>

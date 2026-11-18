@@ -373,6 +373,8 @@ export function studyService(ctx: Ctx) {
         const edited = applyEdit(card, edit);
         byId.set(card.id, edited);
         await tx.cards.saveMany([edited]);
+        // an undo of this card's grade must not bring the old wording back
+        if (session.undo?.cardId === card.id) session.undo.before.card = applyEdit(session.undo.before.card, edit);
         await tx.sessions.save(session);
         return view(session, book, byId, settings);
       }),

@@ -61,6 +61,10 @@ export function cardService(ctx: Ctx) {
     return ch ? displayTitle(book, ch) : '';
   };
 
+  /** words that only occur in excluded chapters are not the book's (same as the import preview, B7) */
+  const inIncluded = (book: Book, byChapter: Record<number, number>) =>
+    book.chapters.some((c) => c.included && (byChapter[c.index] ?? 0) > 0);
+
   async function getBook(tx: Repositories, id: string) {
     const b = await tx.books.get(id);
     if (!b) throw new Error('Book not found');
@@ -99,7 +103,7 @@ export function cardService(ctx: Ctx) {
         const matches = (lemma: string, forms: string[] = []) => !q || lemma.includes(q) || forms.some((f) => f.includes(q));
         let out: WordRow[] = [];
         if (opts.tab === 'unlisted') {
-          out = rows.filter((r) => (r.kind === 'unlisted' || (opts.includeNames && r.kind === 'name')) && !r.ignored)
+          out = rows.filter((r) => (r.kind === 'unlisted' || (opts.includeNames && r.kind === 'name')) && !r.ignored && inIncluded(book, r.occurrencesByChapter))
             .filter((r) => inChapter(r.occurrencesByChapter) && matches(r.lemma, r.forms))
             .sort((a, b) => b.occurrences - a.occurrences || a.firstPosition - b.firstPosition)
             .map((r) => { const ch = firstChapter(r.occurrencesByChapter);
@@ -132,11 +136,11 @@ export function cardService(ctx: Ctx) {
 
     counts: (bookId: string) =>
       ctx.uow.run(async (tx) => {
-        const [rows, cards] = await Promise.all([tx.bookLemmas.listByBook(bookId), tx.cards.listByBook(bookId)]);
+        const [book, rows, cards] = await Promise.all([getBook(tx, bookId), tx.bookLemmas.listByBook(bookId), tx.cards.listByBook(bookId)]);
         const withCard = new Set(cards.map((c) => c.lemma));
         return {
-          unlisted: rows.filter((r) => r.kind === 'unlisted' && !r.ignored).length,
-          names: rows.filter((r) => r.kind === 'name').length,
+          unlisted: rows.filter((r) => r.kind === 'unlisted' && !r.ignored && inIncluded(book, r.occurrencesByChapter)).length,
+          names: rows.filter((r) => r.kind === 'name' && inIncluded(book, r.occurrencesByChapter)).length,
           active: cards.filter((c) => c.status === 'active').length,
           known: cards.filter((c) => c.status === 'known').length + rows.filter((r) => r.kind === 'known' && !withCard.has(r.lemma)).length,
           removed: cards.filter((c) => c.status === 'removed').length,

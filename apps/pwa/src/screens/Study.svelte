@@ -5,7 +5,7 @@
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
-  import { announceUnlocks, banner, pct, toast } from '../lib/ui.svelte';
+  import { announceUnlocks, banner, hideToast, pct, toast, ui } from '../lib/ui.svelte';
   import { vibrate } from '../lib/platform';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
@@ -76,11 +76,20 @@
   /** actions run one after another; a quick tap-then-swipe must not lose the swipe */
   let chain: Promise<unknown> = Promise.resolve();
   let pending = $state(0);
-  function enqueue(fn: () => Promise<void>) {
+  function enqueue(fn: () => Promise<void>): Promise<boolean> {
     pending++;
     busy = true;
-    chain = chain.then(fn).catch((e) => toast(e instanceof Error ? e.message : String(e))).finally(() => { if (--pending === 0) busy = false; });
-    return chain;
+    const done = chain.then(fn).then(() => true, (e) => { toast(e instanceof Error ? e.message : String(e)); return false; })
+      .finally(() => { if (--pending === 0) busy = false; });
+    chain = done;
+    return done;
+  }
+
+  /** a new grade or removal replaces what Undo would undo: the old offers go */
+  function supersede() {
+    clearTimeout(undoTimer);
+    undoPill = undefined;
+    if (ui.toast?.action?.run === undo) hideToast();
   }
 
   function run(fn: () => Promise<SessionView>, opts: { newCard?: boolean } = {}) {
@@ -95,7 +104,7 @@
   function useHint(h: string) { if (!used.has(h)) used = new Set([...used, h]); }
 
   function flip() {
-    if (!view?.card || panel) return;
+    if (!view?.card || panel || askFront) return;
     useHint('tap');
     if (review) return continueReview();
     void run(() => (view!.phase === 'wrongReview' ? api.study.continueAfterReview(view!.sessionId) : api.study.flip(view!.sessionId)));
@@ -120,6 +129,7 @@
     return enqueue(async () => {
       if (!view?.card) return;
       const lemma = view.card.lemma;
+      supersede();
       fly = 1;
       vibrate();
       try {
@@ -141,9 +151,12 @@
 
   function grade(dir: 1 | -1) {
     if (!view?.card || panel) return;
+    const aimed = view.card.id;
     return enqueue(async () => {
       // decided on the state after any queued flip has landed
       if (!view?.card) return;
+      // a swipe during the fly-off must not act on the next card the learner has not even seen face up
+      if (view.card.id !== aimed && view.phase === 'front' && !view.seenBack) { dx = 0; return; }
       if (view.phase === 'wrongReview') {
         dx = 0;
         const v = await api.study.continueAfterReview(view.sessionId);
@@ -161,6 +174,7 @@
         if (view.frontSwipe === 'known') { void markKnownFromFront(); return; }
       }
       useHint(dir === 1 ? 'right' : 'left');
+      supersede();
       fly = dir;
       vibrate();
       try {
@@ -225,15 +239,18 @@
     editDef = s.definition ?? '';
   }
   async function saveEdit() {
-    await run(() => api.study.editCurrent(view!.sessionId, { translations: editList, definition: editDef, pos: editPos }));
-    editing = false;
+    // a refused edit keeps the sheet open with what was typed
+    if (await run(() => api.study.editCurrent(view!.sessionId, { translations: editList, definition: editDef, pos: editPos }))) editing = false;
   }
   async function removeAs(as: 'removed' | 'known') {
     editing = false;
     panel = false;
     const lemma = view?.card?.lemma;
-    await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true });
-    toast(as === 'known' ? `“${lemma}” marked as known · won’t be repeated` : `“${lemma}” removed`, { label: 'Undo', run: undo });
+    supersede();
+    if (!(await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true }))) return;
+    const text = as === 'known' ? `“${lemma}” marked as known · won’t be repeated` : `“${lemma}” removed`;
+    // the last card ends the session, and a finished session has nothing to undo
+    toast(text, view?.done ? undefined : { label: 'Undo', run: undo });
   }
   async function finish() {
     panel = false;
@@ -246,8 +263,11 @@
   }
 
   function key(e: KeyboardEvent) {
-    if (editing || !view?.card) return;
-    if ((e.target as HTMLElement).closest('input, textarea')) return;
+    if (editing || askFront || !view?.card) return;
+    const el = e.target as HTMLElement;
+    if (el.closest('input, textarea, select')) return;
+    // Enter and Space on a focused button press that button
+    if ((e.key === 'Enter' || e.key === ' ') && el.closest('button, a, [role="button"]')) return;
     switch (e.key) {
       case ' ': case 'Enter': e.preventDefault(); flip(); break;
       case 'ArrowRight': e.preventDefault(); void grade(1); break;
@@ -359,6 +379,7 @@
       <div class="panel" data-testid="panel">
         <button class="pbtn" onclick={openEdit}>Edit card</button>
         <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">Mark as known</button>
+        {#if view.canUndo && !(settings?.undoAfterGrade ?? true)}<button class="pbtn" onclick={() => { panel = false; undo(); }} data-testid="panel-undo">Undo</button>{/if}
         <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
       </div>
     {/if}

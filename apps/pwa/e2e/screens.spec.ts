@@ -42,7 +42,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByTestId('reader-card').waitFor();
     await page.waitForTimeout(300);
     await shot('reader-card');
-    await page.locator('.sheet-backdrop').click({ position: { x: 10, y: 10 } });
+    await page.touchscreen.tap(10, 10);
     await tap(page.getByRole('button', { name: 'Back to the book' }));
     await tap(page.getByRole('button', { name: 'Back to library' }));
     await shot('library');

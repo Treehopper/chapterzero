@@ -4,7 +4,7 @@
   import { headword, type ChapterProgress, type WordRow, type WordsTab, type WordSuggestion } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
-  import { fmt, toast } from '../lib/ui.svelte';
+  import { dataChanged, fmt, toast } from '../lib/ui.svelte';
   import Sheet from '../components/Sheet.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
 
@@ -30,6 +30,7 @@
   let translation = $state('');
   let suggestion = $state<WordSuggestion>();
   let addError = $state('');
+  let error = $state('');
   let suggestSeq = 0;
   // edit sheet for active cards
   let editingRow = $state<WordRow>();
@@ -61,8 +62,10 @@
     counts = c;
   }
   onMount(async () => {
-    chapters = (await api.books.chapters(bookId)).filter((c) => c.included);
-    await load();
+    try {
+      chapters = (await api.books.chapters(bookId)).filter((c) => c.included);
+      await load();
+    } catch (e) { error = e instanceof Error ? e.message : String(e); }
   });
 
   function setTab(t: WordsTab) {
@@ -103,7 +106,7 @@
   async function ignore(row: WordRow) {
     adding = undefined;
     await api.cards.ignoreUnlisted(bookId, row.lemma, true);
-    toast(`“${row.lemma}” hidden`, { label: 'Undo', run: async () => { await api.cards.ignoreUnlisted(bookId, row.lemma, false); await load(); } });
+    toast(`“${row.lemma}” hidden`, { label: 'Undo', run: async () => { await api.cards.ignoreUnlisted(bookId, row.lemma, false); dataChanged(); await load(); } });
     await load();
   }
 
@@ -112,7 +115,7 @@
     const before = row.card.status;
     await api.cards.setStatus(row.card.id, status);
     const label = status === 'removed' ? 'removed' : status === 'known' ? 'marked as known' : 'restored';
-    toast(`“${row.lemma}” ${label}`, { label: 'Undo', run: async () => { await api.cards.setStatus(row.card!.id, before); await load(); } });
+    toast(`“${row.lemma}” ${label}`, { label: 'Undo', run: async () => { await api.cards.setStatus(row.card!.id, before); dataChanged(); await load(); } });
     editingRow = undefined;
     await load();
   }
@@ -166,6 +169,7 @@
     <h1>Words</h1>
     <button class="iconbtn" aria-label="Add a word" onclick={() => openAdd()} data-testid="add-word">＋</button>
   </header>
+  {#if error}<p class="error">{error}</p>{/if}
   <div class="tabs" role="tablist">
     {#each TABS as t (t.id)}
       <button role="tab" aria-selected={tab === t.id} class:on={tab === t.id} onclick={() => setTab(t.id)}>

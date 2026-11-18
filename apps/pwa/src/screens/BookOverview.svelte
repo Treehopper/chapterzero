@@ -1,6 +1,6 @@
 <script lang="ts">
   /** Book overview: coverage (E1, I2), works and chapters (I1–I6), boxes (E2), streak and goal (E4). */
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
@@ -32,6 +32,7 @@
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   }
   onMount(load);
+  $effect(() => { if (ui.changed) void untrack(load); });
 
   const stateIcon = { ready: '✓', learning: '●', upcoming: '', excluded: '–' } as const;
   const stateLabel = { ready: 'Ready to read', learning: 'Learning', upcoming: 'Upcoming', excluded: 'Not included' } as const;
@@ -80,7 +81,7 @@
           <span class="small eta" data-testid="book-eta"><strong>{duration(p.toReady.minutes)}</strong> of practice until ready to read
             <span class="muted">· {fmt(p.toReady.cards)} words, about {p.toReady.days} {p.toReady.days === 1 ? 'day' : 'days'} at your daily limit</span></span>
         {/if}
-        {#if p.finishedAt}
+        {#if p.ready}
           {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">Ready to read · open ›</button>
           {:else}<span class="pill good">Ready to read</span>{/if}
         {/if}
@@ -90,7 +91,7 @@
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
         {#if active}Continue · {active.progress.done} / {active.progress.total}
-        {:else if p.toReady.cards}Get ready for reading
+        {:else if !p.ready}Get ready for reading
         {:else}Review{p.due ? ` · ${p.due} due` : ''}{/if}</button>
       {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">Read</button>{/if}
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
@@ -139,7 +140,7 @@
   <Sheet label={c.displayTitle} onclose={() => (sheet = undefined)}>
     <div class="stack">
       <h2>{c.displayTitle}</h2>
-      <div class="muted">{stateLabel[c.state]} · {c.included ? `${pct(c.coverage)} of the words known` : 'not included'}{c.unknownEvery ? ` · one unknown in ${c.unknownEvery}` : ''}</div>
+      <div class="muted">{stateLabel[c.state]}{c.included ? ` · ${pct(c.coverage)} of the words known` : ''}{c.unknownEvery ? ` · one unknown in ${c.unknownEvery}` : ''}</div>
       <div class="row counts">
         <div><strong>{c.cards.unseen}</strong><span class="small muted">unseen</span></div>
         <div><strong>{c.cards.learning}</strong><span class="small muted">learning</span></div>

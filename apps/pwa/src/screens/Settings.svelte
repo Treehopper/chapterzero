@@ -53,6 +53,7 @@
       const data = JSON.parse(await f.text()) as BackupV1;
       if (!confirm('Replace all data on this device with the backup?')) return;
       await api.backup.import(data);
+      ui.achievements = (await api.settings.get()).achievementPopups;
       toast('Backup restored');
       go('library');
     } catch (err) { toast(err instanceof Error ? err.message : 'Not a valid backup file'); }

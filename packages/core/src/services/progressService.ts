@@ -39,6 +39,7 @@ export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma
     unlisted: { words: unl.length, occurrences: unl.reduce((n, l) => n + l.occurrences, 0) },
     due: active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) <= now).length,
     finishedAt: book.finishedAt,
+    ready: chapters.some((c) => c.included) && chapters.every((c) => !c.included || c.state === 'ready'),
     toReady: { ...toReady, days },
   };
 }

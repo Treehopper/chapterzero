@@ -17,7 +17,7 @@ test.describe('reader (Epic R)', () => {
     await word.tap();
     await expect(page.getByTestId('reader-card')).toContainText('learning');
     await expect(page.getByTestId('reader-card').getByRole('link', { name: 'Wiktionary ↗' })).toBeVisible();
-    await page.locator('.sheet-backdrop').click({ position: { x: 10, y: 10 } });   // tap outside closes the sheet
+    await page.touchscreen.tap(10, 10);   // tap outside closes the sheet
     await expect(page.getByTestId('reader-card')).toHaveCount(0);
     // another chapter from the contents; a reload comes back to it
     await tap(page.getByTestId('contents'));

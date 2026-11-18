@@ -56,6 +56,12 @@
     }, 400);
   }
   onMount(() => window.addEventListener('scroll', onScroll, { passive: true }));
+
+  // the chapter in the URL changed from outside (the reader's own changes already match)
+  $effect(() => {
+    const asked = chapterParam;
+    if (untrack(() => ch) && asked !== undefined && /^\d+$/.test(asked) && Number(asked) !== untrack(() => ch!.index)) void show(Number(asked));
+  });
   onDestroy(() => { window.removeEventListener('scroll', onScroll); clearTimeout(timer); });
 
   function tapWord(e: MouseEvent) {
@@ -117,7 +123,7 @@
     padding: calc(var(--safe-top) + 4px) 8px 4px; border-bottom: 1px solid var(--line); }
   .bar .t { font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .text { font-family: var(--serif); font-size: 19px; line-height: 1.6; overflow-wrap: break-word; hyphens: auto; }
-  .text p { margin: 0 0 0.9em; }
+  .text p { margin: 0 0 0.9em; scroll-margin-top: 64px; }  /* below the sticky bar */
   .text .note { font-size: 15px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
   .w { cursor: pointer; }
   .w.active { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);

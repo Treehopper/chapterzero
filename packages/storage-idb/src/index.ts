@@ -259,7 +259,10 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
         const ids = new Set(b.books.map((x) => x.id));
         const texts = (await o.bookTexts.query(() => db.bookTexts.toArray(), () => true)).filter((t) => ids.has(t.bookId));
         const positions = (await o.positions.query(() => db.readingPositions.toArray(), () => true)).filter((p) => ids.has(p.bookId));
+        // the installed word lists belong to the device, not to the backup
+        const packs = await o.meta.get('packs');
         for (const ov of Object.values(o)) ov.clear();
+        if (packs) o.meta.put([packs]);
         o.bookTexts.put(texts);
         o.positions.put(positions);
         o.books.put(b.books);

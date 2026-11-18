@@ -205,6 +205,8 @@ export interface BookProgress {
   unlisted: { words: number; occurrences: number };
   due: number;
   finishedAt?: string;
+  /** every included chapter ready now, however it got there (finishedAt is set once, by study, G2) */
+  ready: boolean;
   /** practice until every included chapter is ready (E7); days: at the daily new-card limit, plus a day for the last ones' second review */
   toReady: ToReady & { days: number };
 }

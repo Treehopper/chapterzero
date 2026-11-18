@@ -6,7 +6,9 @@ export interface Banner { id: number; kind: 'achievement' | 'chapter'; title: st
 
 let nextId = 1;
 /** achievements: Settings › Achievements and streaks (loaded at boot, kept in step by the Settings screen) */
-export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean }>({ banners: [], online: navigator.onLine, achievements: true });
+export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean; changed: number }>({ banners: [], online: navigator.onLine, achievements: true, changed: 0 });
+/** a toast's Undo can land after its screen is gone: whatever is on screen reloads */
+export const dataChanged = () => { ui.changed++; };
 
 window.addEventListener('online', () => (ui.online = true));
 window.addEventListener('offline', () => (ui.online = false));

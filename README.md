@@ -92,7 +92,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session. | Must |
-| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card*, *Mark as known* and *Cancel session*. | Must |
+| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card*, *Mark as known* and *Cancel session* (plus *Undo* when the undo button after swiping is turned off). | Must |
 | C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. *Mark as known* sits directly in the pull-up panel. | Must |
 | C14 | As a learner, I want *Cancel session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
