@@ -19,6 +19,7 @@
   let search = $state('');
   let names = $state(false);
   let rows = $state<WordRow[]>([]);
+  let loading = $state(true);
   let counts = $state<Record<string, number>>({});
   let chapters = $state<ChapterProgress[]>([]);
   let limit = $state(100);
@@ -37,18 +38,24 @@
   // lists per query, so switching back to a tab shows it at once; a change to the words clears them
   const cache = new Map<string, WordRow[]>();
   let seq = 0;
+  /** bumped by every change: a list fetched before it must not land in the cleared cache */
+  let generation = 0;
   async function show() {
     const query = { tab, search, chapterIndex, includeNames: names };
     const key = JSON.stringify(query);
     const hit = cache.get(key);
-    if (hit) { rows = hit; return; }
+    if (hit) { rows = hit; loading = false; return; }
     const mine = ++seq;
+    rows = [];                     // never show the previous tab's words under this tab
+    loading = true;
+    const gen = generation;
     const r = await api.cards.words(bookId, query);
-    cache.set(key, r);
-    if (mine === seq) rows = r;
+    if (gen === generation) cache.set(key, r);
+    if (mine === seq) { rows = r; loading = false; }
   }
   /** after a change to the words: counts and lists are stale */
   async function load() {
+    generation++;
     cache.clear();
     const [, c] = await Promise.all([show(), api.cards.counts(bookId)]);
     counts = c;
@@ -190,11 +197,11 @@
         </span>
       </button>
     {:else}
-      <div class="list-row muted">Nothing here.</div>
+      {#if !loading}<div class="list-row muted">Nothing here.</div>{/if}
     {/each}
   </div>
   {#if rows.length > limit}<button class="btn block more" onclick={() => (limit += 200)}>Show more ({fmt(rows.length - limit)})</button>{/if}
-  <p class="small muted">Swipe a row left to {tab === 'unlisted' ? 'hide it' : 'remove the card'}.</p>
+  {#if tab === 'active' || tab === 'unlisted'}<p class="small muted">Swipe a row left to {tab === 'unlisted' ? 'hide it' : 'remove the card'}.</p>{/if}
 </main>
 
 {#if adding}
