@@ -31,7 +31,6 @@
   }
   onMount(load);
 
-  const bar = (c: number) => Math.max(0, Math.min(1, (c - 0.9) / 0.1)) * 100; // bars scaled 90–100 %
   const stateIcon = { ready: '✓', learning: '●', upcoming: '', excluded: '–' } as const;
   const stateLabel = { ready: 'Ready to read', learning: 'Learning', upcoming: 'Upcoming', excluded: 'Not included' } as const;
   /** works with several chapters get a collapsible heading; single-chapter works are plain rows */
@@ -96,18 +95,18 @@
             <button class="list-row ch {c.state}" onclick={() => (sheet = c)} data-testid="chapter-row">
               <span class="icon" aria-hidden="true">{stateIcon[c.state]}</span>
               <span class="stack grow">
-                <span class="row"><span class="spacer name">{g.work ? c.title : c.displayTitle}</span><span class="num">{c.included ? pct(c.coverage) : ''}</span></span>
+                <span class="row"><span class="spacer name">{g.work ? c.title : c.displayTitle}</span><span class="num" data-testid="chapter-to-target">{c.included ? `${pct(c.toTarget, 0)} to target` : ''}</span></span>
                 {#if c.included}
-                  <span class="cbar" aria-hidden="true"><span style:width="{bar(c.coverage)}%"></span><i style:left="{bar(p.coverageTarget)}%"></i></span>
+                  <span class="cbar" aria-hidden="true"><span style:width="{c.toTarget * 100}%"></span></span>
                 {/if}
-                <span class="small muted">{stateLabel[c.state]}{#if c.state === 'learning'} · {c.cards.unseen} new{/if}{#if c.included && c.unlisted.words} · {c.unlisted.words} not in lists{/if}</span>
+                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}{#if c.included && c.unlisted.words}{' · '}{c.unlisted.words} not in lists{/if}</span>
               </span>
             </button>
           {/each}
         </div>
       {/if}
     {/each}
-    <p class="small muted">Bars show 90–100 %; the mark is your {pct(p.coverageTarget, 0)} target. Coverage is estimated: words not in the lists count as known.</p>
+    <p class="small muted" data-testid="bars-note">Bars show how far each chapter is on the way to your {pct(p.coverageTarget)} target: full = ready to read. “Known” is the estimated share of the chapter's words you know; words not in the lists count as known.</p>
 
     <div class="section-title">Boxes</div>
     <Boxes boxes={p.boxes} />
@@ -190,7 +189,6 @@
   .cbar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); display: block; }
   .cbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); }
   .ready .cbar span { background: var(--good); }
-  .cbar i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); }
   .counts { justify-content: space-around; text-align: center; }
   .counts div { display: flex; flex-direction: column; font-size: 22px; }
   .flame { font-size: 20px; }

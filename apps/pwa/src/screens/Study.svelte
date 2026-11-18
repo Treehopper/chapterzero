@@ -141,7 +141,7 @@
         const [v] = await Promise.all([api.study.grade(view.sessionId, dir === 1 ? 'known' : 'unknown'), new Promise((r) => setTimeout(r, 260))]);
         if (v.phase !== 'wrongReview') cardKey++;
         view = v;
-        if (v.canUndo) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
+        if (v.canUndo && (settings?.undoAfterGrade ?? true)) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
         await afterView(v);
       } finally {
         dx = 0;
@@ -294,7 +294,7 @@
             <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
             {#if review}
               <div class="foot small muted">tap or swipe to continue</div>
-            {:else}
+            {:else if settings?.showBoxLevel}
               <div class="dots" aria-label="Box {card.box} of 8" data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">{card.box ? `box ${card.box}/8` : 'new'}</span></div>
             {/if}
           {/snippet}

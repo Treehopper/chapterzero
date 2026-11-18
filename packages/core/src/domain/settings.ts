@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS: Settings = {
   requireFlipBeforeGrade: true,
   gestureHints: 'everySession',
   achievementPopups: true,
+  undoAfterGrade: true,
+  showBoxLevel: false,
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,
 };

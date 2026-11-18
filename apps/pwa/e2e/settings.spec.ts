@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { firstRun, importAndOpen, tap } from './helpers';
+import { firstRun, importAndOpen, startStudy, swipeRight, tap, tapCard } from './helpers';
 
 test('lookup links: reorder, toggle, custom https only (C17)', async ({ page }) => {
   await firstRun(page);
@@ -55,4 +55,20 @@ test('achievements screen lists locked tiers with progress (G5)', async ({ page 
   await tap(page.getByRole('button', { name: 'Achievements' }));
   await expect(page.getByTestId('achievement')).toHaveCount(4);
   await expect(page.getByTestId('achievement').first()).toContainText('0 / 5');
+});
+
+test('settings: undo button after swiping off, box level on (C6)', async ({ page }) => {
+  await firstRun(page);
+  await tap(page.getByRole('button', { name: 'Settings' }));
+  await page.getByTestId('set-undo').tap();
+  await page.getByTestId('set-boxlevel').tap();
+  await tap(page.getByRole('button', { name: 'Back', exact: true }));
+  await importAndOpen(page);
+  await startStudy(page);
+  await tapCard(page);
+  await expect(page.getByTestId('box-dots')).toHaveText('new');
+  await expect(page.getByTestId('box-dots').locator('i')).toHaveCount(8);
+  await swipeRight(page);
+  await expect(page.getByTestId('card-word')).toBeVisible();
+  await expect(page.getByTestId('undo')).toHaveCount(0);
 });

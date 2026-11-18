@@ -700,6 +700,8 @@ interface Settings {
                                     // a card flipped once and turned back counts as flipped (session.current.seenBack)
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;       // true
+  undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (Undo stays in the swipe-up panel)
+  showBoxLevel: boolean;            // false; box dots on the card back
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }
@@ -1127,17 +1129,16 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 │  ◔ 96.8 % · one unknown in 31   │  estimated coverage
 │                                 │
 │  ▾ Death or Glory               │
-│  ✓ One       ▓▓▓▓▓▓▓▓│ 98.6 %   │  Ready to read
-│  ✓ Two       ▓▓▓▓▓▓▓▓│ 98.1 %   │  Ready to read
-│  ● Three     ▓▓▓▓▓▓░░│ 96.1 %   │  Learning · 23 new · 14 not in lists
-│    Four      ▓▓▓▓▓░░░│ 95.2 %   │  Upcoming
+│  ✓ One       ▓▓▓▓▓▓▓▓ 100 % to target │  Ready to read · 98.6 % known
+│  ✓ Two       ▓▓▓▓▓▓▓▓ 100 % to target │  Ready to read · 98.1 % known
+│  ● Three     ▓▓▓▓▓░░░  64 % to target │  Learning · 96.1 % known · 23 new · 14 not in lists
+│    Four      ▓▓▓░░░░░  41 % to target │  Upcoming · 95.2 % known
 │  ▸ Duty Calls                   │
-│                      ▲ 98 % mark│
 │  [        Study now         ]   │
 └─────────────────────────────────┘
 ```
 
-Bars are scaled from 90 % to 100 %, so the differences that matter are visible. Tapping a chapter opens a sheet with its card counts (unseen / learning / learned), its words not in the lists (link), and *Study this chapter* (I4).
+Each bar (and its number) shows how far the chapter is on the way to the coverage target: 0 % = the chapter's coverage if none of its active cards were known, full = target reached (ready to read) — `ChapterProgress.toTarget`. The estimated coverage itself is in the line below ("96.1 % known"). Tapping a chapter opens a sheet with its card counts (unseen / learning / learned), its words not in the lists (link), and *Study this chapter* (I4).
 
 **Study (full screen, C10–C14)**
 
@@ -1158,9 +1159,9 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 └───────────────────┘   └───────────────────┘   └─┴───────────────┴─┘
 ```
 
-- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots (eight outlined dots, one filled per level, labelled "box n/8" or "new").
+- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech; optionally (`showBoxLevel`) box dots: eight outlined dots, one filled per level, labelled "box n/8" or "new".
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
-- **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6); after a first-sight retirement it reads "Already known · Undo" (C18).
+- **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6; can be turned off in Settings, Undo stays in the swipe-up panel); after a first-sight retirement it reads "Already known · Undo" (C18).
 - **Lookup links (C16)** → every back side ends with the link row. A wrong swipe on the front (only with *Flip before grading* off) swings the card back, showing its back side with a red edge:
 
 ```

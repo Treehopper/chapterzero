@@ -122,6 +122,8 @@ export interface ChapterProgress {
   index: number; workIndex: number; title: string; displayTitle: string;
   included: boolean; wordTokens: number;
   coverage: number;
+  /** 0–1 of the way from "no card of this chapter known" to the coverage target; 1 = ready */
+  toTarget: number;
   unknownEvery: number | null;
   state: 'ready' | 'learning' | 'upcoming' | 'excluded';
   cards: { unseen: number; learning: number; learned: number };
@@ -285,6 +287,10 @@ export interface Settings {
   requireFlipBeforeGrade: boolean;
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;
+  /** the Undo pill after a swipe grade; Undo stays in the swipe-up panel */
+  undoAfterGrade: boolean;
+  /** the box dots on the card back */
+  showBoxLevel: boolean;
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }

@@ -21,6 +21,15 @@ export function bookCoverage(chapters: Chapter[], cards: Card[]): number {
   return Math.max(0, 1 - unknown / tokens);
 }
 
+/** How far a chapter is from its floor (every active card unknown) to the target, 0–1. */
+export function chapterToTarget(ch: Pick<Chapter, 'index' | 'wordTokens'>, cards: Card[], target: number): number {
+  if (ch.wordTokens === 0) return 1;
+  const all = cards.filter((c) => c.status === 'active').reduce((n, c) => n + (c.occurrencesByChapter[ch.index] ?? 0), 0);
+  const floor = Math.max(0, 1 - all / ch.wordTokens);
+  if (floor >= target) return 1;
+  return Math.max(0, Math.min(1, (chapterCoverage(ch, cards) - floor) / (target - floor)));
+}
+
 export const unknownEvery = (coverage: number): number | null => (coverage >= 1 ? null : Math.round(1 / (1 - coverage)));
 
 export function displayTitle(book: Pick<Book, 'works'>, ch: Pick<Chapter, 'workIndex' | 'title'>): string {
@@ -44,7 +53,7 @@ export function chapterProgress(book: Book, cards: Card[], lemmas: BookLemma[], 
     else state = 'upcoming';
     return {
       index: ch.index, workIndex: ch.workIndex, title: ch.title, displayTitle: displayTitle(book, ch),
-      included: ch.included, wordTokens: ch.wordTokens, coverage, unknownEvery: unknownEvery(coverage), state,
+      included: ch.included, wordTokens: ch.wordTokens, coverage, toTarget: coverage >= target - 1e-12 ? 1 : chapterToTarget(ch, cards, target), unknownEvery: unknownEvery(coverage), state,
       cards: {
         unseen: mine.filter(isUnseen).length,
         learning: mine.filter((c) => !isUnseen(c) && c.level < 2).length,

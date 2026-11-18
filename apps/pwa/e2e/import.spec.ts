@@ -56,6 +56,10 @@ test.describe('import (B1–B15, B7)', () => {
     await expect(page.getByTestId('book-coverage')).toBeVisible();
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Not included' })).toHaveCount(5);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Learning' })).toHaveCount(1);
+    const learning = page.getByTestId('chapter-row').filter({ hasText: 'Learning' });
+    await expect(learning).toContainText(/\d+\.\d % known/);            // coverage in the line, bar + number = way to the target
+    await expect(learning.getByTestId('chapter-to-target')).toHaveText(/^\d+ % to target$/);
+    await expect(page.getByTestId('bars-note')).toContainText('full = ready to read');
   });
 
   test('cancelling the preview discards the draft; library tile after import', async ({ page }) => {

@@ -154,7 +154,7 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
     expect(americanVariants('centres')).toEqual(['centers']);
     expect(americanVariants('travelled')).toEqual(['traveled']);
     expect(americanVariants('rise')).toEqual([]);
-    const entry = (lemma: string, rank: number) => ({ lemma, rank, pos: ['verb'], de: ['x'] });
+    const entry = (lemma: string, rank: number) => ({ lemma, rank, pos: ['verb'], de: ['x'], deFreedict: [], cognate: false });
     const wl = new MemoryWordList([entry('realize', 3000), entry('materialize', 9000), entry('promise', 900)],
       [['realizing', 'realize'], ['realized', 'realize'], ['materialized', 'materialize']]);
     const r = await analyseContent(buildContent({ sections: [[

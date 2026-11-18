@@ -7,6 +7,7 @@ import { lookupLinks, isValidTemplate, DEFAULT_LOOKUP_PROVIDERS } from '../domai
 import { headword, resolveCardContent } from '../domain/cardContent.ts';
 import { nearestLevels } from '../services/calibrationService.ts';
 import { EMPTY_STATS } from '../domain/settings.ts';
+import { chapterToTarget } from '../domain/coverage.ts';
 import { SeededRandom } from '../testing/memory.ts';
 import type { Card } from '../domain/types.ts';
 
@@ -55,6 +56,17 @@ const card = (over: Partial<Card> = {}): Card => ({
   id: 'b:x', bookId: 'b', lemma: 'x', forms: [], occurrences: 1, occurrencesByChapter: { 0: 1 }, firstPosition: 0, chapterIndex: 0,
   translations: ['x'], pos: [], translationSource: 'list', origin: 'import', status: 'active', level: 0,
   stats: { correct: 0, wrong: 0, failStreak: 0 }, ...over,
+});
+
+describe('chapter bars (I2)', () => {
+  const ch = { index: 0, wordTokens: 100 };
+  const two = (l1: number, l2: number) => [card({ occurrencesByChapter: { 0: 5 }, level: l1 }), card({ id: 'b:y', occurrencesByChapter: { 0: 5 }, level: l2 })];
+  it('runs from "no card known" (0) to the coverage target (1)', () => {
+    expect(chapterToTarget(ch, two(0, 0), 0.98)).toBe(0);                // 90 % = floor
+    expect(chapterToTarget(ch, two(2, 0), 0.98)).toBeCloseTo(0.625);     // 95 % of the way 90 → 98
+    expect(chapterToTarget(ch, two(2, 2), 0.98)).toBe(1);
+    expect(chapterToTarget(ch, [card({ occurrencesByChapter: { 0: 1 } })], 0.98)).toBe(1); // floor 99 % ≥ target
+  });
 });
 
 describe('scheduler (§7.2)', () => {

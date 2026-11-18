@@ -95,6 +95,12 @@
         <input type="checkbox" checked={s.gestureHints === 'everySession'} onchange={(e) => save({ gestureHints: e.currentTarget.checked ? 'everySession' : 'off' })} /></label>
       <label class="list-row"><span class="spacer">Achievement pop-ups</span>
         <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
+      <label class="list-row"><span class="spacer">Undo button after swiping
+        <span class="small muted block">Undo stays in the swipe-up panel</span></span>
+        <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
+      <label class="list-row"><span class="spacer">Box level on the card back
+        <span class="small muted block">Dots: how many times in a row you knew the card</span></span>
+        <input type="checkbox" checked={s.showBoxLevel} onchange={(e) => save({ showBoxLevel: e.currentTarget.checked })} data-testid="set-boxlevel" /></label>
     </div>
 
     <div class="section-title">Word selection (new imports and re-filtering)</div>
