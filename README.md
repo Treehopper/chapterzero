@@ -151,7 +151,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | D3 | As a learner, I want to remove (hide) any card so it never shows up again. | Must |
 | D4 | As a learner, I want to restore removed cards. | Should |
 | D5 | As a learner, I want to edit the translation of an existing card. | Should |
-| D6 | As a learner, I want to search and filter the word screen (not in the lists / active / known / removed / skipped). | Should |
+| D6 | As a learner, I want to search and filter the word screen (tabs active / known / removed / skipped / not in the lists; opens on *Active*; a tab once loaded is kept until a word changes, and switching tabs only updates the URL, not the screen). | Should |
 | D7 | As a learner, I want to mark a word as "already known" so it's removed here and in future books. | Should |
 | D8 | As a learner, I want to add **any word** as a card by typing it, even one the app skipped as too easy or one that isn't in the book. | Must |
 | D9 | As a learner, I want lookup links in the add sheet, so I can find a translation without leaving the flow. | Should |
@@ -227,11 +227,11 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 | I3 | As a learner, I want a chapter marked "ready to read" at 98 % coverage, and new words then taken from the next chapter. | Must |
 | I4 | As a learner, I want to pick a chapter myself and study its words, including ones left over after it became ready. | Must |
 | I5 | As a learner, I want to change the coverage target (95–100 %). | Should |
-| I6 | As a learner, I want to see per chapter how many words are not in the lists, so I know what coverage doesn't include. | Must |
+| I6 | As a learner, I want to find the words that are not in the lists (per chapter) on the Words screen, without them crowding the book overview. | Should |
 
 **Acceptance criteria (I1–I6)**
 - Coverage of a chapter = 1 − (occurrences of unknown cards ÷ running words of that chapter). A card is **unknown** while it is active with level < 2. Everything else counts as known.
-- Words that are not in the lists are **not** part of coverage. Each chapter shows them separately ("14 words not in the lists"), linking to the word screen filtered to that chapter. Once such a word is added by hand, it counts.
+- Words that are not in the lists are **not** part of coverage. They are not shown on the book overview, the chapter sheet or the session statistics; the *Not in lists* tab of the Words screen (last tab, chapter filter) lists them. Once such a word is added by hand, it counts.
 - Coverage is always labelled "estimated".
 - Chapter states: *Ready* (coverage ≥ target), *Learning* (the chapter new cards currently come from), *Upcoming*.
 - New cards come from the first included chapter that isn't ready, in order of first occurrence in that chapter. That includes words first seen in earlier chapters that are still unlearned. Due reviews always come first, whatever their chapter.
@@ -1067,7 +1067,7 @@ First run:  Install guide ──► Word-list download ──► Vocabulary chec
 Library ──► Import preview ──► Book overview ──► Study (full screen) ──► Statistics (full screen)
    │                                │                  │
    │                                │                  └──► Edit card sheet ──► back to Study
-   │                                └──► Words (not in the lists / active / known / removed / skipped)
+   │                                └──► Words (active / known / removed / skipped / not in the lists)
    │                                          └──► Add word sheet
    ├──► Achievements
    └──► Settings (word lists, vocabulary level, daily limits, coverage target, first-try
@@ -1138,7 +1138,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 └─────────────────────────────────┘
 ```
 
-Each bar (and its number) shows how far the chapter is on the way to the coverage target: 0 % = the chapter's coverage if none of its active cards were known, full = target reached (ready to read) — `ChapterProgress.toTarget`. The estimated coverage itself is in the line below ("96.1 % known"). Tapping a chapter opens a sheet with its card counts (unseen / learning / learned), its words not in the lists (link), and *Study this chapter* (I4).
+Each bar (and its number) shows how far the chapter is on the way to the coverage target: 0 % = the chapter's coverage if none of its active cards were known, full = target reached (ready to read) — `ChapterProgress.toTarget`. The estimated coverage itself is in the line below ("96.1 % known"). Tapping a chapter opens a sheet with its card counts (unseen / learning / learned) and *Study this chapter* (I4).
 
 **Study (full screen, C10–C14)**
 
@@ -1211,7 +1211,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 
 **Statistics (full screen, C14)** — scrollable, three sections:
 1. *This session*: big first-try accuracy ring, cards reviewed, "8 cards moved up a box" (animated), cards removed, time spent. If cards were retired at first sight: "14 words you already knew were removed".
-2. *Overall*: coverage of the current chapter and of the book with the change from this session ("Death or Glory · Three: 96.1 % → 97.0 %"), cards per box, words not in the lists (link), streak flame and daily goal ring, words learned across all books.
+2. *Overall*: coverage of the current chapter and of the book with the change from this session ("Death or Glory · Three: 96.1 % → 97.0 %"), cards per box, streak flame and daily goal ring, words learned across all books.
 3. *Achievements unlocked* (G6): medals earned this session, revealed one by one; gold tiers get confetti.
 
 Buttons at the bottom: *Study more* and *Done* (back to Book overview). Milestone celebrations (E5) play here, not during study.

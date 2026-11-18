@@ -177,7 +177,7 @@ test.describe('study (C1–C18)', () => {
     await tap(page.getByTestId('end-session'));
     await tap(page.getByTestId('done'));
     await tap(page.getByRole('button', { name: 'Words', exact: true }));
-    await expect(page.getByRole('tab', { name: /Not in lists/ })).toHaveAttribute('aria-selected', 'true');
+    await tap(page.getByRole('tab', { name: /Not in lists/ }));
     await expect(page.locator(`[data-word="${w}"]`)).toBeVisible();
   });
 

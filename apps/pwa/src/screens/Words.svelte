@@ -10,11 +10,11 @@
 
   let { bookId, tab: tabParam, chapter: chapterParam }: { bookId: string; tab?: string; chapter?: string } = $props();
   const TABS: { id: WordsTab; label: string }[] = [
-    { id: 'unlisted', label: 'Not in lists' }, { id: 'active', label: 'Active' }, { id: 'known', label: 'Known' },
-    { id: 'removed', label: 'Removed' }, { id: 'skipped', label: 'Skipped' },
+    { id: 'active', label: 'Active' }, { id: 'known', label: 'Known' }, { id: 'removed', label: 'Removed' },
+    { id: 'skipped', label: 'Skipped' }, { id: 'unlisted', label: 'Not in lists' },
   ];
   // the screen is re-created per route, so the initial props are all it needs
-  let tab = $state<WordsTab>(untrack(() => TABS.find((t) => t.id === tabParam)?.id ?? 'unlisted'));
+  let tab = $state<WordsTab>(untrack(() => TABS.find((t) => t.id === tabParam)?.id ?? 'active'));
   let chapterIndex = $state<number | undefined>(untrack(() => (chapterParam ? Number(chapterParam) : undefined)));
   let search = $state('');
   let names = $state(false);
@@ -34,12 +34,24 @@
   let editingRow = $state<WordRow>();
   let editText = $state('');
 
+  // lists per query, so switching back to a tab shows it at once; a change to the words clears them
+  const cache = new Map<string, WordRow[]>();
+  let seq = 0;
+  async function show() {
+    const query = { tab, search, chapterIndex, includeNames: names };
+    const key = JSON.stringify(query);
+    const hit = cache.get(key);
+    if (hit) { rows = hit; return; }
+    const mine = ++seq;
+    const r = await api.cards.words(bookId, query);
+    cache.set(key, r);
+    if (mine === seq) rows = r;
+  }
+  /** after a change to the words: counts and lists are stale */
   async function load() {
-    const [r, c] = await Promise.all([
-      api.cards.words(bookId, { tab, search, chapterIndex, includeNames: names }),
-      api.cards.counts(bookId),
-    ]);
-    rows = r; counts = c;
+    cache.clear();
+    const [, c] = await Promise.all([show(), api.cards.counts(bookId)]);
+    counts = c;
   }
   onMount(async () => {
     chapters = (await api.books.chapters(bookId)).filter((c) => c.included);
@@ -49,7 +61,7 @@
   function setTab(t: WordsTab) {
     tab = t; limit = 100;
     replace('words', bookId, t, ...(chapterIndex !== undefined ? [String(chapterIndex)] : []));
-    void load();
+    void show();
   }
 
   async function suggest(text: string) {
@@ -155,14 +167,14 @@
     {/each}
   </div>
   <div class="row filters">
-    <input type="search" placeholder="Search" bind:value={search} oninput={() => load()} aria-label="Search words" />
-    <select bind:value={chapterIndex} onchange={() => load()} aria-label="Chapter">
+    <input type="search" placeholder="Search" bind:value={search} oninput={() => show()} aria-label="Search words" />
+    <select bind:value={chapterIndex} onchange={() => show()} aria-label="Chapter">
       <option value={undefined}>All chapters</option>
       {#each chapters as c (c.index)}<option value={c.index}>{c.displayTitle}</option>{/each}
     </select>
   </div>
   {#if tab === 'unlisted'}
-    <label class="row small names"><input type="checkbox" bind:checked={names} onchange={() => load()} /> Show names ({fmt(counts.names ?? 0)})</label>
+    <label class="row small names"><input type="checkbox" bind:checked={names} onchange={() => show()} /> Show names ({fmt(counts.names ?? 0)})</label>
   {/if}
 
   <div class="list" data-testid="word-list">

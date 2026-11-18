@@ -9,7 +9,21 @@ test.describe('words (Epic D)', () => {
     await expect(page.getByRole('heading', { name: 'Words' })).toBeVisible();
   });
 
+  test('opens on Active; tabs switch without rebuilding the screen (D1)', async ({ page }) => {
+    const tabs = page.getByRole('tab');
+    await expect(tabs.first()).toHaveText(/^Active/);
+    await expect(tabs.last()).toHaveText(/^Not in lists/);
+    await expect(page.getByRole('tab', { name: /Active/ })).toHaveAttribute('aria-selected', 'true');
+    await page.getByLabel('Search words').fill('e');
+    await tap(page.getByRole('tab', { name: /Known/ }));
+    await expect(page).toHaveURL(/#\/words\/[^/]+\/known/);
+    await expect(page.getByLabel('Search words')).toHaveValue('e');      // same screen, not re-created
+    await tap(page.getByRole('tab', { name: /Active/ }));
+    await expect(page.getByTestId('word-row').first()).toBeVisible();
+  });
+
   test('not in the lists: sorted by frequency, names hidden, ignore with undo (D1)', async ({ page }) => {
+    await tap(page.getByRole('tab', { name: /Not in lists/ }));
     const rows = page.getByTestId('word-row');
     await expect(rows.first()).toBeVisible();
     const counts = (await rows.allInnerTexts()).map((t) => Number(t.match(/×(\d+)/)?.[1] ?? 0));

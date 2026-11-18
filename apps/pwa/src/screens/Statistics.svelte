@@ -58,9 +58,6 @@
       {/if}
       <div class="row"><span class="spacer">{s.book.title}</span><strong>{pct(s.coverage.book.before)} → {pct(s.coverage.book.after)}</strong></div>
       <div class="small muted">estimated coverage{s.book.unknownEvery ? ` · one unknown word every ${s.book.unknownEvery}` : ''}</div>
-      {#if s.book.unlisted.words}
-        <button class="linkbtn left" onclick={() => go('words', s!.bookId, 'unlisted')}>{fmt(s.book.unlisted.words)} words not in the lists (not counted)</button>
-      {/if}
     </div>
     <div class="section-title">Boxes</div>
     <Boxes boxes={s.book.boxes} moved={s.session.promoted} />

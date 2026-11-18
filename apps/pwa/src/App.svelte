@@ -51,7 +51,8 @@
 {#if fatal}
   <main class="screen"><h1>Something went wrong</h1><p class="error">{fatal}</p><button class="btn" onclick={() => location.reload()}>Reload</button></main>
 {:else if booted}
-  {#key router.route.name + '/' + router.route.params.join('/')}
+  <!-- Words keeps itself across tab and chapter changes (only the URL is updated) -->
+  {#key router.route.name === 'words' ? `words/${router.route.params[0]}` : router.route.name + '/' + router.route.params.join('/')}
     {#if router.route.name === 'install'}<InstallGuide />
     {:else if router.route.name === 'download'}<Download />
     {:else if router.route.name === 'check'}<Check />

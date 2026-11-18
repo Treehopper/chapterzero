@@ -75,7 +75,6 @@
         <strong data-testid="book-coverage">{p.unknownEvery ? `about one unknown word every ${p.unknownEvery} words` : 'no unknown words left'}</strong>
         <span class="small muted">You know {fmt(p.rareWordsKnown)} of this book's {fmt(p.rareWordsTotal)} rare words.</span>
         {#if p.finishedAt}<span class="pill good">Ready to read</span>{/if}
-        {#if p.unlisted.words}<button class="linkbtn small left" onclick={() => go('words', bookId, 'unlisted')}>{fmt(p.unlisted.words)} words not in the lists (not counted)</button>{/if}
       </div>
     </section>
 
@@ -99,7 +98,7 @@
                 {#if c.included}
                   <span class="cbar" aria-hidden="true"><span style:width="{c.toTarget * 100}%"></span></span>
                 {/if}
-                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}{#if c.included && c.unlisted.words}{' · '}{c.unlisted.words} not in lists{/if}</span>
+                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}</span>
               </span>
             </button>
           {/each}
@@ -134,9 +133,6 @@
         <div><strong>{c.cards.learned}</strong><span class="small muted">learned</span></div>
       </div>
       <p class="small muted">100 % = all {c.cards.unseen + c.cards.learning + c.cards.learned} cards learned.</p>
-      {#if c.unlisted.words}
-        <button class="linkbtn small left" onclick={() => go('words', bookId, 'unlisted', String(c.index))} data-testid="chapter-unlisted">{c.unlisted.words} words not in the lists (not counted, nothing to do)</button>
-      {/if}
       {#if c.included}
         {@const same = active?.chapterIndex === c.index}
         <button class="btn primary" data-testid="study-chapter"
