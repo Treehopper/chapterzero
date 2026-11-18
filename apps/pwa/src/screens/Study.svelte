@@ -197,6 +197,14 @@
     panel = false;
     editing = true;
   }
+  /** the card back lists the translations in this order */
+  function moveTranslation(i: number, d: -1 | 1) {
+    const j = i + d;
+    if (j < 0 || j >= editList.length) return;
+    const next = [...editList];
+    [next[i], next[j]] = [next[j], next[i]];
+    editList = next;
+  }
   /** take the lists' translations and definition for that part of speech */
   function pickSense(s: SenseOption) {
     editPos = s.pos;
@@ -374,6 +382,10 @@
       {#each editList as _, i (i)}
         <div class="row">
           <input type="text" bind:value={editList[i]} aria-label="Translation {i + 1}" />
+          {#if editList.length > 1}
+            <button class="iconbtn" aria-label="Move translation {i + 1} up" disabled={i === 0} onclick={() => moveTranslation(i, -1)}>↑</button>
+            <button class="iconbtn" aria-label="Move translation {i + 1} down" disabled={i === editList.length - 1} onclick={() => moveTranslation(i, 1)}>↓</button>
+          {/if}
           <button class="iconbtn" aria-label="Remove translation" onclick={() => (editList = editList.filter((__, j) => j !== i))}>×</button>
         </div>
       {/each}

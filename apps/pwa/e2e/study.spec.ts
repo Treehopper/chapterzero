@@ -147,25 +147,30 @@ test.describe('study (C1–C18)', () => {
     await expectPhase(page, 'back');
     await swipeUp(page);
     await tap(page.getByRole('button', { name: 'Edit card' }));
-    await page.getByLabel('Translation 1').fill('meine Übersetzung');
+    await page.getByLabel('Translation 1', { exact: true }).fill('meine Übersetzung');
     await tap(page.getByTestId('save-edit'));
     await expectCard(page, w, 'back');
     await expect(back(page)).toContainText('meine Übersetzung');
   });
 
-  test('edit card: pick another part of speech, edit the definition (C13)', async ({ page }) => {
+  test('edit card: pick another part of speech, edit the definition, reorder translations (C13)', async ({ page }) => {
     expect(await cardWord(page)).toBe('moor');      // noun and verb in the lists
     await tapCard(page);
     await tap(page.getByTestId('grab'));             // the handle opens the panel too
     await tap(page.getByRole('button', { name: 'Edit card' }));
     await expect(page.getByTestId('sense-noun')).toHaveAttribute('aria-checked', 'true');
     await tap(page.getByTestId('sense-verb'));
-    await expect(page.getByLabel('Translation 1')).toHaveValue('anlegen');
+    await expect(page.getByLabel('Translation 1', { exact: true })).toHaveValue('anlegen');
     await expect(page.getByTestId('edit-definition')).toHaveValue(/cast anchor/);
     await page.getByTestId('edit-definition').fill('To tie up a boat.');
+    // reorder: the back lists the translations in this order
+    await expect(page.getByRole('button', { name: 'Move translation 1 up' })).toBeDisabled();
+    await tap(page.getByRole('button', { name: 'Move translation 3 up' }));
+    await tap(page.getByRole('button', { name: 'Move translation 2 up' }));
+    await expect(page.getByLabel('Translation 1', { exact: true })).toHaveValue('vertäuen');
     await tap(page.getByTestId('save-edit'));
     await expect(page.getByTestId('card-word')).toHaveText('to moor');
-    await expect(back(page)).toContainText('anlegen');
+    await expect(back(page)).toHaveText('vertäuen, anlegen, ankern, festmachen');
     await expect(page.locator('.def')).toHaveText('To tie up a boat.');
   });
 
