@@ -10,7 +10,7 @@
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
-  import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
+  import FrontSwipeKnown from '../components/FrontSwipeKnown.svelte';
   import Sheet from '../components/Sheet.svelte';
 
   let { bookId, chapter, how: howParam }: { bookId: string; chapter?: string; how?: string } = $props();
@@ -31,8 +31,7 @@
   let senses = $state<SenseOption[]>([]);
   let used = $state<Set<string>>(new Set());
   let nudge = $state(false);
-  let frontSwipeAsked = true;
-  let askFront = $state<1 | -1>();
+  let askFront = $state(false);
   let cardKey = $state(0);
   let live = $state('');
 
@@ -43,7 +42,6 @@
   onMount(async () => {
     try {
       settings = await api.settings.get();
-      frontSwipeAsked = !!(await api.appState.get()).frontSwipeAsked;
       // params: [chapter index] [start choice from the start sheet (C19)], each optional
       const choice = (x?: string) => /^(cards|min)-(\d+(?:\.\d+)?)$/.exec(x ?? '');  // decimals: short timed sessions in e2e
       const how = choice(howParam) ?? choice(chapter);
@@ -103,22 +101,38 @@
     void run(() => (view!.phase === 'wrongReview' ? api.study.continueAfterReview(view!.sessionId) : api.study.flip(view!.sessionId)));
   }
 
-  /** answer to the one-time "grade without flipping?" question */
-  async function frontSwipeAnswer(yes: boolean) {
-    const dir = askFront!;
-    askFront = undefined;
-    frontSwipeAsked = true;
-    await api.appState.update({ frontSwipeAsked: true });
-    if (!yes) { nudge = true; setTimeout(() => (nudge = false), 400); return; }
-    settings = await api.settings.update({ requireFlipBeforeGrade: false });
-    if (view) view.requireFlip = false;
-    await grade(dir);
+  function shake(text: string) {
+    nudge = true; setTimeout(() => (nudge = false), 400);
+    toast(text);
   }
 
-  async function allowFrontSwipe() {
-    settings = await api.settings.update({ requireFlipBeforeGrade: false });
-    if (view) view.requireFlip = false;
-    toast('Swiping an unflipped card now grades it (Settings › Flip before grading)');
+  /** answer to the one-time question on the first right swipe before a flip */
+  async function frontSwipeAnswer(choice: 'known' | 'grade' | 'flip') {
+    askFront = false;
+    if (choice === 'flip') { nudge = true; setTimeout(() => (nudge = false), 400); return; }
+    settings = await api.settings.update({ frontSwipe: choice });
+    if (view) view.frontSwipe = choice;
+    await grade(1);
+  }
+
+  /** a right swipe on a card never turned over, with frontSwipe 'known': out for good, nothing shown */
+  function markKnownFromFront() {
+    return enqueue(async () => {
+      if (!view?.card) return;
+      const lemma = view.card.lemma;
+      fly = 1;
+      vibrate();
+      try {
+        const [v] = await Promise.all([api.study.removeCurrent(view.sessionId, 'known'), new Promise((r) => setTimeout(r, 260))]);
+        cardKey++;
+        view = v;
+        if (settings?.undoAfterGrade ?? true) showUndo(`“${lemma}” known · Undo`);
+        await afterView(v);
+      } finally {
+        dx = 0;
+        fly = 0;
+      }
+    });
   }
 
   function continueReview() {
@@ -138,14 +152,13 @@
         await afterView(v);
         return;
       }
-      if (view.phase === 'front' && view.requireFlip && !view.seenBack) {
+      if (view.phase === 'front' && !view.seenBack) {
+        // never turned over: a swipe is for words you are sure of, and never shows the back (C7)
         dx = 0;
-        if (!frontSwipeAsked) askFront = dir;
-        else {
-          nudge = true; setTimeout(() => (nudge = false), 400);
-          toast('Tap to flip the card first', { label: 'Allow swiping unflipped', run: allowFrontSwipe }, 4000);
-        }
-        return;
+        if (dir === -1) return shake('Tap to flip the card first');
+        if (view.frontSwipe === 'ask') { askFront = true; return; }
+        if (view.frontSwipe === 'off') return shake('Tap to flip the card first (Settings › Swipe right before flipping)');
+        if (view.frontSwipe === 'known') { void markKnownFromFront(); return; }
       }
       useHint(dir === 1 ? 'right' : 'left');
       fly = dir;
@@ -363,7 +376,7 @@
   <main class="screen"><p class="muted">Loading…</p></main>
 {/if}
 
-{#if askFront}<FrontSwipeConfirm dir={askFront} onanswer={frontSwipeAnswer} />{/if}
+{#if askFront && view?.card}<FrontSwipeKnown word={view.card.lemma} onanswer={frontSwipeAnswer} />{/if}
 
 {#if editing && view?.card}
   <Sheet full label="Edit card" onclose={() => (editing = false)}>

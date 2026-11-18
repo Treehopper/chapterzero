@@ -4,7 +4,7 @@
   import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { fmt, pct, toast } from '../lib/ui.svelte';
+  import { fmt, pct, toast, ui } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Boxes from '../components/Boxes.svelte';
@@ -113,7 +113,8 @@
     {#if daily}
       <div class="section-title">Today</div>
       <div class="card-box row">
-        <span class="flame" aria-label="{daily.streakDays} day streak">🔥 <strong>{daily.streakDays}</strong> <span class="small muted">day streak</span></span>
+        {#if ui.achievements}<span class="flame" aria-label="{daily.streakDays} day streak">🔥 <strong>{daily.streakDays}</strong> <span class="small muted">day streak</span></span>
+        {:else}<span class="small muted">Reviews today</span>{/if}
         <span class="spacer"></span>
         <Ring value={daily.reviewsToday / daily.dailyGoal} size={56} stroke={6} label={String(daily.reviewsToday)} sublabel="/ {daily.dailyGoal}" color="var(--good)" />
       </div>

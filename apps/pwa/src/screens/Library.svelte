@@ -4,7 +4,7 @@
   import type { BookOverview, VocabularyProfile } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { fmt, pct, toast } from '../lib/ui.svelte';
+  import { fmt, pct, toast, ui } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import StartStudy from '../components/StartStudy.svelte';
   import Icon from '../components/Icon.svelte';
@@ -73,7 +73,7 @@
 <main class="screen">
   <header class="topbar">
     <h1>Library</h1>
-    <button class="iconbtn" aria-label="Achievements" onclick={() => go('achievements')}><Icon name="trophy" /></button>
+    {#if ui.achievements}<button class="iconbtn" aria-label="Achievements" onclick={() => go('achievements')}><Icon name="trophy" /></button>{/if}
     <button class="iconbtn" aria-label="Settings" onclick={() => go('settings')}><Icon name="settings" /></button>
   </header>
 

@@ -284,8 +284,13 @@ export interface Settings {
   retireOnFirstTry: boolean;
   useEnglishDefinitions: boolean;
   skipCognates: boolean;
+  /** vocabulary check (H2): a swipe on the front only answers after the flip */
   requireFlipBeforeGrade: boolean;
+  /** study: a right swipe on a card never turned over. 'ask' once, then 'known' (out for good), 'grade' (knew it), 'off'.
+   *  A left swipe on such a card never grades: nothing is shown after a swipe (user feedback) */
+  frontSwipe: 'ask' | 'known' | 'grade' | 'off';
   gestureHints: 'everySession' | 'off';
+  /** false hides achievements and streaks everywhere: pop-ups, statistics, library, book overview */
   achievementPopups: boolean;
   /** the Undo pill after a swipe grade; Undo stays in the swipe-up panel */
   undoAfterGrade: boolean;

@@ -96,7 +96,8 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. When a translation makes no sense, I want to move the word to the words not in the lists from the edit sheet (undoable), where I can still add it by hand. | Must |
 | C14 | As a learner, I want *Cancel session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
-| C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries, and when I answer a card wrong without having turned it over, I want to see its back side. | Must |
+| C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries. | Must |
+| C20 | As a learner, I want to swipe right on a card I haven't turned over when I am sure I know the word, without ever being shown its back; the first time, the app asks whether to mark such cards as known (out for good) or just count them as "knew it". A left swipe before the flip never grades. | Must |
 | C17 | As a learner, I want to choose which lookup sites appear as links. | Should |
 | C18 | As a learner, when I get a card right the very first time I see it, I want it retired for good, so words I already know cost me one swipe and never return. | Must |
 | C19 | As a learner, when I start studying, I want *Quick start* (due reviews, then today's new cards) or to choose a number of cards (10 / 20 / 50) or a time (5 / 10 / 20 min). *Study this chapter* (I4) offers the same choices for that chapter. An open session is continued instead of asking (for a chapter: only its own). | Should |
@@ -136,7 +137,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 **Acceptance criteria (C18)**
 - "First sight" means the card has never been graded (`stats.correct === 0 && stats.wrong === 0`). The card must still be flipped before it can be swiped.
 - Swiping right at first sight sets the card's status to `known`, removes it from the session queue, never schedules it, and adds its lemma to the global known words, so future books skip it (B8).
-- The undo pill reads "Already known · Undo" for 3 s. Undo restores the card, the queue and the known-words entry.
+- The undo pill reads "Already known · Undo" for 3 s. Undo restores the card, the queue and the known-words entry; the card comes back showing its answer, unless it was never turned over (C20), then face down.
 - These grades are counted separately as `alreadyKnown`. They are excluded from session accuracy, from *On a Roll* and from *Word Hoard*, and they do not reset the *On a Roll* streak.
 - A retired card doesn't use up the daily new-card limit: the next unseen card is pulled into the session (§7.3).
 - For coverage (I2) a retired card counts as known immediately.
@@ -697,11 +698,16 @@ interface Settings {
   retireOnFirstTry: boolean;        // true
   useEnglishDefinitions: boolean;   // true
   skipCognates: boolean;            // true
-  requireFlipBeforeGrade: boolean;  // true; the first swipe on a front asks once whether to turn it off (study and check);
-                                    // later blocked swipes show a toast "Tap to flip the card first" with "Allow swiping unflipped"
-                                    // a card flipped once and turned back counts as flipped (session.current.seenBack)
+  requireFlipBeforeGrade: boolean;  // true; vocabulary check only: the first swipe on a front asks once whether to turn it off
+  frontSwipe: 'ask' | 'known' | 'grade' | 'off';  // 'ask'; study (C20): a right swipe on a card never turned over.
+                                    // 'ask' shows "Mark “x” as known?" — Mark as known / Count it as "knew it" / Cancel —
+                                    // and stores the choice ('known' = removeCurrent(…, 'known'), counted as alreadyKnown;
+                                    // 'grade' = grade 'known'). A left swipe there only shakes the card and says "Tap to flip
+                                    // the card first"; nothing ever shows the back after a swipe. A card flipped once and
+                                    // turned back counts as flipped (session.current.seenBack) and grades normally.
   gestureHints: 'everySession' | 'off';
-  achievementPopups: boolean;       // true
+  achievementPopups: boolean;       // true; Settings › Achievements and streaks: false hides pop-ups, the trophy,
+                                    // streaks and medals everywhere
   undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (Undo stays in the swipe-up panel)
   showBoxLevel: boolean;            // false; box dots on the card back, only once the card has reached box 1
   lookupProviders: LookupProvider[];
@@ -1123,7 +1129,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 
 (The numbers in this mock-up are illustrative.) Ticking and unticking updates the card count. Footnote sections don't appear; they are folded into their chapters.
 
-**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame + daily goal ring (E4). Buttons: *Study now*, *Words*.
+**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Study now*, *Words*.
 
 ```
 ┌─────────────────────────────────┐
@@ -1164,7 +1170,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 - **Full screen**: card centred on a full-bleed background, no visible controls except a small handle bar at the bottom for the swipe-up panel. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech; optionally (`showBoxLevel`) box dots: eight outlined dots, one filled per level, labelled "box n/8"; not shown for a card still in box 0.
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
 - **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6; can be turned off in Settings, Undo stays in the swipe-up panel); after a first-sight retirement it reads "Already known · Undo" (C18).
-- **Lookup links (C16)** → every back side ends with the link row. A wrong swipe on the front (only with *Flip before grading* off) swings the card back, showing its back side with a red edge:
+- **Lookup links (C16)** → every back side ends with the link row. (Sessions saved before C20 may still hold a card in the old `wrongReview` phase, shown like this until the next tap or swipe:)
 
 ```
 ┌───────────────────────┐
@@ -1211,10 +1217,9 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 - **Gesture engine**: one Pointer Events recogniser on the stage (`touch-action: none`), axis locked after 10 px, vertical gestures ignored if they start within 44 px of the top or bottom edge. `prefers-reduced-motion` replaces flips/flings with fades.
 - **Accessibility (C7)**: the card is a VoiceOver element with custom actions (*Flip*, *Knew it*, *Didn't know*, *Card options*); keyboard: Space = flip, ←/→ = grade, ↑ = panel, ↓ = close panel, Z = undo.
 
-**Statistics (full screen, C14)** — scrollable, three sections:
+**Statistics (full screen, C14)** — scrollable. First, unless achievements are off: the streak ("🔥 3-day streak · your best yet") and the medals earned this session, revealed one by one (G6; gold tiers get confetti), so they never need scrolling to. Then:
 1. *This session*: big first-try accuracy ring, cards reviewed, "8 cards moved up a box" (animated), cards removed, time spent. If cards were retired at first sight: "14 words you already knew were removed".
-2. *Overall*: coverage of the current chapter and of the book with the change from this session ("Death or Glory · Three: 96.1 % → 97.0 %"), cards per box, streak flame and daily goal ring, words learned across all books.
-3. *Achievements unlocked* (G6): medals earned this session, revealed one by one; gold tiers get confetti.
+2. *Overall*: coverage of the current chapter and of the book with the change from this session ("Death or Glory · Three: 96.1 % → 97.0 %"), cards per box, daily goal ring, words learned across all books.
 
 Buttons at the bottom: *Study more* and *Done* (back to Book overview). Milestone celebrations (E5) play here, not during study.
 

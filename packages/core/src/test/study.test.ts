@@ -85,17 +85,19 @@ describe('session queue and grading', () => {
     expect(stats).toMatchObject({ correctStreak: 1, totalCorrect: 1 });
   });
 
-  it('a wrong swipe on the front shows the back once, with links; swipes there never grade again', async () => {
+  it('a swipe on a card never turned over: right grades only with frontSwipe "grade", left never; nothing is shown after it', async () => {
     const { app, book } = await imported();
-    await app.settings.update({ requireFlipBeforeGrade: false });
     const v0 = await app.study.resumeOrStart(book.id);
-    const w = await app.study.grade(v0.sessionId, 'unknown');
-    expect(w.phase).toBe('wrongReview');
-    expect(w.card?.lemma).toBe(v0.card?.lemma);
-    expect(w.lookupLinks.map((l) => l.name)).toContain('Wiktionary');
-    const next = await app.study.grade(v0.sessionId, 'unknown');
-    expect(next.counters.wrong).toBe(1);
+    await expect(app.study.grade(v0.sessionId, 'known')).rejects.toThrow(/Flip/);       // 'ask' by default
+    await app.settings.update({ frontSwipe: 'grade' });
+    await expect(app.study.grade(v0.sessionId, 'unknown')).rejects.toThrow(/Flip/);
+    const next = await app.study.grade(v0.sessionId, 'known');
     expect(next.phase).toBe('front');
+    expect(next.card?.lemma).not.toBe(v0.card?.lemma);
+    expect(next.frontSwipe).toBe('grade');
+    // "mark as known" from the front counts with the words already known
+    const k = await app.study.removeCurrent(v0.sessionId, 'known');
+    expect(k.counters).toMatchObject({ alreadyKnown: 2, removed: 0 });
   });
 
   it('a chosen number of cards: reviews first, filled with new ones past the daily limit, no refill', async () => {

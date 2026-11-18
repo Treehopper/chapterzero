@@ -4,7 +4,7 @@
   import type { SessionStatistics } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { fmt, pct } from '../lib/ui.svelte';
+  import { fmt, pct, ui } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import Boxes from '../components/Boxes.svelte';
   import Confetti from '../components/Confetti.svelte';
@@ -22,7 +22,7 @@
       s = await api.study.statistics(sessionId);
       // only what was done in this session: coverage gained elsewhere (re-filter, Words) is no reason
       const graded = s.session.reviewed + s.session.alreadyKnown > 0;
-      const celebrate = graded && (s.perfect || s.achievements.some((a) => a.tier === 'gold') || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget));
+      const celebrate = graded && (s.perfect || (ui.achievements && s.achievements.some((a) => a.tier === 'gold')) || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget));
       if (celebrate) setTimeout(() => fire++, 300);
       const t = setInterval(() => { if (!s || revealed >= s.achievements.length) clearInterval(t); else revealed++; }, 450);
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
@@ -37,6 +37,23 @@
   {#if error}<p class="error">{error}</p>{/if}
   {#if s}
     <h1 class="title">Session complete</h1>
+    {#if ui.achievements}
+      <!-- what was earned comes first: no scrolling to find it -->
+      {#if s.overall.streakDays > 0}
+        <section class="card-box row streak" data-testid="stat-streak">
+          <span class="flame">🔥</span>
+          <span class="stack"><strong>{s.overall.streakDays}-day streak</strong>
+            <span class="small muted">{s.overall.streakDays >= s.overall.longestStreak ? 'your best yet' : `best ${s.overall.longestStreak} days`}</span></span>
+        </section>
+      {/if}
+      {#if s.achievements.length}
+        <div class="medals" data-testid="stat-achievements">
+          {#each s.achievements.slice(0, revealed) as a (a.achievementId + (a.tier ?? ''))}
+            <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{a.name}</strong><span class="small muted">{a.tier ?? ''}</span></div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
     <section class="card-box hero">
       <Ring value={s.session.firstTryAccuracy} size={120} stroke={12} label={pct(s.session.firstTryAccuracy, 0)} sublabel="first try" color="var(--good)" />
       <div class="stack figures">
@@ -61,21 +78,12 @@
     </div>
     <div class="section-title">Boxes</div>
     <Boxes boxes={s.book.boxes} moved={s.session.promoted} />
-    <div class="card-box row streak">
-      <span>🔥 <strong>{s.overall.streakDays}</strong> <span class="small muted">day streak · best {s.overall.longestStreak}</span></span>
+    <div class="card-box row goal">
+      <span class="small muted">Reviews today</span>
       <span class="spacer"></span>
       <Ring value={s.overall.reviewsToday / s.overall.dailyGoal} size={60} stroke={6} label={String(s.overall.reviewsToday)} sublabel="/ {s.overall.dailyGoal}" color="var(--good)" />
     </div>
     <p class="small muted">{fmt(s.overall.wordsLearnedAllBooks)} words learned across all books.</p>
-
-    {#if s.achievements.length}
-      <div class="section-title">Achievements unlocked</div>
-      <div class="medals">
-        {#each s.achievements.slice(0, revealed) as a (a.achievementId + (a.tier ?? ''))}
-          <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{a.name}</strong><span class="small muted">{a.tier ?? ''}</span></div>
-        {/each}
-      </div>
-    {/if}
 
     <div class="cta row">
       <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">Study more</button>
@@ -94,7 +102,11 @@
   .up strong { color: var(--good); }
   .known { background: color-mix(in srgb, var(--good) 12%, transparent); padding: 12px 14px; border-radius: 12px; }
   .left { text-align: left; padding-left: 0; }
-  .streak { margin-top: 12px; }
+  .streak { gap: 14px; margin-bottom: 12px; border-color: color-mix(in srgb, var(--bronze) 60%, var(--line)); }
+  .streak .flame { font-size: 34px; }
+  .streak strong { font-size: 20px; }
+  .goal { margin-top: 12px; }
+  .medals { margin-bottom: 12px; }
   .medals { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
   .medal { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 14px; background: var(--surface);
     border: 2px solid var(--line); animation: pop .35s ease both; text-align: center; }

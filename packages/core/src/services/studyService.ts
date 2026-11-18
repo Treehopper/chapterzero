@@ -32,7 +32,7 @@ export interface SessionView {
   firstCard: boolean;
   canUndo: boolean;
   undoKind?: 'grade' | 'retire' | 'remove';
-  requireFlip: boolean;
+  frontSwipe: Settings['frontSwipe'];
   newAchievements: AchievementUnlock[];
   lookupLinks: { name: string; url: string }[];
   chapter?: { index: number; title: string; coverage: number };
@@ -111,7 +111,7 @@ export function studyService(ctx: Ctx) {
       done: !session.current, nothingDue: false, counters: session.counters,
       progress: { done: doneCount, total: doneCount + remaining }, startedAt: session.startedAt, endsAt: session.endsAt,
       firstCard: session.graded.length === 0 && session.counters.alreadyKnown === 0 && session.counters.removed === 0,
-      canUndo: !!session.undo, undoKind: session.undo?.kind, requireFlip: settings.requireFlipBeforeGrade,
+      canUndo: !!session.undo, undoKind: session.undo?.kind, frontSwipe: settings.frontSwipe,
       newAchievements: [], lookupLinks: session.current && session.current.phase !== 'front' && card ? links(card.lemma, settings) : [],
       chapter: ch && { index: ch.index, title: displayTitle(book, ch), coverage: chapterCoverage(ch, cards) },
       retired: false,
@@ -273,7 +273,7 @@ export function studyService(ctx: Ctx) {
           await tx.sessions.save(session);
           return view(session, book, byId, settings);
         }
-        if (session.current.phase === 'front' && !session.current.seenBack && settings.requireFlipBeforeGrade) throw new Error('Flip the card before grading');
+        if (session.current.phase === 'front' && !session.current.seenBack && (result === 'unknown' || settings.frontSwipe !== 'grade')) throw new Error('Flip the card before grading');
         const card = byId.get(session.current.cardId);
         if (!card) throw new Error('Card not found');
         const undo = snapshot(session, card, stats, 'grade');
@@ -325,11 +325,8 @@ export function studyService(ctx: Ctx) {
         };
         if (firstAttempt) session.graded.push(card.id);
         session.undo = { ...undo, logSeq };
-        const neverFlipped = session.current.phase === 'front' && !session.current.seenBack;
         if (result === 'unknown') session.queue.splice(Math.min(settings.scheduler.requeueGap, session.queue.length), 0, card.id);
-        // C16: the back was already seen after a flip; only a wrong swipe on a never-flipped front shows it
-        if (result === 'unknown' && neverFlipped) session.current = { cardId: card.id, phase: 'wrongReview' };
-        else advance(session);
+        advance(session);
         const r = await afterChange(tx, session, book, byId, settings, g.stats, graded, now);
         await tx.sessions.save(session);
         return view(session, book, byId, settings, { newAchievements: r.unlocks, chapterReady: r.chapterReady, bookFinished: r.bookFinished });
@@ -358,7 +355,8 @@ export function studyService(ctx: Ctx) {
         // unlocks and finished books are never revoked
         await tx.achievements.saveStats({ ...u.statsBefore, booksFinished: stats.booksFinished });
         session.queue = u.queueBefore;
-        session.current = u.currentBefore && { ...u.currentBefore, phase: u.currentBefore.phase === 'front' ? 'back' : u.currentBefore.phase };
+        // a card never turned over comes back face down (C20); one seen before comes back showing its answer
+        session.current = u.currentBefore && { ...u.currentBefore, phase: u.currentBefore.phase === 'front' && u.currentBefore.seenBack ? 'back' : u.currentBefore.phase };
         session.counters = u.countersBefore;
         session.graded = u.gradedBefore;
         session.undo = undefined;
@@ -405,7 +403,10 @@ export function studyService(ctx: Ctx) {
           if (!had.has(card.lemma)) { await tx.knownWords.addMany([card.lemma]); addedKnownWord = card.lemma; }
         }
         session.queue = session.queue.filter((id) => id !== card.id);
-        session.counters = { ...session.counters, removed: session.counters.removed + 1 };
+        // marked as known: counted with the words already known (C18), so the statistics say so
+        session.counters = as === 'known'
+          ? { ...session.counters, alreadyKnown: session.counters.alreadyKnown + 1 }
+          : { ...session.counters, removed: session.counters.removed + 1 };
         session.undo = { ...undo, addedKnownWord, lemmaBefore };
         session.current = undefined;
         refill(session, book, byId, settings, now);

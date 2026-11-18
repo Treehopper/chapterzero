@@ -21,7 +21,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     // the first swipe before the flip asks once; "No" keeps flipping first, and is not asked again
     const first = await page.getByTestId('check-word').innerText();
     await swipeRight(page);
-    await expect(page.getByTestId('front-swipe-confirm')).toContainText('Settings › Flip before grading');
+    await expect(page.getByTestId('front-swipe-confirm')).toContainText('Settings › Vocabulary check: flip before answering');
     await tap(page.getByRole('button', { name: "No, I'll flip first" }));
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await swipeRight(page);
@@ -141,7 +141,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await tap(page.getByRole('button', { name: 'Skip' }));
     await tap(page.getByRole('button', { name: 'Settings' }));
-    await expect(page.getByRole('checkbox', { name: 'Flip before grading' })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Vocabulary check: flip before answering' })).not.toBeChecked();
   });
 
   test('in the check, a word flipped and turned back is graded by a swipe without asking', async ({ page }) => {

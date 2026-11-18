@@ -14,10 +14,11 @@ test.describe('study (C1–C18)', () => {
   test('tap flips; swipes only grade after the flip; short drags spring back @android', async ({ page }) => {
     const w = await cardWord(page);
     await expect(page.getByTestId('hints')).toContainText('tap to flip');
-    await swipeRight(page);                       // not flipped yet → asks once, "No" → no grade
-    await tap(page.getByRole('button', { name: "No, I'll flip first" }));
+    await swipeRight(page);                       // not flipped yet → asks, "Cancel" → nothing happens
+    await expect(page.getByTestId('front-swipe-confirm')).toContainText(`Mark “${w}” as known?`);
+    await tap(page.getByRole('button', { name: "Cancel, I'll flip first" }));
     await expectCard(page, w, 'front');
-    await swipeRight(page);                       // not asked again, still no grade, but says why
+    await swipeLeft(page);                        // a left swipe before the flip never grades and never shows the back
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await expectCard(page, w, 'front');
     await expect(page.getByTestId('toast')).toContainText('Tap to flip the card first');
@@ -33,16 +34,35 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByTestId('card-word')).toBeVisible();
   });
 
-  test('after "Yes" to the one-time question, a swipe on the front grades', async ({ page }) => {
+  test('right swipe before the flip: "mark as known" is asked once, then just happens; the back is never shown (C20)', async ({ page }) => {
     const w = await cardWord(page);
     await swipeRight(page);
-    await tap(page.getByRole('button', { name: 'Yes, count it as “knew it”' }));
-    await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');
+    await tap(page.getByTestId('front-known'));
+    await expect(page.getByTestId('undo')).toHaveText(`“${w}” known · Undo`);
     const next = await cardWord(page);
     expect(next).not.toBe(w);
-    await swipeLeft(page);                        // straight from the front, no question → shows the answer to review
+    await expectPhase(page, 'front');
+    await swipeRight(page);                       // no question any more
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
-    await expectCard(page, next, 'wrongReview');
+    await expect(page.getByTestId('undo')).toHaveText(`“${next}” known · Undo`);
+    await expectPhase(page, 'front');
+    await tap(page.getByTestId('undo'));
+    await expectCard(page, next, 'front');
+    await endSession(page);
+    await expect(page.getByTestId('stat-known')).toContainText('1 word you already knew');
+    await tap(page.getByTestId('done'));
+    await tap(page.getByRole('button', { name: 'Back to library' }));
+    await tap(page.getByRole('button', { name: 'Settings' }));
+    await expect(page.getByTestId('set-frontswipe')).toHaveValue('known');
+  });
+
+  test('right swipe before the flip: "count it as knew it" grades from the front from then on', async ({ page }) => {
+    const w = await cardWord(page);
+    await swipeRight(page);
+    await tap(page.getByTestId('front-grade'));
+    await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');   // first sight: retired (C18)
+    expect(await cardWord(page)).not.toBe(w);
+    await expectPhase(page, 'front');
   });
 
   test('flipped and turned back to the front: a swipe grades without asking', async ({ page }) => {
@@ -106,18 +126,6 @@ test.describe('study (C1–C18)', () => {
     // relaunching the app from the start URL resumes too
     await page.goto('/');
     await expectCard(page, w, 'back');
-  });
-
-  test('review after a wrong swipe on the front survives a reload', async ({ page }) => {
-    await swipeLeft(page);
-    await tap(page.getByRole('button', { name: "Yes, count it as “didn't know”" }));
-    await expectPhase(page, 'wrongReview');
-    await expect(page.getByText('tap or swipe to continue')).toBeVisible();
-    await page.reload();
-    await expect(page.getByText('tap or swipe to continue')).toBeVisible();
-    await swipeRight(page);                       // swiping in review mode continues, never grades again
-    await expectPhase(page, 'front');
-    await expect(page.getByText('tap or swipe to continue')).toHaveCount(0);
   });
 
   test('progress is always visible, no Finish in the corner; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {

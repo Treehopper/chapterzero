@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { firstRun, importAndOpen, startStudy, swipeRight, tap, tapCard } from './helpers';
+import { endSession, firstRun, importAndOpen, startStudy, swipeLeft, swipeRight, tap, tapCard } from './helpers';
 
 test('lookup links: reorder, toggle, custom https only (C17)', async ({ page }) => {
   await firstRun(page);
@@ -70,4 +70,27 @@ test('settings: undo button after swiping off, box level on (C6)', async ({ page
   await swipeRight(page);
   await expect(page.getByTestId('card-word')).toBeVisible();
   await expect(page.getByTestId('undo')).toHaveCount(0);
+});
+
+test('statistics put the streak first; achievements and streaks can be turned off (G)', async ({ page }) => {
+  await firstRun(page);
+  await importAndOpen(page);
+  await startStudy(page);
+  await tapCard(page);
+  await swipeLeft(page);                                                  // a real review (a retired card is no review)
+  await endSession(page);
+  const streak = page.getByTestId('stat-streak');
+  await expect(streak).toContainText('1-day streak');
+  const [a, b] = await Promise.all([streak.boundingBox(), page.getByTestId('stat-reviewed').boundingBox()]);
+  expect(a!.y).toBeLessThan(b!.y);                                        // no scrolling to find it
+  await tap(page.getByTestId('done'));
+  await tap(page.getByRole('button', { name: 'Back to library' }));
+  await expect(page.getByRole('button', { name: 'Achievements' })).toBeVisible();
+  await tap(page.getByRole('button', { name: 'Settings' }));
+  await page.getByRole('checkbox', { name: /Achievements and streaks/ }).tap();
+  await tap(page.getByRole('button', { name: 'Back', exact: true }));
+  await expect(page.getByRole('button', { name: 'Achievements' })).toHaveCount(0);
+  await tap(page.getByRole('button', { name: /Open The Lantern Omnibus/ }));
+  await expect(page.getByText('day streak')).toHaveCount(0);
+  await expect(page.getByText('Reviews today')).toBeVisible();
 });

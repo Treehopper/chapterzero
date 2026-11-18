@@ -3,6 +3,7 @@
   import { api } from './lib/api';
   import { router, replace } from './lib/router.svelte';
   import { isStandalone } from './lib/platform';
+  import { ui } from './lib/ui.svelte';
   import Overlays from './components/Overlays.svelte';
   import InstallGuide from './screens/InstallGuide.svelte';
   import Download from './screens/Download.svelte';
@@ -23,7 +24,8 @@
 
   onMount(async () => {
     try {
-      const [status, profile, state] = await Promise.all([api.wordLists.status(), api.calibration.profile(), api.appState.get()]);
+      const [status, profile, state, settings] = await Promise.all([api.wordLists.status(), api.calibration.profile(), api.appState.get(), api.settings.get()]);
+      ui.achievements = settings.achievementPopups;
       const r = router.route;
       if (!status.installed) {
         if (r.name !== 'install' && r.name !== 'download') replace(!isStandalone() && !state.installGuideDismissed ? 'install' : 'download');

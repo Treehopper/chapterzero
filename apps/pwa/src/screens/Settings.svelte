@@ -5,7 +5,7 @@
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { download } from '../lib/platform';
-  import { fmt, toast } from '../lib/ui.svelte';
+  import { fmt, toast, ui } from '../lib/ui.svelte';
 
   let s = $state<Settings>();
   let packs = $state<PackStatus>();
@@ -22,7 +22,7 @@
   });
 
   async function save(patch: Partial<Settings>) {
-    try { s = await api.settings.update(patch); } catch (e) { toast(e instanceof Error ? e.message : String(e)); }
+    try { s = await api.settings.update(patch); ui.achievements = s.achievementPopups; } catch (e) { toast(e instanceof Error ? e.message : String(e)); }
   }
   const providers = $derived([...(s?.lookupProviders ?? [])].sort((a, b) => a.order - b.order));
   function setProviders(list: LookupProvider[]) { void save({ lookupProviders: list.map((p, i) => ({ ...p, order: i + 1 })) }); }
@@ -89,11 +89,17 @@
       <label class="list-row"><span class="spacer">First-try correct
         <span class="small muted block">{s.retireOnFirstTry ? 'Retire the card' : 'Schedule normally'}</span></span>
         <input type="checkbox" checked={s.retireOnFirstTry} onchange={(e) => save({ retireOnFirstTry: e.currentTarget.checked })} /></label>
-      <label class="list-row"><span class="spacer">Flip before grading</span>
+      <label class="list-row"><span class="spacer">Swipe right before flipping
+        <span class="small muted block">A swipe on a card you haven't turned over never shows its back</span></span>
+        <select value={s.frontSwipe} onchange={(e) => save({ frontSwipe: e.currentTarget.value as Settings['frontSwipe'] })} data-testid="set-frontswipe" aria-label="Swipe right before flipping">
+          <option value="ask">Ask</option><option value="known">Mark as known</option><option value="grade">Count as “knew it”</option><option value="off">Not allowed</option>
+        </select></label>
+      <label class="list-row"><span class="spacer">Vocabulary check: flip before answering</span>
         <input type="checkbox" checked={s.requireFlipBeforeGrade} onchange={(e) => save({ requireFlipBeforeGrade: e.currentTarget.checked })} /></label>
       <label class="list-row"><span class="spacer">Gesture hints every session</span>
         <input type="checkbox" checked={s.gestureHints === 'everySession'} onchange={(e) => save({ gestureHints: e.currentTarget.checked ? 'everySession' : 'off' })} /></label>
-      <label class="list-row"><span class="spacer">Achievement pop-ups</span>
+      <label class="list-row"><span class="spacer">Achievements and streaks
+        <span class="small muted block">Pop-ups, the trophy, streaks and medals</span></span>
         <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
       <label class="list-row"><span class="spacer">Undo button after swiping
         <span class="small muted block">Undo stays in the swipe-up panel</span></span>

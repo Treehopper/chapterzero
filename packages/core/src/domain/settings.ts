@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   useEnglishDefinitions: true,
   skipCognates: true,
   requireFlipBeforeGrade: true,
+  frontSwipe: 'ask',
   gestureHints: 'everySession',
   achievementPopups: true,
   undoAfterGrade: true,

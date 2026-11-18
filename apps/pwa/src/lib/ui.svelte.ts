@@ -5,7 +5,8 @@ export interface Toast { id: number; text: string; action?: { label: string; run
 export interface Banner { id: number; kind: 'achievement' | 'chapter'; title: string; subtitle?: string; tier?: string }
 
 let nextId = 1;
-export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean }>({ banners: [], online: navigator.onLine });
+/** achievements: Settings › Achievements and streaks (loaded at boot, kept in step by the Settings screen) */
+export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean }>({ banners: [], online: navigator.onLine, achievements: true });
 
 window.addEventListener('online', () => (ui.online = true));
 window.addEventListener('offline', () => (ui.online = false));
