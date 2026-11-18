@@ -1158,7 +1158,7 @@ Bars are scaled from 90 % to 100 %, so the differences that matter are visible. 
 └───────────────────┘   └───────────────────┘   └─┴───────────────┴─┘
 ```
 
-- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots.
+- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech, box dots (eight outlined dots, one filled per level, labelled "box n/8" or "new").
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
 - **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6); after a first-sight retirement it reads "Already known · Undo" (C18).
 - **Lookup links (C16)** → every back side ends with the link row. A wrong swipe on the front (only with *Flip before grading* off) swings the card back, showing its back side with a red edge:

@@ -295,7 +295,7 @@
             {#if review}
               <div class="foot small muted">tap or swipe to continue</div>
             {:else}
-              <div class="dots" aria-label="Box {card.box}">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}</div>
+              <div class="dots" aria-label="Box {card.box} of 8" data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">{card.box ? `box ${card.box}/8` : 'new'}</span></div>
             {/if}
           {/snippet}
         </FlipCard>
@@ -371,8 +371,10 @@
   .en { font-size: 12px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
   .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .links { flex: none; margin-top: auto; border-top: 1px solid var(--line); padding-top: 8px; }
-  .dots { display: flex; gap: 6px; justify-content: center; flex: none; padding-top: 10px; }
-  .dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--surface-2); }
+  .dots { display: flex; gap: 6px; justify-content: center; align-items: center; flex: none; padding-top: 10px; }
+  .dots i { width: 8px; height: 8px; border-radius: 4px; box-sizing: border-box; border: 1.5px solid var(--muted); opacity: 0.45; }
+  .dots i.on { border: none; opacity: 1; }
+  .dots span { margin-left: 6px; }
   .dots i.on { background: var(--good); }
   .topbar { position: absolute; top: var(--safe-top); left: 16px; right: 4px; display: flex; align-items: center; gap: 8px; }
   .progress { flex: 1; display: flex; align-items: center; gap: 8px; pointer-events: none; }

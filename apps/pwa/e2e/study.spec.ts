@@ -23,6 +23,8 @@ test.describe('study (C1–C18)', () => {
     await tapCard(page);
     await expectCard(page, w, 'back');
     await expect(back(page)).toBeVisible();
+    await expect(page.getByTestId('box-dots')).toHaveText('new');       // labelled, not a lone unexplained dot
+    await expect(page.getByTestId('box-dots').locator('i')).toHaveCount(8);
     await expect(page.getByTestId('hints')).toContainText('knew');
     await swipe(page, 60, 0, { ms: 400 });        // < 30 % and slow → springs back
     await expectCard(page, w, 'back');
