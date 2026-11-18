@@ -287,7 +287,6 @@
           <span>{view.progress.done} / {view.progress.total}</span>
         </div>
       {/if}
-      <button class="end" onclick={finish} data-testid="end-session">Finish</button>
     </div>
 
     <div class="cardpos" class:nudge>
@@ -328,7 +327,7 @@
 
     {#if hintsOn}<GestureHints {flipped} {used} grade={!review} extra />{/if}
 
-    {#if !panel && !undoPill}
+    {#if !panel}
       <button class="grab" onclick={() => vertical(-1)} aria-label="Card options" data-testid="grab" data-nogesture><span></span></button>
     {/if}
 
@@ -338,13 +337,12 @@
 
     {#if panel}
       <div class="panel" data-testid="panel">
-        <button class="pbtn" onclick={openEdit}>✎ Edit card</button>
-        <button class="pbtn" onclick={() => removeAs('unlisted')} data-testid="nonsense">⁇ Translation makes no sense</button>
-        <button class="pbtn" onclick={finish} data-testid="finish">◼ Finish session</button>
+        <button class="pbtn" onclick={openEdit}>Edit card</button>
+        <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
       </div>
     {/if}
 
-    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, up to edit the card.' : ''}</div>
+    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, up to edit the card or end the session.' : ''}</div>
     <div class="sr-only">
       <button onclick={flip}>Flip</button>
       <button onclick={() => grade(1)}>Knew it</button>
@@ -386,6 +384,7 @@
       <div class="section-title">Other actions</div>
       <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>
       <button class="btn block" onclick={() => removeAs('known')}>Mark as known</button>
+      <button class="btn block" onclick={() => removeAs('unlisted')} data-testid="nonsense">Translation makes no sense: move to the words not in the lists</button>
     </div>
   </Sheet>
 {/if}
@@ -414,9 +413,8 @@
   .dots i.on { border: none; opacity: 1; }
   .dots span { margin-left: 6px; }
   .dots i.on { background: var(--good); }
-  .topbar { position: absolute; top: var(--safe-top); left: 16px; right: 4px; display: flex; align-items: center; gap: 8px; }
+  .topbar { position: absolute; top: var(--safe-top); left: 16px; right: 16px; min-height: 44px; display: flex; align-items: center; gap: 8px; }
   .progress { flex: 1; display: flex; align-items: center; gap: 8px; pointer-events: none; }
-  .end { min-height: 44px; padding: 0 12px; border: none; background: none; color: var(--accent); font-size: 16px; font-weight: 600; }
   .track { flex: 1; height: 3px; background: color-mix(in srgb, var(--text) 15%, transparent); border-radius: 2px; overflow: hidden; }
   .track div { height: 100%; background: var(--accent); }
   .progress span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
@@ -428,11 +426,12 @@
   .chip { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 0 14px; min-height: 36px; font-weight: 600; }
   .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   textarea { width: 100%; font: inherit; font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); resize: vertical; }
-  .undo { position: absolute; bottom: calc(var(--safe-bottom) + 28px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
+  .undo { position: absolute; bottom: calc(var(--safe-bottom) + 44px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
     padding: 10px 18px; min-height: 44px; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: var(--card-shadow); }
   .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(var(--safe-bottom) + 16px); background: var(--surface);
     border-radius: 20px 20px 0 0; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 8px; animation: up .2s ease-out; }
   @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
-  .pbtn { min-height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); font-size: 17px; font-weight: 600; }
+  .pbtn { min-height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 17px; font-weight: 600; }
+  .pbtn.cancel { color: var(--bad); }
   .nothing { justify-content: center; }
 </style>

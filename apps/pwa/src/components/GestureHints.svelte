@@ -11,7 +11,7 @@
     {#if !used.has('left')}<div class="h left" data-testid="hint-left">✗<br />didn't<br />know</div>{/if}
     {#if !used.has('right')}<div class="h right" data-testid="hint-right">✓<br />knew<br />it</div>{/if}
   {/if}
-  {#if extra && !used.has('up')}<div class="h bottom" data-testid="hint-up">↑ swipe up for more:<br /><span class="sub">edit card · translation makes no sense · finish</span></div>{/if}
+  {#if extra && !used.has('up')}<div class="h bottom" data-testid="hint-up">↑ swipe up<br /><span class="sub">to edit the card or end the session</span></div>{/if}
 </div>
 
 <style>

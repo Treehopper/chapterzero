@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cardWord, expectCard, expectPhase, firstRun, importAndOpen, startStudy, studyNow, swipe, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { cardWord, endSession, expectCard, expectPhase, firstRun, importAndOpen, startStudy, studyNow, swipe, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 async function ready(page: Page) {
   await firstRun(page);
@@ -120,11 +120,11 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByText('tap or swipe to continue')).toHaveCount(0);
   });
 
-  test('progress and Finish are always visible; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {
+  test('progress is always visible, no Finish in the corner; swipe up opens the panel; edge swipes are ignored (C11, C12)', async ({ page }) => {
     const p = page.getByTestId('progress');
     await expect(p).toBeVisible();
     await expect(p).toHaveText(/^\s*0 \/ \d+$/);
-    await expect(page.getByTestId('end-session')).toBeVisible();
+    await expect(page.getByTestId('end-session')).toHaveCount(0);
     await tapCard(page);
     await expectPhase(page, 'back');
     await swipeRight(page);
@@ -146,7 +146,7 @@ test.describe('study (C1–C18)', () => {
     await tapCard(page);
     await expectPhase(page, 'back');
     await swipeUp(page);
-    await tap(page.getByRole('button', { name: '✎ Edit card' }));
+    await tap(page.getByRole('button', { name: 'Edit card' }));
     await page.getByLabel('Translation 1').fill('meine Übersetzung');
     await tap(page.getByTestId('save-edit'));
     await expectCard(page, w, 'back');
@@ -157,7 +157,7 @@ test.describe('study (C1–C18)', () => {
     expect(await cardWord(page)).toBe('moor');      // noun and verb in the lists
     await tapCard(page);
     await tap(page.getByTestId('grab'));             // the handle opens the panel too
-    await tap(page.getByRole('button', { name: '✎ Edit card' }));
+    await tap(page.getByRole('button', { name: 'Edit card' }));
     await expect(page.getByTestId('sense-noun')).toHaveAttribute('aria-checked', 'true');
     await tap(page.getByTestId('sense-verb'));
     await expect(page.getByLabel('Translation 1')).toHaveValue('anlegen');
@@ -170,17 +170,18 @@ test.describe('study (C1–C18)', () => {
   });
 
   test('swipe-up hint and handle on the first card (C13)', async ({ page }) => {
-    await expect(page.getByTestId('hint-up')).toContainText('swipe up for more');
+    await expect(page.getByTestId('hint-up')).toContainText('to edit the card or end the session');
     await expect(page.getByTestId('grab')).toBeVisible();
     await swipeUp(page);
     await expect(page.getByTestId('panel')).toBeVisible();
+    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Cancel session']);
     await expect(page.getByTestId('grab')).toHaveCount(0);
   });
 
   test('remove the current card with undo toast (C13, D3)', async ({ page }) => {
     const w = await cardWord(page);
     await swipeUp(page);
-    await tap(page.getByRole('button', { name: '✎ Edit card' }));
+    await tap(page.getByRole('button', { name: 'Edit card' }));
     await tap(page.getByRole('button', { name: 'Remove card' }));
     await expect(page.getByTestId('toast')).toContainText(`“${w}” removed`);
     expect(await cardWord(page)).not.toBe(w);
@@ -191,15 +192,17 @@ test.describe('study (C1–C18)', () => {
   test('"translation makes no sense" moves the word to Not in lists; undo brings the card back', async ({ page }) => {
     const w = await cardWord(page);
     await swipeUp(page);
+    await tap(page.getByRole('button', { name: 'Edit card' }));
     await tap(page.getByTestId('nonsense'));
     await expect(page.getByTestId('toast')).toContainText(`“${w}” moved to the words not in the lists`);
     expect(await cardWord(page)).not.toBe(w);
     await tap(page.getByTestId('toast').getByRole('button', { name: 'Undo' }));
     await expectCard(page, w);
     await swipeUp(page);
+    await tap(page.getByRole('button', { name: 'Edit card' }));
     await tap(page.getByTestId('nonsense'));
     await expect(page.getByTestId('toast')).toBeVisible();
-    await tap(page.getByTestId('end-session'));
+    await endSession(page);
     await tap(page.getByTestId('done'));
     await tap(page.getByRole('button', { name: 'Words', exact: true }));
     await tap(page.getByRole('tab', { name: /Not in lists/ }));
@@ -215,7 +218,7 @@ test.describe('study (C1–C18)', () => {
     await expectPhase(page, 'back');
     await swipeRight(page);
     await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');
-    await tap(page.getByTestId('end-session'));
+    await endSession(page);
     await expect(page.getByTestId('statistics')).toBeVisible();
     await expect(page.getByTestId('stat-reviewed')).toHaveText('1');
     await expect(page.getByTestId('stat-known')).toContainText('1 word you already knew was removed');
@@ -227,7 +230,7 @@ test.describe('study (C1–C18)', () => {
 
   test('finishing on the first card without grading anything does not celebrate', async ({ page }) => {
     await expectPhase(page, 'front');
-    await tap(page.getByTestId('end-session'));
+    await endSession(page);
     await expect(page.getByTestId('statistics')).toBeVisible();
     await page.waitForTimeout(800);
     await expect(page.getByTestId('confetti')).toHaveAttribute('data-fired', '0');
@@ -243,9 +246,9 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByTestId('toast')).toBeVisible();
     await studyNow(page);
     // the open card was filtered out: the session skips it (it used to hang on "Loading…")
-    const end = page.getByTestId('end-session');
-    await expect(end.or(page.getByTestId('statistics'))).toBeVisible();
-    if (await end.isVisible()) await tap(end);
+    const grab = page.getByTestId('grab');
+    await expect(grab.or(page.getByTestId('statistics'))).toBeVisible();
+    if (await grab.isVisible()) await endSession(page);
     await expect(page.getByTestId('statistics')).toBeVisible();
     await expect(page.getByTestId('stat-reviewed')).toHaveText('0');
     await page.waitForTimeout(800);

@@ -7,6 +7,7 @@
   import { fmt, pct, toast } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import StartStudy from '../components/StartStudy.svelte';
+  import Icon from '../components/Icon.svelte';
 
   let books = $state<BookOverview[]>([]);
   let loaded = $state(false);
@@ -72,8 +73,8 @@
 <main class="screen">
   <header class="topbar">
     <h1>Library</h1>
-    <button class="iconbtn" aria-label="Achievements" onclick={() => go('achievements')}>🏆</button>
-    <button class="iconbtn" aria-label="Settings" onclick={() => go('settings')}>⚙︎</button>
+    <button class="iconbtn" aria-label="Achievements" onclick={() => go('achievements')}><Icon name="trophy" /></button>
+    <button class="iconbtn" aria-label="Settings" onclick={() => go('settings')}><Icon name="settings" /></button>
   </header>
 
   {#if profile?.source === 'default' && !hintDismissed}

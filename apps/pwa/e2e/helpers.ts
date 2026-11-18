@@ -91,3 +91,9 @@ export const expectCard = (page: Page, word: string, phase?: 'front' | 'back' | 
 export const expectPhase = (page: Page, phase: 'front' | 'back' | 'wrongReview') => expect(stage(page)).toHaveAttribute('data-phase', phase);
 /** wait until no study action is in flight */
 export const settled = (page: Page) => expect(stage(page)).toHaveAttribute('data-busy', 'false');
+
+/** end the session from the swipe-up panel (C12) */
+export async function endSession(page: Page) {
+  await page.getByTestId('grab').tap();
+  await page.getByTestId('finish').tap();
+}
