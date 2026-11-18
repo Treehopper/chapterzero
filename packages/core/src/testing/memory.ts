@@ -2,8 +2,8 @@
 import { deepClone as clone } from '../domain/clone.ts';
 import { DEFAULT_SETTINGS, EMPTY_STATS } from '../domain/settings.ts';
 import type {
-  AchievementUnlock, AppState, BackupV1, Book, BookLemma, CalibrationSession, Card, EpubContent, ImportDraft,
-  LearnerStats, PackStatus, ReviewLogEntry, Settings, StudySession, VocabularyProfile, WordEntry,
+  AchievementUnlock, AppState, BackupV1, Book, BookLemma, BookText, CalibrationSession, Card, EpubContent, ImportDraft,
+  LearnerStats, PackStatus, ReadingPosition, ReviewLogEntry, Settings, StudySession, VocabularyProfile, WordEntry,
 } from '../domain/types.ts';
 import type { Clock, EpubReader, IdGenerator, PackInstaller, Ports, Random, Repositories, UnitOfWork, WordList } from '../ports/index.ts';
 
@@ -13,6 +13,8 @@ interface Data {
   lemmas: Map<string, BookLemma>;
   drafts: Map<string, ImportDraft>;
   sessions: Map<string, StudySession>;
+  texts: Map<string, BookText>;
+  positions: Map<string, ReadingPosition>;
   log: ReviewLogEntry[];
   seq: number;
   stats: LearnerStats;
@@ -26,7 +28,7 @@ interface Data {
 
 
 function emptyData(): Data {
-  return { books: new Map(), cards: new Map(), lemmas: new Map(), drafts: new Map(), sessions: new Map(), log: [], seq: 0,
+  return { books: new Map(), cards: new Map(), lemmas: new Map(), drafts: new Map(), sessions: new Map(), texts: new Map(), positions: new Map(), log: [], seq: 0,
     stats: clone(EMPTY_STATS), unlocks: [], known: new Set(), settings: clone(DEFAULT_SETTINGS), appState: {} };
 }
 
@@ -41,7 +43,15 @@ function repos(d: Data): Repositories {
         for (const [k, c] of d.cards) if (c.bookId === id) d.cards.delete(k);
         for (const [k, l] of d.lemmas) if (l.bookId === id) d.lemmas.delete(k);
         for (const [k, s] of d.sessions) if (s.bookId === id) d.sessions.delete(k);
+        d.texts.delete(id);
+        d.positions.delete(id);
       },
+    },
+    bookTexts: {
+      get: async (id) => clone(d.texts.get(id)),
+      save: async (t) => void d.texts.set(t.bookId, clone(t)),
+      getPosition: async (id) => clone(d.positions.get(id)),
+      savePosition: async (p) => void d.positions.set(p.bookId, clone(p)),
     },
     cards: {
       get: async (id) => clone(d.cards.get(id)),
@@ -97,7 +107,11 @@ function repos(d: Data): Repositories {
       }),
       replace: async (b: BackupV1) => {
         const fresh = emptyData();
+        // the reader's text is not in backups (size): kept for the books the backup brings back
+        const ids = new Set(b.books.map((x) => x.id));
+        const keep = <T,>(m: Map<string, T>) => new Map([...m].filter(([k]) => ids.has(k)));
         Object.assign(d, fresh, {
+          texts: keep(d.texts), positions: keep(d.positions),
           books: new Map(b.books.map((x) => [x.id, clone(x)])), cards: new Map(b.cards.map((x) => [x.id, clone(x)])),
           lemmas: new Map(b.bookLemmas.map((x) => [`${x.bookId}|${x.lemma}`, clone(x)])),
           sessions: new Map(b.sessions.map((x) => [x.id, clone(x)])), log: clone(b.reviewLog),
@@ -131,8 +145,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
 
 function cloneData(d: Data): Data {
   const maps = <K, V>(m: Map<K, V>) => new Map([...m].map(([k, v]) => [k, clone(v)] as [K, V]));
-  return { ...clone({ ...d, books: undefined, cards: undefined, lemmas: undefined, drafts: undefined, sessions: undefined, known: undefined }),
+  return { ...clone({ ...d, books: undefined, cards: undefined, lemmas: undefined, drafts: undefined, sessions: undefined, texts: undefined, positions: undefined, known: undefined }),
     books: maps(d.books), cards: maps(d.cards), lemmas: maps(d.lemmas), drafts: maps(d.drafts), sessions: maps(d.sessions),
+    texts: maps(d.texts), positions: maps(d.positions),
     known: new Set(d.known) } as Data;
 }
 

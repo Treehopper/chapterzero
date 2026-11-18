@@ -22,10 +22,12 @@
   let error = $state('');
   let active = $state<{ progress: { done: number; total: number }; endsAt?: string; chapterIndex?: number } | null>(null);
   let starting = $state<{ chapter?: { index: number; title: string } }>();
+  /** books imported before the reader have no stored text (Epic R) */
+  let readable = $state(false);
 
   async function load() {
     try {
-      [book, p, daily, active] = await Promise.all([api.books.get(bookId), api.progress.book(bookId), api.progress.daily(1), api.study.active(bookId)]);
+      [book, p, daily, active, readable] = await Promise.all([api.books.get(bookId), api.progress.book(bookId), api.progress.daily(1), api.study.active(bookId), api.reader.available(bookId)]);
       cutoff = book.cutoffRank;
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   }
@@ -74,13 +76,17 @@
       <div class="stack hero-text">
         <strong data-testid="book-coverage">{p.unknownEvery ? `about one unknown word every ${p.unknownEvery} words` : 'no unknown words left'}</strong>
         <span class="small muted">You know {fmt(p.rareWordsKnown)} of this book's {fmt(p.rareWordsTotal)} rare words.</span>
-        {#if p.finishedAt}<span class="pill good">Ready to read</span>{/if}
+        {#if p.finishedAt}
+          {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">Ready to read · open ›</button>
+          {:else}<span class="pill good">Ready to read</span>{/if}
+        {/if}
       </div>
     </section>
 
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
         {active ? `Continue · ${active.progress.done} / ${active.progress.total}` : `Study now${p.due ? ` · ${p.due} due` : ''}`}</button>
+      {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">Read</button>{/if}
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
     </div>
 
@@ -189,4 +195,5 @@
   .counts { justify-content: space-around; text-align: center; }
   .counts div { display: flex; flex-direction: column; font-size: 22px; }
   .flame { font-size: 20px; }
+  .readpill { border: none; cursor: pointer; align-self: flex-start; }
 </style>

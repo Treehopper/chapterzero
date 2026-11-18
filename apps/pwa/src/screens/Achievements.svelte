@@ -5,7 +5,16 @@
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   let list = $state<AchievementView[]>([]);
-  onMount(async () => { list = await api.achievements.list(); });
+  // books first (unlocked ones on top), then the others in their usual order
+  const rank = (a: AchievementView) => (a.bookId ? (a.tiers.some((t) => t.unlockedAt) ? 0 : 1) : 2);
+  /** unlocked books with stored text open in the reader (Epic R) */
+  let readable = $state(new Set<string>());
+  onMount(async () => {
+    list = (await api.achievements.list()).map((a, i) => ({ a, i })).sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i).map((x) => x.a);
+    const ids = list.filter((a) => a.bookId && a.tiers.some((t) => t.unlockedAt)).map((a) => a.bookId!);
+    const flags = await Promise.all(ids.map((id) => api.reader.available(id)));
+    readable = new Set(ids.filter((_, i) => flags[i]));
+  });
   const date = (iso?: string) => (iso ? new Date(iso).toLocaleDateString() : '');
   const icon = { bronze: '🥉', silver: '🥈', gold: '🥇' } as const;
 </script>
@@ -31,6 +40,7 @@
           <div class="progressbar"><div style:width="{Math.min(100, (a.value / a.next.threshold) * 100)}%"></div></div>
           <span class="small muted">{Math.min(a.value, a.next.threshold)} / {a.next.threshold}</span>
         {:else if top}<span class="small muted">{date(top.unlockedAt)}</span>{/if}
+        {#if a.bookId && readable.has(a.bookId)}<button class="btn primary read" onclick={() => go('read', a.bookId!)} data-testid="achievement-read">Read</button>{/if}
       </article>
     {/each}
   </div>
@@ -49,4 +59,5 @@
   .tier.on.silver { background: var(--silver); color: #111; }
   .tier.on.gold { background: var(--gold); color: #111; }
   .progressbar { width: 100%; }
+  .read { width: 100%; min-height: 40px; margin-top: 4px; }
 </style>

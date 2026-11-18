@@ -2,8 +2,8 @@
 import Dexie, { type Table } from 'dexie';
 import {
   DEFAULT_SETTINGS, EMPTY_STATS,
-  type AchievementUnlock, type AppState, type BackupV1, type Book, type BookLemma, type Card, type ImportDraft,
-  type LearnerStats, type Repositories, type ReviewLogEntry, type Settings, type StudySession, type UnitOfWork,
+  type AchievementUnlock, type AppState, type BackupV1, type Book, type BookLemma, type BookText, type Card, type ImportDraft,
+  type LearnerStats, type ReadingPosition, type Repositories, type ReviewLogEntry, type Settings, type StudySession, type UnitOfWork,
   type VocabularyProfile,
 } from '@vocabfirst/core';
 
@@ -30,6 +30,8 @@ export class VocabDb extends Dexie {
   forms!: Table<FormRow, string>;
   packChunks!: Table<PackChunkRow, [string, string]>;
   meta!: Table<Meta, string>;
+  bookTexts!: Table<BookText, string>;
+  readingPositions!: Table<ReadingPosition, string>;
 
   constructor(name = 'vocabfirst') {
     super(name);
@@ -48,6 +50,8 @@ export class VocabDb extends Dexie {
       packChunks: '[packId+file]',
       meta: 'key',
     });
+    // Epic R: the reader's text and position, per book
+    this.version(2).stores({ bookTexts: 'bookId', readingPositions: 'bookId' });
   }
 }
 
@@ -128,6 +132,8 @@ function overlays(db: VocabDb) {
     knownWords: new Overlay(db.knownWords, (k) => k.lemma),
     unlocks: new Overlay(db.achievementUnlocks, (u) => [u.achievementId, u.tier ?? 'gold'] as [string, string]),
     meta: new Overlay(db.meta, (m) => m.key),
+    bookTexts: new Overlay(db.bookTexts, (t) => t.bookId),
+    positions: new Overlay(db.readingPositions, (p) => p.bookId),
   };
 }
 type Overlays = ReturnType<typeof overlays>;
@@ -155,8 +161,16 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
         o.bookLemmas.del(rows.map((r) => [r.bookId, r.lemma] as [string, string]));
         const sessions = await o.sessions.query(() => db.sessions.where('[bookId+state]').between([id, Dexie.minKey] as never, [id, Dexie.maxKey] as never, true, true).toArray(), (s) => s.bookId === id);
         o.sessions.del(sessions.map((s) => s.id));
+        o.bookTexts.del([id]);
+        o.positions.del([id]);
         o.books.del([id]);
       },
+    },
+    bookTexts: {
+      get: (id) => o.bookTexts.get(id),
+      save: async (t) => o.bookTexts.put([t]),
+      getPosition: (id) => o.positions.get(id),
+      savePosition: async (p) => o.positions.put([p]),
     },
     cards: {
       get: (id) => o.cards.get(id),
@@ -241,7 +255,13 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
       }),
       replace: async (b: BackupV1) => {
         const appState = await getMeta<AppState>('appState', {});
+        // the reader's text is not in backups (size): kept for the books the backup brings back
+        const ids = new Set(b.books.map((x) => x.id));
+        const texts = (await o.bookTexts.query(() => db.bookTexts.toArray(), () => true)).filter((t) => ids.has(t.bookId));
+        const positions = (await o.positions.query(() => db.readingPositions.toArray(), () => true)).filter((p) => ids.has(p.bookId));
         for (const ov of Object.values(o)) ov.clear();
+        o.bookTexts.put(texts);
+        o.positions.put(positions);
         o.books.put(b.books);
         o.bookLemmas.put(b.bookLemmas);
         o.cards.put(b.cards);

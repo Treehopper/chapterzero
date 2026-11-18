@@ -10,6 +10,7 @@ import { cardService } from './services/cardService.ts';
 import { bookOverview } from './services/context.ts';
 import { importService } from './services/importService.ts';
 import { computeBookProgress, dailyStats, loadBookProgress, streaks } from './services/progressService.ts';
+import { readerService } from './services/readerService.ts';
 import { studyService } from './services/studyService.ts';
 
 export interface AchievementView {
@@ -63,6 +64,7 @@ export function createApp(ports: Ports) {
         }),
     },
     study: studyService(ports),
+    reader: readerService(ports),
     cards: cardService(ports),
     progress: {
       book: (id: string) => uow.run((tx) => loadBookProgress(tx, id, clock.now())),

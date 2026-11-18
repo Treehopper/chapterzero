@@ -15,12 +15,13 @@
   import Statistics from './screens/Statistics.svelte';
   import Words from './screens/Words.svelte';
   import Achievements from './screens/Achievements.svelte';
+  import Reader from './screens/Reader.svelte';
   import Settings from './screens/Settings.svelte';
 
   let booted = $state(false);
   let fatal = $state('');
   const SETUP = new Set(['install', 'download', 'check']);
-  const KNOWN = new Set([...SETUP, 'library', 'import', 'book', 'study', 'stats', 'words', 'achievements', 'settings']);
+  const KNOWN = new Set([...SETUP, 'library', 'import', 'book', 'study', 'stats', 'words', 'read', 'achievements', 'settings']);
 
   onMount(async () => {
     try {
@@ -53,8 +54,8 @@
 {#if fatal}
   <main class="screen"><h1>Something went wrong</h1><p class="error">{fatal}</p><button class="btn" onclick={() => location.reload()}>Reload</button></main>
 {:else if booted}
-  <!-- Words keeps itself across tab and chapter changes (only the URL is updated) -->
-  {#key router.route.name === 'words' ? `words/${router.route.params[0]}` : router.route.name + '/' + router.route.params.join('/')}
+  <!-- Words and the reader keep themselves across tab and chapter changes (only the URL is updated) -->
+  {#key router.route.name === 'words' || router.route.name === 'read' ? `${router.route.name}/${router.route.params[0]}` : router.route.name + '/' + router.route.params.join('/')}
     {#if router.route.name === 'install'}<InstallGuide />
     {:else if router.route.name === 'download'}<Download />
     {:else if router.route.name === 'check'}<Check />
@@ -63,6 +64,7 @@
     {:else if router.route.name === 'study'}<Study bookId={router.route.params[0]} chapter={router.route.params[1]} how={router.route.params[2]} />
     {:else if router.route.name === 'stats'}<Statistics sessionId={router.route.params[0]} />
     {:else if router.route.name === 'words'}<Words bookId={router.route.params[0]} tab={router.route.params[1]} chapter={router.route.params[2]} />
+    {:else if router.route.name === 'read'}<Reader bookId={router.route.params[0]} chapter={router.route.params[1]} />
     {:else if router.route.name === 'achievements'}<Achievements />
     {:else if router.route.name === 'settings'}<Settings />
     {:else}<Library />

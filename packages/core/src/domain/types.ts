@@ -33,6 +33,16 @@ export interface Book {
   finishedAt?: string;
 }
 
+/** The book's text for the reader (Epic R), stored at import: paragraphs per chapter, in reading order. */
+export interface BookText {
+  bookId: BookId;
+  chapters: BookTextChapter[];
+}
+/** footnotes sit right after the paragraph that links to them (B13), marked `note` */
+export interface BookTextChapter { blocks: { text: string; note?: boolean }[] }
+
+export interface ReadingPosition { bookId: BookId; chapter: number; block: number; at: string }
+
 export type LemmaKind = 'card' | 'belowLevel' | 'known' | 'cognate' | 'name' | 'unlisted';
 
 export interface BookLemma {
@@ -94,6 +104,8 @@ export interface ImportDraft {
   nameLemmas: string[];
   /** Distinct common tokens with the chapters they occur in (preview counts). */
   common: { token: string; chapters: number[] }[];
+  /** the text for the reader, per chapter (Epic R) */
+  text: BookTextChapter[];
 }
 
 export interface PreviewCounts {

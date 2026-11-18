@@ -1,7 +1,7 @@
 /** Ports (README §4.1): everything core needs from the outside world. */
 import type {
-  AchievementUnlock, AppState, BackupV1, Book, BookId, BookLemma, CalibrationSession, Card, CardId,
-  EpubContent, ImportDraft, LearnerStats, LemmaKind, PackInfo, PackStatus, Progress, ReviewLogEntry,
+  AchievementUnlock, AppState, BackupV1, Book, BookId, BookLemma, BookText, CalibrationSession, Card, CardId,
+  EpubContent, ImportDraft, LearnerStats, LemmaKind, PackInfo, PackStatus, Progress, ReadingPosition, ReviewLogEntry,
   SessionId, Settings, StudySession, VocabularyProfile, WordEntry,
 } from '../domain/types.ts';
 
@@ -11,8 +11,15 @@ export interface BookRepository {
   get(id: BookId): Promise<Book | undefined>;
   list(): Promise<Book[]>;
   save(book: Book): Promise<void>;
-  /** cascades to cards, book lemmas, sessions */
+  /** cascades to cards, book lemmas, sessions, the book's text and reading position */
   delete(id: BookId): Promise<void>;
+}
+
+export interface BookTextRepository {
+  get(bookId: BookId): Promise<BookText | undefined>;
+  save(text: BookText): Promise<void>;
+  getPosition(bookId: BookId): Promise<ReadingPosition | undefined>;
+  savePosition(p: ReadingPosition): Promise<void>;
 }
 
 export interface CardRepository {
@@ -87,6 +94,7 @@ export interface BackupStore {
 export interface Repositories {
   books: BookRepository;
   cards: CardRepository;
+  bookTexts: BookTextRepository;
   bookLemmas: BookLemmaRepository;
   drafts: ImportDraftRepository;
   sessions: SessionRepository;

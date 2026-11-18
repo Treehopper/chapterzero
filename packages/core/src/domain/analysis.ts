@@ -1,8 +1,8 @@
 /** Import steps 5–8 (README §7.1): tokenise, match, names, aggregate. */
 import type { WordList } from '../ports/index.ts';
-import { buildStructure, removeRepeatedBlocks, splitSectionsAtTocAnchors } from './structure.ts';
+import { buildStructure, removeRepeatedBlocks, splitSectionsAtTocAnchors, type PlacedBlock } from './structure.ts';
 import { americanVariants, cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
-import type { Chapter, EpubContent, ImportDraft } from './types.ts';
+import type { BookTextChapter, Chapter, EpubContent, ImportDraft } from './types.ts';
 
 interface TokenStat {
   token: string;
@@ -202,5 +202,16 @@ export async function analyseContent(
     listedLemmas: lemmas.filter((l) => l.listed).map((l) => l.lemma),
     nameLemmas: lemmas.filter((l) => l.name).map((l) => l.lemma),
     common: commonList,
+    text: bookText(content, structure.order, structure.chapters.length),
   };
+}
+
+/** the reader's text (Epic R): each chapter's paragraphs in reading order, footnotes after their paragraph */
+function bookText(content: EpubContent, order: PlacedBlock[], chapters: number): BookTextChapter[] {
+  const out: BookTextChapter[] = Array.from({ length: chapters }, () => ({ blocks: [] }));
+  for (const pb of order) {
+    const text = content.sections[pb.section].blocks[pb.block].text.replace(/\s+/g, ' ').trim();
+    if (text) out[pb.chapter].blocks.push(pb.note ? { text, note: true } : { text });
+  }
+  return out;
 }

@@ -18,7 +18,7 @@ The target user is an advanced non-native reader (roughly C1/C2). Three design r
 - Domain logic and storage have **no UI dependencies**, so they can move to a backend later without a rewrite.
 
 **Non-goals (v1)**
-- No reading view for the EPUB itself (use your normal reader).
+- No full EPUB rendering (images, original styling, pagination): the reader (Epic R) shows clean text.
 - No accounts, sync, or cloud storage (but the design prepares for it, see §7.7).
 - No audio or pronunciation.
 - No multi-word expressions ("give up"); single-word cards only.
@@ -241,6 +241,23 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 - Book overview lists works (collapsible) and their chapters with a coverage bar, a 98 % marker and the state. Tapping a chapter offers *Study this chapter*.
 - The statistics screen shows the coverage change of the current chapter and of the book for this session.
 
+### Epic R – Reading in the app
+
+| ID | Story | Priority |
+|----|-------|----------|
+| R1 | As a learner, I want to read the book inside the app — before or after it is ready — so the words I learned meet me in context. | Should |
+| R2 | As a learner, I want words that are cards in this book subtly underlined, and a tap on any word that is (or was) a card to show its translation, definition, state and lookup links. | Should |
+| R3 | As a learner, I want the reader to reopen where I stopped. | Should |
+| R4 | As a learner, I want the achievements screen to show my books first, an unlocked book opening straight into the reader. | Should |
+
+**Acceptance criteria (R1–R4)**
+- The text is stored at import (§7.1): each chapter's paragraphs in reading order, footnotes right after the paragraph that links to them, whitespace collapsed. No images, no styling; the app's serif at 19 px.
+- Books imported before Epic R have no stored text: no *Read* button; re-importing the book adds it. Backups do not include the text (size); a restore keeps the stored text of the books it brings back.
+- Entry points: *Read* next to *Study now* on the book overview (any time), the *Ready to read · open ›* pill once the book is ready, and a *Read* button on the unlocked *Ready for ‹title›* medal.
+- One chapter at a time with a sticky bar (back, chapter title, ☰ contents incl. chapters not included for study) and previous/next buttons at the end. Underlined: words of **active** cards; tappable: words of any card of the book (known and removed ones show their state).
+- Position = first paragraph still on screen, saved 0.4 s after scrolling stops and on every chapter change; the route `#/read/<bookId>/<chapter>` makes a relaunch come back too.
+- Achievements: book medals first (unlocked ones on top), then the others in their usual order.
+
 ### Epic F – Data safety
 
 | ID | Story | Priority |
@@ -448,6 +465,13 @@ interface VocabApp {
     // cards.senses(cardId): { pos, translations, definition? }[] — the lists' content per part of speech, main first
     removeCurrent(sessionId: SessionId, as: 'removed' | 'known'): Promise<SessionView>; // C13
     finish(sessionId: SessionId): Promise<SessionStatistics>;                           // C14
+  };
+  reader: {                                                                             // Epic R
+    available(bookId: BookId): Promise<boolean>;            // text stored (books imported since Epic R)
+    open(bookId: BookId): Promise<ReaderBook>;              // chapters (title, included, paragraph count) + where to open
+    chapter(bookId: BookId, index: number): Promise<ReaderChapter>;  // paragraphs as runs of text and card words
+                                                            // ({ t, c: cardId }), plus those cards (translations, state, links)
+    savePosition(bookId: BookId, chapter: number, block: number): Promise<void>;
   };
   cards: {
     list(bookId: BookId, filter: CardFilter): Promise<CardView[]>;
@@ -852,7 +876,7 @@ Runs in a Web Worker that hosts `core` + adapters; the UI only receives progress
 
 **7. Names (B5).** A lemma (listed or not) is a name if at least 90 % of its occurrences that are not sentence-initial are capitalised, with at least one such occurrence. Unlisted words seen only sentence-initially and capitalised are names too.
 
-**8. Aggregate and preview.** Per lemma: forms, occurrences, `occurrencesByChapter`, `firstPosition` (reading-order token index, B10), example sentence (B9: the sentence of the first occurrence if it has 8–25 words, else the first such sentence, else the first occurrence cut to 25 words around the word). Part of speech: each occurrence votes — a form with a `pos` in the forms table votes for it, and so does the word right before ("to", "would", "they" … → verb; "the", "his", "every" … → noun). With a two-thirds majority that part of speech is stored in `BookLemma.pos`, and the card takes its translations and definition (`forPos`); otherwise the card uses `pos[0]`. Common words are only counted. Build the `ImportPreview` by running the classification of step 9 without saving.
+**8. Aggregate and preview.** Per lemma: forms, occurrences, `occurrencesByChapter`, `firstPosition` (reading-order token index, B10), example sentence (B9: the sentence of the first occurrence if it has 8–25 words, else the first such sentence, else the first occurrence cut to 25 words around the word). Part of speech: each occurrence votes — a form with a `pos` in the forms table votes for it, and so does the word right before ("to", "would", "they" … → verb; "the", "his", "every" … → noun). With a two-thirds majority that part of speech is stored in `BookLemma.pos`, and the card takes its translations and definition (`forPos`); otherwise the card uses `pos[0]`. Common words are only counted. Build the `ImportPreview` by running the classification of step 9 without saving. The draft also keeps the reader's text (Epic R): each chapter's blocks in the reading order of step 3, footnotes marked; *Confirm* stores it as the book's `BookText`.
 
 **9. Confirm: classify and save.** For every lemma of the draft, the first matching rule decides `BookLemma.kind`:
 
@@ -1233,7 +1257,7 @@ Buttons at the bottom: *Study more* and *Done* (back to Book overview). Mileston
 │ └─────────────────────────┘ │
 ```
 
-**Achievements** (G5): a grid of medal tiles. Unlocked tiers in colour (bronze `#B0753B`, silver `#A8B0B8`, gold `#D4A72C`) with the unlock date; locked ones greyed out with a progress bar and "87 / 100". Each *Ready for ‹title›* badge shows the book cover.
+**Achievements** (G5): a grid of medal tiles. Unlocked tiers in colour (bronze `#B0753B`, silver `#A8B0B8`, gold `#D4A72C`) with the unlock date; locked ones greyed out with a progress bar and "87 / 100". Each *Ready for ‹title›* badge shows the book cover. Book medals come first, unlocked ones on top; an unlocked one with stored text has a *Read* button (R4).
 
 **Words** (Epic D) — segmented control: *Not in the lists · Active · Known · Removed · Skipped*, a search field, a chapter filter and a "+" button.
 
@@ -1313,7 +1337,7 @@ Buttons at the bottom: *Study more* and *Done* (back to Book overview). Mileston
 └─ LICENSES.md               third-party data and code attributions
 ```
 
-### IndexedDB schema (Dexie, v1)
+### IndexedDB schema (Dexie, v2)
 
 ```ts
 db.version(1).stores({
@@ -1331,6 +1355,10 @@ db.version(1).stores({
   packChunks:   '[packId+file]',   // which chunks are installed, for resumable download
   meta:         'key'              // appState, pack info, settings, vocabulary profile,
                                    // calibration session, learner stats
+});
+db.version(2).stores({             // Epic R
+  bookTexts:        'bookId',      // BookText: { bookId, chapters: { blocks: { text, note? }[] }[] }
+  readingPositions: 'bookId',      // { bookId, chapter, block, at }
 });
 ```
 

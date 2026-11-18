@@ -118,6 +118,7 @@ export function importService(ctx: Ctx) {
         await tx.books.save(book);
         await tx.bookLemmas.saveMany(rows);
         await tx.cards.saveMany(cards);
+        if (draft.text) await tx.bookTexts.save({ bookId, chapters: draft.text });   // drafts from before Epic R have none
         await tx.drafts.delete(draftId);
         const state = await tx.appState.get();
         await tx.appState.save({ ...state, lastBookId: bookId });
