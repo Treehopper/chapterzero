@@ -78,7 +78,7 @@
       <button class="list-row" onclick={() => go('check', 'restart')}>Repeat the vocabulary check</button>
     </div>
 
-    <div class="section-title">Studying</div>
+    <div class="section-title">Practice</div>
     <div class="list">
       <label class="list-row"><span class="spacer">New cards per day</span>
         <input class="num" type="number" min="1" max="200" value={s.dailyNewLimit} onchange={(e) => save({ dailyNewLimit: +e.currentTarget.value })} /></label>

@@ -13,9 +13,9 @@
   };
 </script>
 
-<Sheet label="Start studying" {onclose}>
+<Sheet label={chapter ? 'Get this chapter ready' : 'Get ready to read'} {onclose}>
   <div class="stack" data-testid="start-study">
-    <h2>{chapter ? 'Study this chapter' : 'Start studying'}</h2>
+    <h2>{chapter ? 'Get this chapter ready' : 'Get ready to read'}</h2>
     {#if chapter}<p class="muted chapter" data-testid="start-chapter">{chapter.title}</p>{/if}
     <button class="btn primary block quick" onclick={() => start()} data-testid="quick-start">
       <strong>Quick start</strong>

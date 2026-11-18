@@ -285,8 +285,8 @@
 {:else if view?.nothingDue}
   <main class="screen stack nothing" data-testid="nothing-due">
     <h1>All done for now</h1>
-    <p class="muted">Nothing is due and today's new cards are used up. You can study ahead if you have time before reading.</p>
-    <button class="btn primary block" onclick={studyAhead}>Study ahead</button>
+    <p class="muted">Nothing is due and today's new cards are used up. You can get ahead if you have time before reading.</p>
+    <button class="btn primary block" onclick={studyAhead}>Get ahead</button>
     <button class="btn block" onclick={() => go('book', bookId)}>Back to the book</button>
   </main>
 {:else if view?.card}

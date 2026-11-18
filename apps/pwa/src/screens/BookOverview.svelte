@@ -4,7 +4,7 @@
   import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { duration, fmt, pct, toast, ui } from '../lib/ui.svelte';
+  import { duration, fmt, pct, shortDuration, toast, ui } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Boxes from '../components/Boxes.svelte';
@@ -89,7 +89,8 @@
 
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
-        {active ? `Continue · ${active.progress.done} / ${active.progress.total}` : `Study now${p.due ? ` · ${p.due} due` : ''}`}</button>
+        {active ? `Continue · ${active.progress.done} / ${active.progress.total}`
+          : p.toReady.cards ? `Get ready · ${shortDuration(p.toReady.minutes)}` : `Review${p.due ? ` · ${p.due} due` : ''}`}</button>
       {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">Read</button>{/if}
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
     </div>
@@ -151,7 +152,7 @@
         {@const same = active?.chapterIndex === c.index}
         <button class="btn primary" data-testid="study-chapter"
           onclick={() => { if (same) go('study', bookId); else starting = { chapter: { index: c.index, title: c.displayTitle } }; sheet = undefined; }}>
-          {same && active ? `Continue · ${active.progress.done} / ${active.progress.total}` : 'Study this chapter'}</button>
+          {same && active ? `Continue · ${active.progress.done} / ${active.progress.total}` : c.state === 'ready' ? 'Review this chapter' : 'Get this chapter ready'}</button>
       {/if}
     </div>
   </Sheet>
@@ -186,7 +187,8 @@
   .hero { display: flex; gap: 16px; align-items: center; }
   .hero-text { gap: 6px; }
   .left { text-align: left; padding-left: 0; }
-  .actions { margin: 12px 0 4px; }
+  .actions { margin: 12px 0 4px; gap: 8px; }
+  .actions .btn { padding: 0 14px; white-space: nowrap; }
   .work { background: none; border: none; text-align: left; width: 100%; padding: 0; }
   .ch { align-items: flex-start; }
   .icon { width: 18px; font-weight: 800; color: var(--muted); margin-top: 2px; }

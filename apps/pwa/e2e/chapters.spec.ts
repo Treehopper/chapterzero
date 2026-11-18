@@ -30,7 +30,7 @@ test('chapter study takes the same start options; its open session is continued 
   const harbourOne = page.getByTestId('chapter-row').filter({ hasText: 'One' }).nth(1);
   await tap(harbourOne);
   await tap(page.getByTestId('study-chapter'));
-  await expect(page.getByTestId('start-study')).toContainText('Study this chapter');
+  await expect(page.getByTestId('start-study')).toContainText('Get this chapter ready');
   await tap(page.getByTestId('start-cards-10'));
   await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 10$/);
   expect(page.url()).toMatch(/#\/study\/[^/]+$/);
@@ -66,7 +66,7 @@ test('nothing due → study ahead (C9)', async ({ page }) => {
   await expect(page.getByTestId('statistics')).toBeVisible();
   await studyNow(page, 'study-more');
   await expect(page.getByTestId('nothing-due')).toBeVisible();
-  await tap(page.getByRole('button', { name: 'Study ahead' }));
+  await tap(page.getByRole('button', { name: 'Get ahead' }));
   await expect(page.getByTestId('card-word')).toBeVisible();
   await swipeUp(page);
   await tap(page.getByTestId('finish'));

@@ -64,7 +64,7 @@ export async function importAndOpen(page: Page) {
   await expect(page.getByTestId('book-coverage')).toBeVisible();
 }
 
-/** Study now: continues an open session, or takes Quick start from the start sheet (C19). */
+/** Get ready: continues an open session, or takes Quick start from the start sheet (C19). */
 export async function studyNow(page: Page, button = 'study-now') {
   await tap(page.getByTestId(button));
   const quick = page.getByTestId('quick-start');

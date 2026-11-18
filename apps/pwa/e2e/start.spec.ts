@@ -7,7 +7,7 @@ test.describe('start options (C19)', () => {
     await importAndOpen(page);
   });
 
-  test('Study now offers Quick start, a number of cards or a time; an open session is continued', async ({ page }) => {
+  test('Get ready offers Quick start, a number of cards or a time; an open session is continued', async ({ page }) => {
     await tap(page.getByTestId('study-now'));
     const sheet = page.getByTestId('start-study');
     await expect(sheet.getByTestId('quick-start')).toContainText('Quick start');

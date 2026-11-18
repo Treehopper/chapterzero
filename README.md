@@ -100,7 +100,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C20 | As a learner, I want to swipe right on a card I haven't turned over when I am sure I know the word, without ever being shown its back; the first time, the app asks whether to mark such cards as known (out for good) or just count them as "knew it". A left swipe before the flip never grades. | Must |
 | C17 | As a learner, I want to choose which lookup sites appear as links. | Should |
 | C18 | As a learner, when I get a card right the very first time I see it, I want it retired for good, so words I already know cost me one swipe and never return. | Must |
-| C19 | As a learner, when I start studying, I want *Quick start* (due reviews, then today's new cards) or to choose a number of cards (10 / 20 / 50) or a time (5 / 10 / 20 min). *Study this chapter* (I4) offers the same choices for that chapter. An open session is continued instead of asking (for a chapter: only its own). | Should |
+| C19 | As a learner, when I start studying, I want *Quick start* (due reviews, then today's new cards) or to choose a number of cards (10 / 20 / 50) or a time (5 / 10 / 20 min). *Get this chapter ready* (I4) offers the same choices for that chapter. An open session is continued instead of asking (for a chapter: only its own). | Should |
 
 **Acceptance criteria (C2, C5)**
 - A swipe is committed when horizontal travel > 30 % of card width or velocity > 0.5 px/ms; otherwise the card springs back.
@@ -239,7 +239,7 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 - New cards come from the first included chapter that isn't ready, in order of first occurrence in that chapter. That includes words first seen in earlier chapters that are still unlearned. Due reviews always come first, whatever their chapter.
 - When a chapter becomes ready during a session, a banner says "Death or Glory · Three is ready to read" (once per chapter), and new cards continue from the next chapter.
 - A chapter can fall back below the target when cards are forgotten. Its state then changes back, but the banner isn't repeated.
-- Book overview lists works (collapsible) and their chapters with a coverage bar, a 98 % marker and the state. Tapping a chapter offers *Study this chapter*.
+- Book overview lists works (collapsible) and their chapters with a coverage bar, a 98 % marker and the state. Tapping a chapter offers *Get this chapter ready*.
 - The statistics screen shows the coverage change of the current chapter and of the book for this session.
 
 ### Epic R – Reading in the app
@@ -254,7 +254,7 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 **Acceptance criteria (R1–R4)**
 - The text is stored at import (§7.1): each chapter's paragraphs in reading order, footnotes right after the paragraph that links to them, whitespace collapsed. No images, no styling; the app's serif at 19 px.
 - Books imported before Epic R have no stored text: no *Read* button; re-importing the book adds it. Backups do not include the text (size); a restore keeps the stored text of the books it brings back.
-- Entry points: *Read* next to *Study now* on the book overview (any time), the *Ready to read · open ›* pill once the book is ready, and a *Read* button on the unlocked *Ready for ‹title›* medal.
+- Entry points: *Read* next to *Get ready* on the book overview (any time), the *Ready to read · open ›* pill once the book is ready, and a *Read* button on the unlocked *Ready for ‹title›* medal.
 - One chapter at a time with a sticky bar (back, chapter title, ☰ contents incl. chapters not included for study) and previous/next buttons at the end. Underlined: words of **active** cards; tappable: words of any card of the book (known and removed ones show their state).
 - Position = first paragraph still on screen, saved 0.4 s after scrolling stops and on every chapter change; the route `#/read/<bookId>/<chapter>` makes a relaunch come back too.
 - Achievements: book medals first (unlocked ones on top), then the others in their usual order.
@@ -634,7 +634,7 @@ interface StudySession {
            statsBefore: LearnerStats; addedKnownWord?: string };
   counters: { reviewed: number; correct: number; wrong: number; promoted: number;
               alreadyKnown: number };   // first-sight retirements (C18), not part of `reviewed`
-  targetChapter?: number;           // set when started with *Study this chapter* (I4)
+  targetChapter?: number;           // set when started with *Get this chapter ready* (I4)
   cardLimit?: number;               // C19: fixed number of cards, no refill
   endsAt?: string;                  // C19: timed session
   coverageAtStart: { book: number; chapter: number };
@@ -954,8 +954,8 @@ The cards of one book are loaded into memory for this (a few thousand objects), 
 3. **Refill**: when a card is retired at first sight, or removed during the session, append the next candidate by the same rule, as long as the daily limit isn't reached.
 4. Failed cards are re-inserted `requeueGap` positions later (or at the end if the queue is shorter). The session ends when the queue is empty or the user leaves.
 5. After every grade the coverage of the target chapter is recomputed. If it reached the target for the first time (`index ∉ book.chaptersAnnounced`), the index is added there and `SessionView.chapterReady` is set. Cards already in the queue stay; the next session picks a new target chapter.
-6. "Study ahead" (C9) adds not-yet-due cards with the nearest `dueAt`, and does **not** promote their level beyond the next interval twice in one day.
-7. **Start options (C19)**: *Quick start* is steps 1–6; with *Study this chapter* every option also sets `chapterIndex`. *N cards*: at most N reviews, filled up to N with new cards **ignoring the daily limit**, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; refill ignores the daily limit; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
+6. "Get ahead" (C9) adds not-yet-due cards with the nearest `dueAt`, and does **not** promote their level beyond the next interval twice in one day.
+7. **Start options (C19)**: *Quick start* is steps 1–6; with *Get this chapter ready* every option also sets `chapterIndex`. *N cards*: at most N reviews, filled up to N with new cards **ignoring the daily limit**, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; refill ignores the daily limit; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
 
 ### 7.4 Resume anywhere (C5)
 
@@ -1129,7 +1129,9 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 └─────────────────────────────┘
 ```
 
-**Library** — one tile per book: cover, title, coverage ring, current chapter ("Death or Glory · Three · 96.1 %"), "12 due" badge, big *Study* button. Empty state explains how to import. First launch in Safari (not installed) shows a one-time "Add to Home Screen" guide, because iOS has no install prompt.
+**Wording**: buttons name the goal, reading, not the chore: *Get ready*, *Get this chapter ready*, *Get ready to read* (start sheet), *Keep going*, *Get ahead*; *Review* once a book or chapter is ready.
+
+**Library** — one tile per book: cover, title, coverage ring, current chapter ("Death or Glory · Three · 96.1 %"), "12 due" badge, big *Get ready* button (*Review* once the book is ready). Empty state explains how to import. First launch in Safari (not installed) shows a one-time "Add to Home Screen" guide, because iOS has no install prompt.
 
 **Import preview** (B7, B11, B12)
 
@@ -1156,7 +1158,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 
 (The numbers in this mock-up are illustrative.) Ticking and unticking updates the card count. Footnote sections don't appear; they are folded into their chapters.
 
-**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Study now*, *Words*.
+**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Get ready · 13 min* (*Review · N due* once nothing is left to learn; *Continue · d / t* with an open session), *Read*, *Words*.
 
 ```
 ┌─────────────────────────────────┐
@@ -1169,11 +1171,11 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 │  ● Three     ▓▓▓▓▓░░░  64 % to target │  Learning · 96.1 % known · 23 new · 14 not in lists
 │    Four      ▓▓▓░░░░░  41 % to target │  Upcoming · 95.2 % known
 │  ▸ Duty Calls                   │
-│  [        Study now         ]   │
+│  [    Get ready · 13 min     ]  │
 └─────────────────────────────────┘
 ```
 
-Each bar (and its number) shows how far the chapter is on the way to the coverage target: 0 % = the chapter's coverage if none of its active cards were known, full = target reached (ready to read) — `ChapterProgress.toTarget`. The estimated coverage itself is in the line below ("96.1 % known"). Tapping a chapter opens a sheet with its card counts (unseen / learning / learned) and *Study this chapter* (I4).
+Each bar (and its number) shows how far the chapter is on the way to the coverage target: 0 % = the chapter's coverage if none of its active cards were known, full = target reached (ready to read) — `ChapterProgress.toTarget`. The estimated coverage itself is in the line below ("96.1 % known"). Tapping a chapter opens a sheet with its card counts (unseen / learning / learned) and *Get this chapter ready* (I4).
 
 **Study (full screen, C10–C14)**
 
@@ -1248,7 +1250,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 1. *This session*: big first-try accuracy ring, cards reviewed, "8 cards moved up a box" (animated), cards removed, time spent. If cards were retired at first sight: "14 words you already knew were removed".
 2. *Overall*: coverage of the current chapter and of the book with the change from this session ("Death or Glory · Three: 96.1 % → 97.0 %"), cards per box, daily goal ring, words learned across all books.
 
-Buttons at the bottom: *Study more* and *Done* (back to Book overview). Milestone celebrations (E5) play here, not during study.
+Buttons at the bottom: *Keep going* and *Done* (back to Book overview). Milestone celebrations (E5) play here, not during study.
 
 **Achievement pop-up** (G4) and **chapter-ready banner** (I3) — the same component, sliding in from the top for 5 s; a tap dismisses it:
 

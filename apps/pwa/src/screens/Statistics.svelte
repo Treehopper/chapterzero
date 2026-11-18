@@ -86,7 +86,7 @@
     <p class="small muted">{fmt(s.overall.wordsLearnedAllBooks)} words learned across all books.</p>
 
     <div class="cta row">
-      <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">Study more</button>
+      <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">Keep going</button>
       <button class="btn primary spacer" onclick={() => go('book', s!.bookId)} data-testid="done">Done</button>
     </div>
   {:else if !error}<p class="muted">Loading…</p>{/if}
