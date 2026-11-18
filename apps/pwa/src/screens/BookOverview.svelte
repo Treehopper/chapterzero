@@ -22,8 +22,6 @@
   let error = $state('');
   let active = $state<{ progress: { done: number; total: number }; endsAt?: string; chapterIndex?: number } | null>(null);
   let starting = $state<{ chapter?: { index: number; title: string } }>();
-  /** the chapter new cards come from: the button shows its estimate, never the whole book's */
-  const next = $derived(p?.chapters.find((c) => c.state === 'learning'));
   /** books imported before the reader have no stored text (Epic R) */
   let readable = $state(false);
 
@@ -92,8 +90,7 @@
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
         {#if active}Continue · {active.progress.done} / {active.progress.total}
-        {:else if p.toReady.cards}<span class="lbl">Get ready</span>
-          {#if next?.toReady}<span class="sub" data-testid="study-now-eta">{next.title} · {duration(next.toReady.minutes)}</span>{/if}
+        {:else if p.toReady.cards}Get ready for reading
         {:else}Review{p.due ? ` · ${p.due} due` : ''}{/if}</button>
       {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">Read</button>{/if}
       <button class="btn" onclick={() => go('words', bookId)}>Words</button>
@@ -193,8 +190,6 @@
   .left { text-align: left; padding-left: 0; }
   .actions { margin: 12px 0 4px; gap: 8px; }
   .actions .btn { padding: 0 14px; white-space: nowrap; }
-  .actions .primary { flex-direction: column; gap: 0; min-width: 0; line-height: 1.2; }
-  .actions .primary .sub { font-size: 13px; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }  /* long chapter titles */
   .work { background: none; border: none; text-align: left; width: 100%; padding: 0; }
   .ch { align-items: flex-start; }
   .icon { width: 18px; font-weight: 800; color: var(--muted); margin-top: 2px; }

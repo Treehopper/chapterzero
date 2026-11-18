@@ -63,9 +63,8 @@ test.describe('import (B1–B15, B7)', () => {
     // E7: time to ready, for the book and the learning chapter
     await expect(page.getByTestId('book-eta')).toContainText(/≈ \d+ (min|h).* of practice until ready to read/);
     await expect(learning.getByTestId('chapter-eta')).toHaveText(/^≈ \d+/);
-    // the button names the learning chapter and its time, not the whole book's
-    const eta = await learning.getByTestId('chapter-eta').innerText();
-    await expect(page.getByTestId('study-now-eta')).toHaveText(`One · ${eta}`);
+    // no estimate on the button itself
+    await expect(page.getByTestId('study-now')).toHaveText('Get ready for reading');
   });
 
   test('cancelling the preview discards the draft; library tile after import', async ({ page }) => {

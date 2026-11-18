@@ -254,7 +254,7 @@ A default set of achievements is enabled out of the box. Tiered achievements hav
 **Acceptance criteria (R1–R4)**
 - The text is stored at import (§7.1): each chapter's paragraphs in reading order, footnotes right after the paragraph that links to them, whitespace collapsed. No images, no styling; the app's serif at 19 px.
 - Books imported before Epic R have no stored text: no *Read* button; re-importing the book adds it. Backups do not include the text (size); a restore keeps the stored text of the books it brings back.
-- Entry points: *Read* next to *Get ready* on the book overview (any time), the *Ready to read · open ›* pill once the book is ready, and a *Read* button on the unlocked *Ready for ‹title›* medal.
+- Entry points: *Read* next to *Get ready for reading* on the book overview (any time), the *Ready to read · open ›* pill once the book is ready, and a *Read* button on the unlocked *Ready for ‹title›* medal.
 - One chapter at a time with a sticky bar (back, chapter title, ☰ contents incl. chapters not included for study) and previous/next buttons at the end. Underlined: words of **active** cards; tappable: words of any card of the book (known and removed ones show their state).
 - Position = first paragraph still on screen, saved 0.4 s after scrolling stops and on every chapter change; the route `#/read/<bookId>/<chapter>` makes a relaunch come back too.
 - Achievements: book medals first (unlocked ones on top), then the others in their usual order.
@@ -1129,9 +1129,9 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 └─────────────────────────────┘
 ```
 
-**Wording**: buttons name the goal, reading, not the chore: *Get ready*, *Get this chapter ready*, *Get ready to read* (start sheet), *Keep going*, *Get ahead*; *Review* once a book or chapter is ready.
+**Wording**: buttons name the goal, reading, not the chore: *Get ready for reading*, *Get this chapter ready*, *Get ready to read* (start sheet), *Keep going*, *Get ahead*; *Review* once a book or chapter is ready.
 
-**Library** — one tile per book: cover, title, coverage ring, current chapter ("Death or Glory · Three · 96.1 %"), "12 due" badge, big *Get ready* button (*Review* once the book is ready). Empty state explains how to import. First launch in Safari (not installed) shows a one-time "Add to Home Screen" guide, because iOS has no install prompt.
+**Library** — one tile per book: cover, title, coverage ring, current chapter ("Death or Glory · Three · 96.1 %"), "12 due" badge, big *Get ready for reading* button (*Review* once the book is ready). Empty state explains how to import. First launch in Safari (not installed) shows a one-time "Add to Home Screen" guide, because iOS has no install prompt.
 
 **Import preview** (B7, B11, B12)
 
@@ -1158,7 +1158,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 
 (The numbers in this mock-up are illustrative.) Ticking and unticking updates the card count. Footnote sections don't appear; they are folded into their chapters.
 
-**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Get ready* with the learning chapter's estimate below it ("One · ≈ 9 min" — never the whole book's) (*Review · N due* once nothing is left to learn; *Continue · d / t* with an open session), *Read*, *Words*.
+**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Get ready for reading* (no time estimate on the button; estimates are in the chapter rows) (*Review · N due* once nothing is left to learn; *Continue · d / t* with an open session), *Read*, *Words*.
 
 ```
 ┌─────────────────────────────────┐
@@ -1171,7 +1171,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 │  ● Three     ▓▓▓▓▓░░░  64 % to target │  Learning · 96.1 % known · 23 new · 14 not in lists
 │    Four      ▓▓▓░░░░░  41 % to target │  Upcoming · 95.2 % known
 │  ▸ Duty Calls                   │
-│  [ Get ready  (One · ≈ 9 min) ] │
+│  [ Get ready for reading ]      │
 └─────────────────────────────────┘
 ```
 

@@ -133,7 +133,7 @@
           </div>
           <Ring value={b.coverage} size={64} stroke={7} label={(b.coverage * 100).toFixed(1)} sublabel="%" mark={0.98} />
         </button>
-        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.finishedAt ? 'Review' : 'Get ready'}</button>
+        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.finishedAt ? 'Review' : 'Get ready for reading'}</button>
       </article>
     {/each}
   </div>
