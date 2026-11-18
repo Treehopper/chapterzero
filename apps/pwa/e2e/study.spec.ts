@@ -187,7 +187,7 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByTestId('grab')).toBeVisible();
     await swipeUp(page);
     await expect(page.getByTestId('panel')).toBeVisible();
-    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Cancel session']);
+    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Cancel session']);
     await expect(page.getByTestId('grab')).toHaveCount(0);
   });
 
@@ -202,24 +202,19 @@ test.describe('study (C1–C18)', () => {
     await expectCard(page, w);
   });
 
-  test('"translation makes no sense" moves the word to Not in lists; undo brings the card back', async ({ page }) => {
+  test('mark as known straight from the panel; undo brings the card back; the edit sheet has no such button (C13)', async ({ page }) => {
     const w = await cardWord(page);
     await swipeUp(page);
     await tap(page.getByRole('button', { name: 'Edit card' }));
-    await tap(page.getByTestId('nonsense'));
-    await expect(page.getByTestId('toast')).toContainText(`“${w}” moved to the words not in the lists`);
+    await expect(page.getByRole('button', { name: 'Mark as known' })).toHaveCount(0);
+    await expect(page.getByText(/makes no sense/)).toHaveCount(0);
+    await tap(page.getByRole('button', { name: 'Cancel', exact: true }));
+    await swipeUp(page);
+    await tap(page.getByTestId('panel-known'));
+    await expect(page.getByTestId('toast')).toContainText(`“${w}” marked as known`);
     expect(await cardWord(page)).not.toBe(w);
     await tap(page.getByTestId('toast').getByRole('button', { name: 'Undo' }));
     await expectCard(page, w);
-    await swipeUp(page);
-    await tap(page.getByRole('button', { name: 'Edit card' }));
-    await tap(page.getByTestId('nonsense'));
-    await expect(page.getByTestId('toast')).toBeVisible();
-    await endSession(page);
-    await tap(page.getByTestId('done'));
-    await tap(page.getByRole('button', { name: 'Words', exact: true }));
-    await tap(page.getByRole('tab', { name: /Not in lists/ }));
-    await expect(page.locator(`[data-word="${w}"]`)).toBeVisible();
   });
 
   test('finish shows statistics; reopening shows them again (C14)', async ({ page }) => {

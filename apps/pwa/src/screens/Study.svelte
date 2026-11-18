@@ -228,13 +228,12 @@
     await run(() => api.study.editCurrent(view!.sessionId, { translations: editList, definition: editDef, pos: editPos }));
     editing = false;
   }
-  async function removeAs(as: 'removed' | 'known' | 'unlisted') {
+  async function removeAs(as: 'removed' | 'known') {
     editing = false;
     panel = false;
     const lemma = view?.card?.lemma;
     await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true });
-    toast(as === 'known' ? `“${lemma}” marked as known` : as === 'unlisted' ? `“${lemma}” moved to the words not in the lists`
-      : `“${lemma}” removed`, { label: 'Undo', run: undo });
+    toast(as === 'known' ? `“${lemma}” marked as known` : `“${lemma}” removed`, { label: 'Undo', run: undo });
   }
   async function finish() {
     panel = false;
@@ -359,6 +358,7 @@
     {#if panel}
       <div class="panel" data-testid="panel">
         <button class="pbtn" onclick={openEdit}>Edit card</button>
+        <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">Mark as known</button>
         <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
       </div>
     {/if}
@@ -408,8 +408,6 @@
       <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">Save</button>
       <div class="section-title">Other actions</div>
       <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>
-      <button class="btn block" onclick={() => removeAs('known')}>Mark as known</button>
-      <button class="btn block" onclick={() => removeAs('unlisted')} data-testid="nonsense">Translation makes no sense: move to the words not in the lists</button>
     </div>
   </Sheet>
 {/if}

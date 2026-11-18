@@ -92,8 +92,8 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session. | Must |
-| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card* and *Cancel session*. | Must |
-| C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. When a translation makes no sense, I want to move the word to the words not in the lists from the edit sheet (undoable), where I can still add it by hand. | Must |
+| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card*, *Mark as known* and *Cancel session*. | Must |
+| C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. *Mark as known* sits directly in the pull-up panel. | Must |
 | C14 | As a learner, I want *Cancel session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
 | C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries. | Must |
@@ -1191,6 +1191,8 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 │ │ "…he would not│ │   │ │ "…he would not│ │   │ ┌───────────────┐ │
 │ │  relinquish…" │ │   │ │  relinquish…" │ │   │ │   Edit card   │ │
 │ └───────────────┘ │   │ └───────────────┘ │   │ ├───────────────┤ │
+│                   │   │                   │   │ │ Mark as known │ │
+│                   │   │                   │   │ ├───────────────┤ │
 │                   │   │                   │   │ │ Cancel session│ │
 │                   │   │                   │   │ │     (red)     │ │
 └───────────────────┘   └───────────────────┘   └─┴───────────────┴─┘
@@ -1223,8 +1225,8 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 
   Links are real `<a href target="_blank" rel="noopener noreferrer">` elements. The gesture recogniser ignores pointer-downs that start on a link.
 - **Top bar** → a 3 px progress bar (session done/total, accent colour) and a tiny "12 / 40" label, always visible under the status bar. User feedback: hidden progress felt like no progress; the way out is the swipe-up panel, named in the first-card hint and marked by the handle bar.
-- **Swipe up** (or tap the small handle bar at the bottom, shown whenever the panel is closed) → bottom panel with 56 px-tall buttons, *Edit card* and *Cancel session* (red text); card dims to 40 %. Swipe down or tap the card to dismiss.
-- **Edit card sheet** → full-screen: word, part-of-speech chips (when the lists know more than one), translation fields (editable, add/remove, reorder with ↑/↓; the back lists them in this order), definition field, *Save*, then destructive actions *Remove card*, *Mark as known* and *Translation makes no sense: move to the words not in the lists* (removes the card, sets the word's `listed: false` so a re-filter keeps it out) (each confirmed via an undo toast rather than a dialog), *Cancel*.
+- **Swipe up** (or tap the small handle bar at the bottom, shown whenever the panel is closed) → bottom panel with 56 px-tall buttons, *Edit card*, *Mark as known* and *Cancel session* (red text); card dims to 40 %. Swipe down or tap the card to dismiss.
+- **Edit card sheet** → full-screen: word, part-of-speech chips (when the lists know more than one), translation fields (editable, add/remove, reorder with ↑/↓; the back lists them in this order), definition field, *Save*, then *Remove card* (confirmed via an undo toast rather than a dialog), *Cancel*. *Mark as known* is in the pull-up panel itself (undo toast).
 - **Gesture hints (C15)** on the first card of a session:
 
 ```
