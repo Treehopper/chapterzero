@@ -211,7 +211,7 @@ test.describe('study (C1–C18)', () => {
     await tap(page.getByRole('button', { name: 'Cancel', exact: true }));
     await swipeUp(page);
     await tap(page.getByTestId('panel-known'));
-    await expect(page.getByTestId('toast')).toContainText(`“${w}” marked as known`);
+    await expect(page.getByTestId('toast')).toContainText(`“${w}” marked as known · won’t be repeated`);
     expect(await cardWord(page)).not.toBe(w);
     await tap(page.getByTestId('toast').getByRole('button', { name: 'Undo' }));
     await expectCard(page, w);

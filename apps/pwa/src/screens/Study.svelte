@@ -233,7 +233,7 @@
     panel = false;
     const lemma = view?.card?.lemma;
     await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true });
-    toast(as === 'known' ? `“${lemma}” marked as known` : `“${lemma}” removed`, { label: 'Undo', run: undo });
+    toast(as === 'known' ? `“${lemma}” marked as known · won’t be repeated` : `“${lemma}” removed`, { label: 'Undo', run: undo });
   }
   async function finish() {
     panel = false;
