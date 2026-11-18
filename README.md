@@ -1158,7 +1158,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 
 (The numbers in this mock-up are illustrative.) Ticking and unticking updates the card count. Footnote sections don't appear; they are folded into their chapters.
 
-**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Get ready · 13 min* (*Review · N due* once nothing is left to learn; *Continue · d / t* with an open session), *Read*, *Words*.
+**Book overview** — coverage ring for the book (E1) with "about one unknown word every 31 words", then works and chapters (Epic I), boxes (E2), streak flame (unless achievements are off) + daily goal ring (E4). Buttons: *Get ready* with the learning chapter's estimate below it ("One · ≈ 9 min" — never the whole book's) (*Review · N due* once nothing is left to learn; *Continue · d / t* with an open session), *Read*, *Words*.
 
 ```
 ┌─────────────────────────────────┐
@@ -1171,7 +1171,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
 │  ● Three     ▓▓▓▓▓░░░  64 % to target │  Learning · 96.1 % known · 23 new · 14 not in lists
 │    Four      ▓▓▓░░░░░  41 % to target │  Upcoming · 95.2 % known
 │  ▸ Duty Calls                   │
-│  [    Get ready · 13 min     ]  │
+│  [ Get ready  (One · ≈ 9 min) ] │
 └─────────────────────────────────┘
 ```
 
