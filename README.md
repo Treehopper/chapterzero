@@ -93,7 +93,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session, and a visible *Finish* button next to it. | Must |
 | C12 | As a learner, I want to **swipe up** to reveal *Edit card*, *Translation makes no sense* and *Finish session*. | Must |
-| C13 | As a learner, I want *Edit card* to let me change the translation of the current card or remove it, and then continue studying. When a translation makes no sense, I want to move the word to the words not in the lists in one tap (undoable), where I can still add it by hand. | Must |
+| C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. When a translation makes no sense, I want to move the word to the words not in the lists in one tap (undoable), where I can still add it by hand. | Must |
 | C14 | As a learner, I want *Finish session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
 | C16 | As a learner, I want the back side to carry links to Wiktionary and other dictionaries, and when I answer a card wrong without having turned it over, I want to see its back side. | Must |
@@ -113,7 +113,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 - Vertical swipes are only recognised if they start more than 44 px away from the top and bottom screen edges, so they don't fight iOS Notification/Control Center and the home indicator.
 - The progress bar ("12 / 40") and a *Finish* text button sit at the top, below the safe area, all the time. Swipe down only closes the panel.
 - Swipe up: a bottom panel with two large buttons slides in; the card dims. Swiping down or tapping the dimmed card closes the panel. The panel never grades or flips the card.
-- *Edit card* opens a full-screen sheet with the translations (editable), *Save*, *Remove card*, *Mark as known* and *Cancel*. Saving keeps the current card and its side. Remove/known take the card out of the session queue and show the next card. All changes are persisted atomically with the session.
+- *Edit card* opens a full-screen sheet with the parts of speech the lists know for the word (when more than one: picking one fills in its translations and definition, and the card follows it, e.g. "to moor"), the translations (editable), the English definition (editable; a card needs a translation or a definition), *Save*, *Remove card*, *Mark as known* and *Cancel*. Saving keeps the current card and its side. Remove/known take the card out of the session queue and show the next card. All changes are persisted atomically with the session.
 - *Finish session* marks the session finished; ungraded cards keep their due dates. Closing the app while the statistics screen is shown reopens the statistics, not the old session.
 
 **Acceptance criteria (C15)**
@@ -443,7 +443,8 @@ interface VocabApp {
     grade(sessionId: SessionId, result: 'known' | 'unknown'): Promise<SessionView>;
     continueAfterReview(sessionId: SessionId): Promise<SessionView>;  // leaves wrongReview (C16, wrong swipe on the front)
     undo(sessionId: SessionId): Promise<SessionView>;
-    editCurrent(sessionId: SessionId, translations: string[]): Promise<SessionView>;    // C13
+    editCurrent(sessionId: SessionId, edit: { translations: string[]; definition?: string; pos?: string }): Promise<SessionView>;    // C13
+    // cards.senses(cardId): { pos, translations, definition? }[] — the lists' content per part of speech, main first
     removeCurrent(sessionId: SessionId, as: 'removed' | 'known'): Promise<SessionView>; // C13
     finish(sessionId: SessionId): Promise<SessionStatistics>;                           // C14
   };
@@ -696,12 +697,13 @@ interface Settings {
   retireOnFirstTry: boolean;        // true
   useEnglishDefinitions: boolean;   // true
   skipCognates: boolean;            // true
-  requireFlipBeforeGrade: boolean;  // true; the first swipe on a front asks once whether to turn it off (study and check)
+  requireFlipBeforeGrade: boolean;  // true; the first swipe on a front asks once whether to turn it off (study and check);
+                                    // later blocked swipes show a toast "Tap to flip the card first" with "Allow swiping unflipped"
                                     // a card flipped once and turned back counts as flipped (session.current.seenBack)
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;       // true
   undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (Undo stays in the swipe-up panel)
-  showBoxLevel: boolean;            // false; box dots on the card back
+  showBoxLevel: boolean;            // false; box dots on the card back, only once the card has reached box 1
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }
@@ -1159,7 +1161,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 └───────────────────┘   └───────────────────┘   └─┴───────────────┴─┘
 ```
 
-- **Full screen**: card centred on a full-bleed background, no visible controls. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech; optionally (`showBoxLevel`) box dots: eight outlined dots, one filled per level, labelled "box n/8" or "new".
+- **Full screen**: card centred on a full-bleed background, no visible controls except a small handle bar at the bottom for the swipe-up panel. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech; optionally (`showBoxLevel`) box dots: eight outlined dots, one filled per level, labelled "box n/8"; not shown for a card still in box 0.
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
 - **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6; can be turned off in Settings, Undo stays in the swipe-up panel); after a first-sight retirement it reads "Already known · Undo" (C18).
 - **Lookup links (C16)** → every back side ends with the link row. A wrong swipe on the front (only with *Flip before grading* off) swings the card back, showing its back side with a red edge:
@@ -1186,8 +1188,8 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 
   Links are real `<a href target="_blank" rel="noopener noreferrer">` elements. The gesture recogniser ignores pointer-downs that start on a link.
 - **Top bar** → a 3 px progress bar (session done/total, accent colour), a tiny "12 / 40" label and a *Finish* text button (44 px), always visible under the status bar. User feedback: hidden progress and a hidden way out felt like no progress and no way out.
-- **Swipe up** → bottom panel with 56 px-tall buttons, *Edit card*, *Translation makes no sense* (removes the card, sets the word's `listed: false` so a re-filter keeps it out, undo toast) and *Finish session*; card dims to 40 %. Swipe down or tap the card to dismiss.
-- **Edit card sheet** → full-screen: word, translation chips (editable, add/remove), *Save*, then destructive actions *Remove card* and *Mark as known* (each confirmed via an undo toast rather than a dialog), *Cancel*.
+- **Swipe up** (or tap the small handle bar at the bottom, shown whenever the panel is closed) → bottom panel with 56 px-tall buttons, *Edit card*, *Translation makes no sense* (removes the card, sets the word's `listed: false` so a re-filter keeps it out, undo toast) and *Finish session*; card dims to 40 %. Swipe down or tap the card to dismiss.
+- **Edit card sheet** → full-screen: word, part-of-speech chips (when the lists know more than one), translation fields (editable, add/remove), definition field, *Save*, then destructive actions *Remove card* and *Mark as known* (each confirmed via an undo toast rather than a dialog), *Cancel*.
 - **Gesture hints (C15)** on the first card of a session:
 
 ```
@@ -1201,7 +1203,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 │  │   ◉ tap to flip │  │   know│  │                 │  │ it
 │  └─────────────────┘  │       │  └─────────────────┘  │
 │                       │       │                       │
-│     ↑ edit card       │       │     ↑ edit card       │
+│  ↑ swipe up for more  │       │  ↑ swipe up for more  │
 └───────────────────────┘       └───────────────────────┘
 ```
 

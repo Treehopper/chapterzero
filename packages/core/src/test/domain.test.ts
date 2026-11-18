@@ -4,7 +4,7 @@ import { grade, DEFAULT_SCHEDULER } from '../domain/scheduler.ts';
 import { onGrade, newUnlocks, ACHIEVEMENTS } from '../domain/achievements.ts';
 import { levelOfRank, startLevel } from '../domain/levels.ts';
 import { lookupLinks, isValidTemplate, DEFAULT_LOOKUP_PROVIDERS } from '../domain/lookup.ts';
-import { headword, resolveCardContent } from '../domain/cardContent.ts';
+import { headword, resolveCardContent, senseOptions } from '../domain/cardContent.ts';
 import { nearestLevels } from '../services/calibrationService.ts';
 import { EMPTY_STATS } from '../domain/settings.ts';
 import { chapterToTarget } from '../domain/coverage.ts';
@@ -56,6 +56,17 @@ const card = (over: Partial<Card> = {}): Card => ({
   id: 'b:x', bookId: 'b', lemma: 'x', forms: [], occurrences: 1, occurrencesByChapter: { 0: 1 }, firstPosition: 0, chapterIndex: 0,
   translations: ['x'], pos: [], translationSource: 'list', origin: 'import', status: 'active', level: 0,
   stats: { correct: 0, wrong: 0, failStreak: 0 }, ...over,
+});
+
+describe('sense options for editing (C13)', () => {
+  it('lists each part of speech with its own translations and definition, main first', () => {
+    const e = { lemma: 'chafe', rank: 9000, pos: ['noun', 'verb'], de: ['Scheuerstelle'], deFreedict: [], def: 'a sore from rubbing', cognate: false,
+      senses: [{ pos: 'verb', de: ['scheuern', 'reiben'], def: 'to rub' }, { pos: 'noun', de: ['x'] }, { pos: 'adj', de: [] }] };
+    expect(senseOptions(e)).toEqual([
+      { pos: 'noun', translations: ['Scheuerstelle'], definition: 'a sore from rubbing' },
+      { pos: 'verb', translations: ['scheuern', 'reiben'], definition: 'to rub' },
+    ]);
+  });
 });
 
 describe('chapter bars (I2)', () => {

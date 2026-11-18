@@ -17,9 +17,10 @@ test.describe('study (C1–C18)', () => {
     await swipeRight(page);                       // not flipped yet → asks once, "No" → no grade
     await tap(page.getByRole('button', { name: "No, I'll flip first" }));
     await expectCard(page, w, 'front');
-    await swipeRight(page);                       // not asked again, still no grade
+    await swipeRight(page);                       // not asked again, still no grade, but says why
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await expectCard(page, w, 'front');
+    await expect(page.getByTestId('toast')).toContainText('Tap to flip the card first');
     await tapCard(page);
     await expectCard(page, w, 'back');
     await expect(back(page)).toBeVisible();
@@ -150,6 +151,30 @@ test.describe('study (C1–C18)', () => {
     await tap(page.getByTestId('save-edit'));
     await expectCard(page, w, 'back');
     await expect(back(page)).toContainText('meine Übersetzung');
+  });
+
+  test('edit card: pick another part of speech, edit the definition (C13)', async ({ page }) => {
+    expect(await cardWord(page)).toBe('moor');      // noun and verb in the lists
+    await tapCard(page);
+    await tap(page.getByTestId('grab'));             // the handle opens the panel too
+    await tap(page.getByRole('button', { name: '✎ Edit card' }));
+    await expect(page.getByTestId('sense-noun')).toHaveAttribute('aria-checked', 'true');
+    await tap(page.getByTestId('sense-verb'));
+    await expect(page.getByLabel('Translation 1')).toHaveValue('anlegen');
+    await expect(page.getByTestId('edit-definition')).toHaveValue(/cast anchor/);
+    await page.getByTestId('edit-definition').fill('To tie up a boat.');
+    await tap(page.getByTestId('save-edit'));
+    await expect(page.getByTestId('card-word')).toHaveText('to moor');
+    await expect(back(page)).toContainText('anlegen');
+    await expect(page.locator('.def')).toHaveText('To tie up a boat.');
+  });
+
+  test('swipe-up hint and handle on the first card (C13)', async ({ page }) => {
+    await expect(page.getByTestId('hint-up')).toContainText('swipe up for more');
+    await expect(page.getByTestId('grab')).toBeVisible();
+    await swipeUp(page);
+    await expect(page.getByTestId('panel')).toBeVisible();
+    await expect(page.getByTestId('grab')).toHaveCount(0);
   });
 
   test('remove the current card with undo toast (C13, D3)', async ({ page }) => {

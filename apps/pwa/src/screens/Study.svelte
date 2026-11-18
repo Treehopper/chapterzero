@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Full-screen study (C1–C18, §8.1 "Study"). Every action is persisted before the next card animates in. */
   import { onDestroy, onMount } from 'svelte';
-  import { headword, type SessionView, type Settings } from '@vocabfirst/core';
+  import { headword, type SenseOption, type SessionView, type Settings } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
@@ -26,6 +26,9 @@
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
   let editing = $state(false);
   let editList = $state<string[]>([]);
+  let editDef = $state('');
+  let editPos = $state<string>();
+  let senses = $state<SenseOption[]>([]);
   let used = $state<Set<string>>(new Set());
   let nudge = $state(false);
   let frontSwipeAsked = true;
@@ -112,6 +115,12 @@
     await grade(dir);
   }
 
+  async function allowFrontSwipe() {
+    settings = await api.settings.update({ requireFlipBeforeGrade: false });
+    if (view) view.requireFlip = false;
+    toast('Swiping an unflipped card now grades it (Settings › Flip before grading)');
+  }
+
   function continueReview() {
     void run(() => api.study.continueAfterReview(view!.sessionId), { newCard: true });
   }
@@ -131,7 +140,11 @@
       }
       if (view.phase === 'front' && view.requireFlip && !view.seenBack) {
         dx = 0;
-        if (!frontSwipeAsked) askFront = dir; else { nudge = true; setTimeout(() => (nudge = false), 400); }
+        if (!frontSwipeAsked) askFront = dir;
+        else {
+          nudge = true; setTimeout(() => (nudge = false), 400);
+          toast('Tap to flip the card first', { label: 'Allow swiping unflipped', run: allowFrontSwipe }, 4000);
+        }
         return;
       }
       useHint(dir === 1 ? 'right' : 'left');
@@ -176,11 +189,22 @@
     if (!view?.card) return;
     editList = [...view.card.translations];
     if (!editList.length) editList = [''];
+    editDef = view.card.definition ?? '';
+    editPos = view.card.pos[0];
+    senses = [];
+    const id = view.card.id;
+    void api.cards.senses(id).then((s) => { if (view?.card?.id === id) senses = s; });
     panel = false;
     editing = true;
   }
+  /** take the lists' translations and definition for that part of speech */
+  function pickSense(s: SenseOption) {
+    editPos = s.pos;
+    editList = s.translations.length ? [...s.translations] : [''];
+    editDef = s.definition ?? '';
+  }
   async function saveEdit() {
-    await run(() => api.study.editCurrent(view!.sessionId, editList));
+    await run(() => api.study.editCurrent(view!.sessionId, { translations: editList, definition: editDef, pos: editPos }));
     editing = false;
   }
   async function removeAs(as: 'removed' | 'known' | 'unlisted') {
@@ -294,8 +318,8 @@
             <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
             {#if review}
               <div class="foot small muted">tap or swipe to continue</div>
-            {:else if settings?.showBoxLevel}
-              <div class="dots" aria-label="Box {card.box} of 8" data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">{card.box ? `box ${card.box}/8` : 'new'}</span></div>
+            {:else if settings?.showBoxLevel && card.box > 0}
+              <div class="dots" aria-label="Box {card.box} of 8" data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">box {card.box}/8</span></div>
             {/if}
           {/snippet}
         </FlipCard>
@@ -303,6 +327,10 @@
     </div>
 
     {#if hintsOn}<GestureHints {flipped} {used} grade={!review} extra />{/if}
+
+    {#if !panel && !undoPill}
+      <button class="grab" onclick={() => vertical(-1)} aria-label="Card options" data-testid="grab" data-nogesture><span></span></button>
+    {/if}
 
     {#if undoPill && !panel}
       <button class="undo" onclick={undo} data-testid="undo">{undoPill.label}</button>
@@ -334,7 +362,16 @@
 {#if editing && view?.card}
   <Sheet full label="Edit card" onclose={() => (editing = false)}>
     <div class="stack">
-      <div class="row"><h2 class="spacer">{headword(view.card.lemma, view.card.pos)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      <div class="row"><h2 class="spacer">{headword(view.card.lemma, editPos ? [editPos] : view.card.pos)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      {#if senses.length > 1}
+        <div class="section-title">Part of speech</div>
+        <div class="row senses" role="radiogroup" aria-label="Part of speech">
+          {#each senses as s (s.pos)}
+            <button class="chip" class:on={editPos === s.pos} role="radio" aria-checked={editPos === s.pos} onclick={() => pickSense(s)} data-testid="sense-{s.pos}">{s.pos}</button>
+          {/each}
+        </div>
+        <p class="small muted">Picking one fills in the lists' translations and definition for it.</p>
+      {/if}
       <div class="section-title">Translations</div>
       {#each editList as _, i (i)}
         <div class="row">
@@ -343,7 +380,8 @@
         </div>
       {/each}
       {#if editList.length < 4}<button class="linkbtn" onclick={() => (editList = [...editList, ''])}>＋ Add translation</button>{/if}
-      {#if view.card.definition}<p class="small muted">{view.card.definition}</p>{/if}
+      <label class="stack small">English definition
+        <textarea rows="3" bind:value={editDef} aria-label="Definition" data-testid="edit-definition"></textarea></label>
       <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">Save</button>
       <div class="section-title">Other actions</div>
       <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>
@@ -382,6 +420,14 @@
   .track { flex: 1; height: 3px; background: color-mix(in srgb, var(--text) 15%, transparent); border-radius: 2px; overflow: hidden; }
   .track div { height: 100%; background: var(--accent); }
   .progress span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  /* a handle that says "something is below": tap it or swipe up */
+  .grab { position: absolute; bottom: calc(var(--safe-bottom) + 6px); left: 50%; transform: translateX(-50%); width: 88px; height: 32px;
+    border: none; background: none; padding: 0; display: flex; align-items: center; justify-content: center; }
+  .grab span { width: 40px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--text) 30%, transparent); }
+  .senses { gap: 8px; flex-wrap: wrap; }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 0 14px; min-height: 36px; font-weight: 600; }
+  .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  textarea { width: 100%; font: inherit; font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); resize: vertical; }
   .undo { position: absolute; bottom: calc(var(--safe-bottom) + 28px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
     padding: 10px 18px; min-height: 44px; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: var(--card-shadow); }
   .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(var(--safe-bottom) + 16px); background: var(--surface);

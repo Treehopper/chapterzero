@@ -1,5 +1,5 @@
 /** CardService (Epic D): words screen, suggest, adding by hand, remove/restore/known. */
-import { resolveCardContent } from '../domain/cardContent.ts';
+import { resolveCardContent, senseOptions, type SenseOption } from '../domain/cardContent.ts';
 import { chapterProgress, displayTitle } from '../domain/coverage.ts';
 import { levelOfRank } from '../domain/levels.ts';
 import { normalizeToken } from '../domain/text.ts';
@@ -197,6 +197,14 @@ export function cardService(ctx: Ctx) {
         const row = await tx.bookLemmas.get(bookId, lemma);
         if (row) await tx.bookLemmas.saveMany([{ ...row, ignored }]);
       }),
+
+    /** what the lists offer per part of speech for this card's word (C13); empty when not in the lists */
+    senses: async (cardId: string): Promise<SenseOption[]> => {
+      const card = await ctx.uow.run((tx) => tx.cards.get(cardId));
+      if (!card) throw new Error('Card not found');
+      const e = (await ctx.wordList.entries([card.lemma])).get(card.lemma);
+      return e ? senseOptions(e) : [];
+    },
 
     editTranslation: (cardId: string, translations: string[]) =>
       ctx.uow.run(async (tx) => {

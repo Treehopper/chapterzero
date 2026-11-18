@@ -66,8 +66,7 @@ test('settings: undo button after swiping off, box level on (C6)', async ({ page
   await importAndOpen(page);
   await startStudy(page);
   await tapCard(page);
-  await expect(page.getByTestId('box-dots')).toHaveText('new');
-  await expect(page.getByTestId('box-dots').locator('i')).toHaveCount(8);
+  await expect(page.getByTestId('box-dots')).toHaveCount(0);           // a new card has no filled dot yet
   await swipeRight(page);
   await expect(page.getByTestId('card-word')).toBeVisible();
   await expect(page.getByTestId('undo')).toHaveCount(0);

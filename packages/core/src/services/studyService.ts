@@ -366,14 +366,13 @@ export function studyService(ctx: Ctx) {
         return view(session, book, byId, settings);
       }),
 
-    editCurrent: (sessionId: string, translations: string[]) =>
+    /** translations, and optionally the definition and the part of speech (C13) */
+    editCurrent: (sessionId: string, edit: CardEdit) =>
       ctx.uow.run(async (tx) => {
         const { session, book, byId, settings } = await load(tx, sessionId);
         const card = session.current && byId.get(session.current.cardId);
         if (!card) throw new Error('No current card');
-        const ts = cleanTranslations(translations);
-        if (!ts.length && !card.definition) throw new Error('A card needs a translation');
-        const edited: Card = { ...card, translations: ts, edited: true, translationSource: 'manual' };
+        const edited = applyEdit(card, edit);
         byId.set(card.id, edited);
         await tx.cards.saveMany([edited]);
         await tx.sessions.save(session);
@@ -440,3 +439,13 @@ export function studyService(ctx: Ctx) {
 }
 
 export { cleanTranslations };
+
+export interface CardEdit { translations: string[]; definition?: string; pos?: string }
+
+export function applyEdit(card: Card, edit: CardEdit): Card {
+  const ts = cleanTranslations(edit.translations);
+  const definition = edit.definition === undefined ? card.definition : edit.definition.trim() || undefined;
+  if (!ts.length && !definition) throw new Error('A card needs a translation or a definition');
+  const pos = edit.pos ? [edit.pos, ...card.pos.filter((p) => p !== edit.pos)] : card.pos;
+  return { ...card, translations: ts, definition, pos, edited: true, translationSource: ts.length ? 'manual' : 'definition' };
+}

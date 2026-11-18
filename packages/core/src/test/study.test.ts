@@ -201,9 +201,14 @@ describe('session queue and grading', () => {
     const { app, book, cards } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);
     await app.study.flip(v0.sessionId);
-    const e = await app.study.editCurrent(v0.sessionId, ['aufgeben', ' aufgeben ', 'verzichten']);
+    const e = await app.study.editCurrent(v0.sessionId, { translations: ['aufgeben', ' aufgeben ', 'verzichten'] });
     expect(e.card).toMatchObject({ lemma: 'relinquish', translations: ['aufgeben', 'verzichten'] });
     expect(e.phase).toBe('back');
+    // part of speech and definition too; an empty definition is dropped, but a card needs one of the two
+    const p = await app.study.editCurrent(v0.sessionId, { translations: ['Aufgabe'], definition: ' the act of giving up ', pos: 'noun' });
+    expect(p.card).toMatchObject({ translations: ['Aufgabe'], definition: 'the act of giving up', translationSource: 'manual' });
+    expect(p.card?.pos[0]).toBe('noun');
+    await expect(app.study.editCurrent(v0.sessionId, { translations: [], definition: '' })).rejects.toThrow(/translation or a definition/);
     const r = await app.study.removeCurrent(v0.sessionId, 'removed');
     expect(r.card?.lemma).not.toBe('relinquish');
     expect(r.phase).toBe('front');
