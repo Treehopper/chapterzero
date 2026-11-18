@@ -54,5 +54,7 @@ export function announceUnlocks(unlocks: AchievementUnlock[], enabled: boolean) 
   }
 }
 
+/** "≈ 25 min", "≈ 1 h 20 min" */
+export const duration = (min: number) => (min < 60 ? `≈ ${Math.max(1, min)} min` : `≈ ${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`);
 export const pct = (x: number, digits = 1) => `${(x * 100).toFixed(digits)} %`;
 export const fmt = (n: number) => n.toLocaleString('en-US');

@@ -60,6 +60,9 @@ test.describe('import (B1–B15, B7)', () => {
     await expect(learning).toContainText(/\d+\.\d % known/);            // coverage in the line, bar + number = way to the target
     await expect(learning.getByTestId('chapter-to-target')).toHaveText(/^\d+ % to target$/);
     await expect(page.getByTestId('bars-note')).toContainText('full = ready to read');
+    // E7: time to ready, for the book and the learning chapter
+    await expect(page.getByTestId('book-eta')).toContainText(/≈ \d+ (min|h).* of practice until ready to read/);
+    await expect(learning.getByTestId('chapter-eta')).toHaveText(/^≈ \d+/);
   });
 
   test('cancelling the preview discards the draft; library tile after import', async ({ page }) => {

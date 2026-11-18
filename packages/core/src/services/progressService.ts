@@ -1,11 +1,19 @@
 /** ProgressService (README §7.5): coverage, chapter states, boxes, streaks. */
 import { bookCoverage, chapterProgress, unknownEvery } from '../domain/coverage.ts';
 import { dayKey, startOfDay, addDays } from '../domain/dates.ts';
+import { DEFAULT_PACE, estimateToReady, paceFrom, type Pace } from '../domain/estimate.ts';
 import type { Book, BookLemma, BookProgress, Card, ReviewLogEntry, Settings } from '../domain/types.ts';
 import type { Repositories } from '../ports/index.ts';
 
-export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma[], settings: Settings, now: Date): BookProgress {
-  const chapters = chapterProgress(book, cards, lemmas, settings.coverageTarget);
+export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma[], settings: Settings, now: Date, pace: Pace = DEFAULT_PACE): BookProgress {
+  const est = new Map(estimateToReady(book, cards, settings.coverageTarget, pace).map((e) => [e.index, e]));
+  const chapters = chapterProgress(book, cards, lemmas, settings.coverageTarget).map((c) => {
+    const e = est.get(c.index);
+    return e && e.cards && c.state !== 'ready' ? { ...c, toReady: { minutes: e.minutes, cards: e.cards, newCards: e.newCards } } : c;
+  });
+  const sum = (k: 'minutes' | 'cards' | 'newCards') => chapters.reduce((n, c) => n + (c.toReady?.[k] ?? 0), 0);
+  const toReady = { minutes: sum('minutes'), cards: sum('cards'), newCards: sum('newCards') };
+  const days = toReady.cards ? Math.ceil(toReady.newCards / settings.dailyNewLimit) + 1 : 0;
   const coverage = bookCoverage(book.chapters, cards);
   const learning = chapters.find((c) => c.state === 'learning');
   const boxes = new Array<number>(settings.scheduler.maxLevel + 1).fill(0);
@@ -31,14 +39,17 @@ export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma
     unlisted: { words: unl.length, occurrences: unl.reduce((n, l) => n + l.occurrences, 0) },
     due: active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) <= now).length,
     finishedAt: book.finishedAt,
+    toReady: { ...toReady, days },
   };
 }
 
 export async function loadBookProgress(tx: Repositories, bookId: string, now: Date): Promise<BookProgress> {
   const book = await tx.books.get(bookId);
   if (!book) throw new Error('Book not found');
-  const [cards, lemmas, settings] = await Promise.all([tx.cards.listByBook(bookId), tx.bookLemmas.listByBook(bookId), tx.settings.get()]);
-  return computeBookProgress(book, cards, lemmas, settings, now);
+  const [cards, lemmas, settings, log] = await Promise.all([
+    tx.cards.listByBook(bookId), tx.bookLemmas.listByBook(bookId), tx.settings.get(), tx.reviewLog.listSince(addDays(startOfDay(now), -30)),
+  ]);
+  return computeBookProgress(book, cards, lemmas, settings, now, paceFrom(log));
 }
 
 export interface DailyStats { day: string; reviews: number; correct: number }

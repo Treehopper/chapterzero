@@ -8,6 +8,7 @@ import { headword, resolveCardContent, senseOptions } from '../domain/cardConten
 import { nearestLevels } from '../services/calibrationService.ts';
 import { EMPTY_STATS } from '../domain/settings.ts';
 import { chapterToTarget } from '../domain/coverage.ts';
+import { DEFAULT_PACE, estimateToReady, paceFrom } from '../domain/estimate.ts';
 import { SeededRandom } from '../testing/memory.ts';
 import type { Card } from '../domain/types.ts';
 
@@ -66,6 +67,27 @@ describe('sense options for editing (C13)', () => {
       { pos: 'noun', translations: ['Scheuerstelle'], definition: 'a sore from rubbing' },
       { pos: 'verb', translations: ['scheuern', 'reiben'], definition: 'to rub' },
     ]);
+  });
+});
+
+describe('time to ready (E7)', () => {
+  const ch = (index: number) => ({ index, workIndex: 0, title: String(index), kind: 'story' as const, included: true, wordTokens: 100 });
+  const book = { id: 'b', title: 'B', language: 'en' as const, importedAt: '', cutoffRank: 0, stats: { wordTokens: 200, distinctWords: 0 },
+    works: [], chapters: [ch(0), ch(1)], chaptersAnnounced: [] };
+  it('takes cards in study order until the target; later chapters count earlier ones as done', () => {
+    const cards = [
+      card({ id: 'c', occurrencesByChapter: { 0: 1 }, firstPosition: 30 }), card({ id: 'b', occurrencesByChapter: { 0: 2 }, firstPosition: 20 }),
+      card({ id: 'a', occurrencesByChapter: { 0: 5, 1: 3 }, firstPosition: 10 }), card({ id: 'd', occurrencesByChapter: { 1: 2 }, level: 1 }),
+    ];
+    const [one, two] = estimateToReady(book, cards, 0.98, DEFAULT_PACE);
+    expect(one).toMatchObject({ cards: 2, newCards: 2, reviews: 5, minutes: 1 });   // a, then b: 8 → 1 unknown of 100
+    expect(two).toMatchObject({ cards: 0, minutes: 0 });                            // a is planned already, d alone is 2 %
+  });
+  it('learns the pace from the review log, with defaults for a short history', () => {
+    expect(paceFrom([])).toEqual(DEFAULT_PACE);
+    const at = (s: number) => new Date(Date.UTC(2026, 0, 1, 10, 0, s)).toISOString();
+    const log = Array.from({ length: 30 }, (_, i) => ({ cardId: 'x', bookId: 'b', at: at(i * 5), result: i % 5 ? 'known' as const : 'unknown' as const, levelBefore: 0, levelAfter: 0 }));
+    expect(paceFrom(log)).toEqual({ secondsPerReview: 5, wrongRate: 0.2 });
   });
 });
 

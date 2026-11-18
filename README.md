@@ -175,6 +175,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | E4 | As a learner, I want a daily streak and a daily goal ring. | Should |
 | E5 | As a learner, I want small celebrations (animation, sound off by default) at milestones: a chapter becoming ready to read, the whole book reaching the coverage target, streak records, first perfect session. | Should |
 | E6 | As a learner, I want a history chart of success rate and reviews per day. | Could |
+| E7 | As a learner, I want to see how much practice time is left until the book, and each chapter, is ready to read. | Should |
 
 ### Epic G – Achievements (Steam-style)
 
@@ -966,6 +967,8 @@ The cards of one book are loaded into memory for this (a few thousand objects), 
 - The calibration check and an import draft are persisted the same way.
 
 ### 7.5 Progress metrics (Epics E and I)
+
+- **Time to ready** (E7, `domain/estimate.ts`): in reading order, each included chapter below the target takes unknown cards until it reaches it, in the order study brings them (cards in learning first, then new ones by first occurrence, as in §7.3); cards taken for an earlier chapter count as known for later ones. Each taken card needs `(2 − level) / (1 − wrongRate)` more reviews; minutes = reviews × seconds per review. The pace comes from the last 30 days of the review log (median gap < 90 s between reviews, share of wrong answers clamped to 5–60 %), or 8 s and 25 % with fewer than 20 reviews. Shown on the book overview ("≈ 1 h 20 min of practice until ready to read · 240 words, about 13 days at your daily limit"; days = new cards ÷ daily new-card limit, + 1 for the last ones' second review), per chapter row ("· ≈ 15 min") and in the chapter sheet (what the chapter adds once the chapters before it are ready).
 
 - **Coverage** (I2) is a pure function over the book's chapters and cards:
 

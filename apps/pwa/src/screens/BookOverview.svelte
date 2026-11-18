@@ -4,7 +4,7 @@
   import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { fmt, pct, toast, ui } from '../lib/ui.svelte';
+  import { duration, fmt, pct, toast, ui } from '../lib/ui.svelte';
   import Ring from '../components/Ring.svelte';
   import Sheet from '../components/Sheet.svelte';
   import Boxes from '../components/Boxes.svelte';
@@ -76,6 +76,10 @@
       <div class="stack hero-text">
         <strong data-testid="book-coverage">{p.unknownEvery ? `about one unknown word every ${p.unknownEvery} words` : 'no unknown words left'}</strong>
         <span class="small muted">You know {fmt(p.rareWordsKnown)} of this book's {fmt(p.rareWordsTotal)} rare words.</span>
+        {#if p.toReady.cards}
+          <span class="small eta" data-testid="book-eta"><strong>{duration(p.toReady.minutes)}</strong> of practice until ready to read
+            <span class="muted">· {fmt(p.toReady.cards)} words, about {p.toReady.days} {p.toReady.days === 1 ? 'day' : 'days'} at your daily limit</span></span>
+        {/if}
         {#if p.finishedAt}
           {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">Ready to read · open ›</button>
           {:else}<span class="pill good">Ready to read</span>{/if}
@@ -104,7 +108,7 @@
                 {#if c.included}
                   <span class="cbar" aria-hidden="true"><span style:width="{c.toTarget * 100}%"></span></span>
                 {/if}
-                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}</span>
+                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}{#if c.toReady}{' · '}<span data-testid="chapter-eta">{duration(c.toReady.minutes)}</span>{/if}</span>
               </span>
             </button>
           {/each}
@@ -139,6 +143,9 @@
         <div><strong>{c.cards.learning}</strong><span class="small muted">learning</span></div>
         <div><strong>{c.cards.learned}</strong><span class="small muted">learned</span></div>
       </div>
+      {#if c.toReady}
+        <p class="small" data-testid="sheet-eta"><strong>{duration(c.toReady.minutes)}</strong> of practice ({c.toReady.cards} words) until this chapter is ready to read<span class="muted">, once the chapters before it are</span>.</p>
+      {/if}
       <p class="small muted">100 % = all {c.cards.unseen + c.cards.learning + c.cards.learned} cards learned.</p>
       {#if c.included}
         {@const same = active?.chapterIndex === c.index}
@@ -196,4 +203,5 @@
   .counts div { display: flex; flex-direction: column; font-size: 22px; }
   .flame { font-size: 20px; }
   .readpill { border: none; cursor: pointer; align-self: flex-start; }
+  .eta { margin-top: 2px; }
 </style>

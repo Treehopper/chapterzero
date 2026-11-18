@@ -140,7 +140,11 @@ export interface ChapterProgress {
   state: 'ready' | 'learning' | 'upcoming' | 'excluded';
   cards: { unseen: number; learning: number; learned: number };
   unlisted: { words: number; occurrences: number };
+  /** practice this chapter adds until it is ready, once the chapters before it are (E7); absent when ready or not included */
+  toReady?: ToReady;
 }
+
+export interface ToReady { minutes: number; cards: number; newCards: number }
 
 export interface CardSnapshot { card: Card }
 
@@ -201,6 +205,8 @@ export interface BookProgress {
   unlisted: { words: number; occurrences: number };
   due: number;
   finishedAt?: string;
+  /** practice until every included chapter is ready (E7); days: at the daily new-card limit, plus a day for the last ones' second review */
+  toReady: ToReady & { days: number };
 }
 
 export interface SessionStatistics {
