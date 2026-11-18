@@ -92,7 +92,7 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session. | Must |
-| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card*, *Mark as known* and *Cancel session* (plus *Undo* when the undo button after swiping is turned off). | Must |
+| C12 | As a learner, I want to **swipe up** (or tap the handle bar at the bottom) to reveal *Edit card*, *Mark as known* and *Cancel session*. | Must |
 | C13 | As a learner, I want *Edit card* to let me change the translation, the English definition and the part of speech of the current card or remove it, and then continue studying. *Mark as known* sits directly in the pull-up panel. | Must |
 | C14 | As a learner, I want *Cancel session* to end the session and show full-screen statistics for this session and my overall progress. | Must |
 | C15 | As a learner, I want overlays explaining the gestures on the first card of every session. | Must |
@@ -733,7 +733,7 @@ interface Settings {
   gestureHints: 'everySession' | 'off';
   achievementPopups: boolean;       // true; Settings › Achievements and streaks: false hides pop-ups, the trophy,
                                     // streaks and medals everywhere
-  undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (Undo stays in the swipe-up panel)
+  undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (without it only the Z key undoes; the panel never has Undo)
   showBoxLevel: boolean;            // false; box dots on the card back, only once the card has reached box 1
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
@@ -1200,7 +1200,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 
 - **Full screen**: card centred on a full-bleed background, no visible controls except a small handle bar at the bottom for the swipe-up panel. Front: English word (verbs as "to brood", when `pos[0]` is verb) + context sentence with the word in bold. Back: German translations, the English definition in smaller type, part of speech; optionally (`showBoxLevel`) box dots: eight outlined dots, one filled per level, labelled "box n/8"; not shown for a card still in box 0.
 - **Tap** → 3D flip (300 ms, `rotateY`, `backface-visibility: hidden`).
-- **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6; can be turned off in Settings, Undo stays in the swipe-up panel); after a first-sight retirement it reads "Already known · Undo" (C18).
+- **Swipe left/right** → card follows the finger with slight rotation (`x * 0.05deg`); green/red tint with ✓/✗ grows with distance. Past the threshold the card flies off and the next one scales up from the deck behind. A small "Undo" pill appears near the bottom for 3 s (C6; can be turned off in Settings; the swipe-up panel has no Undo); after a first-sight retirement it reads "Already known · Undo" (C18).
 - **Lookup links (C16)** → every back side ends with the link row. (Sessions saved before C20 may still hold a card in the old `wrongReview` phase, shown like this until the next tap or swipe:)
 
 ```
@@ -1225,7 +1225,7 @@ Each bar (and its number) shows how far the chapter is on the way to the coverag
 
   Links are real `<a href target="_blank" rel="noopener noreferrer">` elements. The gesture recogniser ignores pointer-downs that start on a link.
 - **Top bar** → a 3 px progress bar (session done/total, accent colour) and a tiny "12 / 40" label, always visible under the status bar. User feedback: hidden progress felt like no progress; the way out is the swipe-up panel, named in the first-card hint and marked by the handle bar.
-- **Swipe up** (or tap the small handle bar at the bottom, shown whenever the panel is closed) → bottom panel with 56 px-tall buttons, *Edit card*, *Mark as known* and *Cancel session* (red text); card dims to 40 %. Swipe down or tap the card to dismiss.
+- **Swipe up** (or tap the small handle bar at the bottom, shown whenever the panel is closed) → bottom panel with 56 px-tall buttons, *Edit card*, *Mark as known* and *Cancel session* (red text); no Undo. While the finger pulls, the panel slides up with it and the card rises with it (up to 72 px), so the gesture is visible from the first pixel; past 48 px (or a flick) it opens, else both spring back. Open: card raised and dimmed to 40 %. Swipe down (panel and card follow the finger) or tap the card to dismiss.
 - **Edit card sheet** → full-screen: word, part-of-speech chips (when the lists know more than one), translation fields (editable, add/remove, reorder with ↑/↓; the back lists them in this order), definition field, *Save*, then *Remove card* (confirmed via an undo toast rather than a dialog), *Cancel*. *Mark as known* is in the pull-up panel itself (undo toast).
 - **Gesture hints (C15)** on the first card of a session:
 

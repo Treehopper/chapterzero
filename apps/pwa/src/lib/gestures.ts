@@ -6,6 +6,7 @@ export interface GestureHandlers {
   onTap?: (e: PointerEvent) => void;
   onDragX?: (dx: number) => void;
   onSwipeX?: (dir: 1 | -1) => void;
+  onDragY?: (dy: number) => void;
   onSwipeY?: (dir: 1 | -1) => void; // 1 = down
   onCancel?: () => void;
   /** width used for the 30 % threshold (the card's width) */
@@ -55,6 +56,7 @@ export function gestures(node: HTMLElement, handlers: GestureHandlers) {
       if (axis === 'y' && (sy < EDGE_GUARD_PX || sy > window.innerHeight - EDGE_GUARD_PX)) axis = 'none';
     }
     if (axis === 'x') h.onDragX?.(dx);
+    else if (axis === 'y') h.onDragY?.(dy);
   }
 
   function up(e: PointerEvent) {
@@ -82,7 +84,7 @@ export function gestures(node: HTMLElement, handlers: GestureHandlers) {
   function cancel(e: PointerEvent) {
     if (e.pointerId !== id) return;
     id = null;
-    if (axis === 'x') h.onCancel?.();
+    if (axis === 'x' || axis === 'y') h.onCancel?.();
   }
 
   node.addEventListener('pointerdown', down);

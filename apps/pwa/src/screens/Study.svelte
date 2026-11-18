@@ -22,6 +22,12 @@
   let fly = $state<-1 | 0 | 1>(0);
   let busy = $state(false);
   let panel = $state(false);
+  /** vertical finger offset while the panel is pulled (0 when not dragging) */
+  let dy = $state(0);
+  let panelH = $state(220);
+  /** how far the panel is out, 0–1: follows the finger, then settles */
+  const openness = $derived(Math.min(1, Math.max(0, panel ? 1 - dy / panelH : -dy / panelH)));
+  const CARD_LIFT = 72;
   let undoPill = $state<{ label: string; until: number }>();
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
   let editing = $state(false);
@@ -203,7 +209,13 @@
     void run(() => api.study.undo(view!.sessionId), { newCard: true });
   }
 
+  /** the panel slides in and out when opened or closed without a drag (handle, keys, tap on the card) */
+  function slide(_: Element) {
+    return { duration: dy === 0 ? 200 : 0, css: (t: number) => `transform: translateY(${(1 - t) * 100}%)` };
+  }
+
   function vertical(dir: 1 | -1) {
+    dy = 0;
     if (dir === 1) {
       panel = false;
     } else {
@@ -312,7 +324,8 @@
   {@const card = view.card}
   <main class="stage" aria-label="Study" data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
     use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
-      onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
+      onDragY: (y) => { if (!fly) dy = y; },
+      onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => { dx = 0; dy = 0; }, width: () => Math.min(innerWidth * 0.88, 440) }}>
 
     <div class="topbar">
       {#if left !== undefined && view.endsAt}
@@ -329,9 +342,9 @@
       {/if}
     </div>
 
-    <div class="cardpos" class:nudge>
+    <div class="cardpos" class:nudge class:dragging={dy !== 0} style:translate="0 {-CARD_LIFT * openness}px">
       {#key cardKey}
-        <FlipCard {flipped} {dx} {fly} dim={panel} {review} entering={!review} label="Card {card.lemma}">
+        <FlipCard {flipped} {dx} {fly} dim={openness > 0.5} {review} entering={!review} label="Card {card.lemma}">
           {#snippet front()}
             <div class="lvl small muted">{card.listLevel ? `Level ${card.listLevel}` : 'Added by hand'}</div>
             <div class="word" data-testid="card-word">{headword(card.lemma, card.pos)}</div>
@@ -375,11 +388,10 @@
       <button class="undo" onclick={undo} data-testid="undo">{undoPill.label}</button>
     {/if}
 
-    {#if panel}
-      <div class="panel" data-testid="panel">
+    {#if panel || openness > 0}
+      <div class="panel" class:dragging={dy !== 0} transition:slide data-testid="panel" bind:offsetHeight={panelH} style:transform="translateY({(1 - openness) * 100}%)">
         <button class="pbtn" onclick={openEdit}>Edit card</button>
         <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">Mark as known</button>
-        {#if view.canUndo && !(settings?.undoAfterGrade ?? true)}<button class="pbtn" onclick={() => { panel = false; undo(); }} data-testid="panel-undo">Undo</button>{/if}
         <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
       </div>
     {/if}
@@ -436,7 +448,8 @@
 <style>
   .stage { position: fixed; inset: 0; background: var(--stage); display: flex; align-items: center; justify-content: center;
     touch-action: none; overscroll-behavior: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
-  .cardpos { position: relative; }
+  .cardpos { position: relative; transition: translate 0.25s ease-out; }
+  .cardpos.dragging, .panel.dragging { transition: none; }
   .cardpos.nudge { animation: nudge 0.35s; }
   @keyframes nudge { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
   .lvl { text-align: center; }
@@ -473,8 +486,7 @@
   .undo { position: absolute; bottom: calc(var(--safe-bottom) + 44px); left: 50%; transform: translateX(-50%); border: none; border-radius: 999px;
     padding: 10px 18px; min-height: 44px; background: var(--text); color: var(--bg); font-weight: 700; box-shadow: var(--card-shadow); }
   .panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(var(--safe-bottom) + 16px); background: var(--surface);
-    border-radius: 20px 20px 0 0; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 8px; animation: up .2s ease-out; }
-  @keyframes up { from { transform: translateY(100%); } to { transform: none; } }
+    border-radius: 20px 20px 0 0; box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 8px; transition: transform .25s ease-out; }
   .pbtn { min-height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 17px; font-weight: 600; }
   .pbtn.cancel { color: var(--bad); }
   .nothing { justify-content: center; }

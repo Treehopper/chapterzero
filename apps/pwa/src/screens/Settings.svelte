@@ -103,7 +103,7 @@
         <span class="small muted block">Pop-ups, the trophy, streaks and medals</span></span>
         <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
       <label class="list-row"><span class="spacer">Undo button after swiping
-        <span class="small muted block">Undo stays in the swipe-up panel</span></span>
+        <span class="small muted block">Without it, a swipe can only be undone with the Z key</span></span>
         <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
       <label class="list-row"><span class="spacer">Box level on the card back
         <span class="small muted block">Dots: how many times in a row you knew the card</span></span>

@@ -55,7 +55,7 @@ test('mark as known on the last card: the toast on the statistics screen must no
   }
 });
 
-test('undo pill off: the panel offers Undo (as Settings promises "Undo stays in the swipe-up panel")', async ({ page }) => {
+test('undo pill off: no pill, and the panel never offers Undo', async ({ page }) => {
   const id = await bookId(page);
   await page.goto('/#/settings');
   await page.getByTestId('set-undo').tap();
@@ -71,7 +71,7 @@ test('undo pill off: the panel offers Undo (as Settings promises "Undo stays in 
   await expect(page.getByTestId('undo')).toHaveCount(0);
   await swipeUp(page);
   await expect(page.getByTestId('panel')).toBeVisible();
-  await expect(page.getByTestId('panel').getByRole('button', { name: /Undo/ })).toBeVisible();
+  await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Cancel session']);
 });
 
 test('keyboard: Enter on the focused Undo pill undoes instead of flipping the card', async ({ page }) => {
