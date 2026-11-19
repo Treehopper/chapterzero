@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: Settings = {
   undoAfterGrade: true,
   undoAfterKnown: true,
   showBoxLevel: false,
+  showLookupLinks: true,
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,
 };

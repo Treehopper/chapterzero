@@ -110,6 +110,23 @@ test.describe('study (C1–C18)', () => {
     await expectCard(page, w, 'back');
   });
 
+  test('links on the card back can be turned off in the settings (C17)', async ({ page }) => {
+    await tapCard(page);
+    await expectPhase(page, 'back');
+    await expect(page.getByTestId('card-links')).toBeVisible();
+    const study = page.url();
+    await page.goto('/#/settings');
+    await page.getByTestId('set-links').tap();
+    await expect(page.getByTestId('set-links')).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Show Wiktionary' })).toHaveCount(0);
+    await page.waitForTimeout(300);
+    await page.goto(study);
+    await expectPhase(page, 'back');
+    await expect(back(page)).toBeVisible();
+    await expect(page.getByTestId('card-links')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Wiktionary ↗' })).toHaveCount(0);
+  });
+
   test('close and reopen: same card, same side, same counters (C5)', async ({ page }) => {
     await tapCard(page);
     await expectPhase(page, 'back');

@@ -375,7 +375,7 @@
             {#if card.example}
               <p class="ex small">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
-            <div class="links"><LookupLinks links={view!.lookupLinks} /></div>
+            {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>{/if}
             {#if review}
               <div class="foot small muted">tap or swipe to continue</div>
             {:else if settings?.showBoxLevel && card.box > 0}

@@ -318,6 +318,8 @@ export interface Settings {
   undoAfterKnown: boolean;
   /** the box dots on the card back */
   showBoxLevel: boolean;
+  /** the lookup links on the card back (C17) */
+  showLookupLinks: boolean;
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }

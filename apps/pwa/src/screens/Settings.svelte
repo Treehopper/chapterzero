@@ -122,6 +122,9 @@
 
     <div class="section-title">Lookup links</div>
     <div class="list">
+      <label class="list-row"><span class="spacer">Links on the card back</span>
+        <input type="checkbox" checked={s.showLookupLinks} onchange={(e) => save({ showLookupLinks: e.currentTarget.checked })} data-testid="set-links" /></label>
+      {#if s.showLookupLinks}
       {#each providers as p, i (p.id)}
         <div class="list-row">
           <input type="checkbox" checked={p.enabled} aria-label="Show {p.name}" onchange={(e) => setProviders(providers.map((x) => (x.id === p.id ? { ...x, enabled: e.currentTarget.checked } : x)))} />
@@ -139,6 +142,7 @@
         {#if customError}<span class="error small">{customError}</span>{/if}
         <button class="btn" onclick={addCustom}>Add link</button>
       </div>
+      {/if}
     </div>
 
     <div class="section-title">Backup</div>
