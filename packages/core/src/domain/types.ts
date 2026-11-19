@@ -314,6 +314,8 @@ export interface Settings {
   achievementPopups: boolean;
   /** the Undo pill after a swipe grade; Undo stays in the swipe-up panel */
   undoAfterGrade: boolean;
+  /** the Undo button after Mark as known (study panel, front swipe, Words screen) */
+  undoAfterKnown: boolean;
   /** the box dots on the card back */
   showBoxLevel: boolean;
   lookupProviders: LookupProvider[];

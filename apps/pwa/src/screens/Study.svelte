@@ -150,7 +150,7 @@
         const [v] = await Promise.all([api.study.removeCurrent(view.sessionId, 'known'), new Promise((r) => setTimeout(r, 260))]);
         cardKey++;
         view = v;
-        if (settings?.undoAfterGrade ?? true) showUndo(`“${lemma}” known · Undo`);
+        if (settings?.undoAfterKnown ?? true) showUndo(`“${lemma}” known · Undo`);
         await afterView(v);
       } finally {
         dx = 0;
@@ -270,7 +270,7 @@
     if (!(await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true }))) return;
     const text = as === 'known' ? `“${lemma}” marked as known · won’t be repeated` : `“${lemma}” removed`;
     // the last card ends the session, and a finished session has nothing to undo
-    toast(text, view?.done ? undefined : { label: 'Undo', run: undo });
+    toast(text, view?.done || (as === 'known' && !(settings?.undoAfterKnown ?? true)) ? undefined : { label: 'Undo', run: undo });
   }
   async function finish() {
     panel = false;

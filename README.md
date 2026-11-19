@@ -734,6 +734,7 @@ interface Settings {
   achievementPopups: boolean;       // true; Settings › Achievements and streaks: false hides pop-ups, the trophy,
                                     // streaks and medals everywhere
   undoAfterGrade: boolean;          // true; the Undo pill after a swipe grade (without it only the Z key undoes; the panel never has Undo)
+  undoAfterKnown: boolean;          // true; the Undo button after Mark as known: the toast from the panel, the pill after a front swipe, the Words toast
   showBoxLevel: boolean;            // false; box dots on the card back, only once the card has reached box 1
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;

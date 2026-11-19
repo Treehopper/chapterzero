@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gestureHints: 'everySession',
   achievementPopups: true,
   undoAfterGrade: true,
+  undoAfterKnown: true,
   showBoxLevel: false,
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,

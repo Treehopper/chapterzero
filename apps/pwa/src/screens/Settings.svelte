@@ -105,6 +105,8 @@
       <label class="list-row"><span class="spacer">Undo button after swiping
         <span class="small muted block">Without it, a swipe can only be undone with the Z key</span></span>
         <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
+      <label class="list-row"><span class="spacer">Undo button after “Mark as known”</span>
+        <input type="checkbox" checked={s.undoAfterKnown} onchange={(e) => save({ undoAfterKnown: e.currentTarget.checked })} data-testid="set-undo-known" /></label>
       <label class="list-row"><span class="spacer">Box level on the card back
         <span class="small muted block">Dots: how many times in a row you knew the card</span></span>
         <input type="checkbox" checked={s.showBoxLevel} onchange={(e) => save({ showBoxLevel: e.currentTarget.checked })} data-testid="set-boxlevel" /></label>

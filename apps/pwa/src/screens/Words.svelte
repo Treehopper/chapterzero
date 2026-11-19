@@ -115,7 +115,8 @@
     const before = row.card.status;
     await api.cards.setStatus(row.card.id, status);
     const label = status === 'removed' ? 'removed' : status === 'known' ? 'marked as known' : 'restored';
-    toast(`“${row.lemma}” ${label}`, { label: 'Undo', run: async () => { await api.cards.setStatus(row.card!.id, before); dataChanged(); await load(); } });
+    const offer = status !== 'known' || (await api.settings.get()).undoAfterKnown;
+    toast(`“${row.lemma}” ${label}`, offer ? { label: 'Undo', run: async () => { await api.cards.setStatus(row.card!.id, before); dataChanged(); await load(); } } : undefined);
     editingRow = undefined;
     await load();
   }

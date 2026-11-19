@@ -160,3 +160,36 @@ test('undo after an edit of the next card: the edit survives, the previous card 
   await tapCard(page);
   await expect(back(page)).toContainText('zwei');
 });
+
+test('Undo after "Mark as known" off: no Undo after a front swipe, from the panel or on the Words screen', async ({ page }) => {
+  const id = await bookId(page);
+  await page.goto('/#/settings');
+  await page.getByTestId('set-frontswipe').selectOption('known');
+  await page.getByTestId('set-undo-known').tap();
+  await expect(page.getByTestId('set-undo-known')).not.toBeChecked();
+  await expect(page.getByTestId('set-undo')).toBeChecked();
+  await page.goto(`/#/book/${id}`);
+  await startStudy(page);
+  const a = await cardWord(page);
+  await swipeRight(page);                         // on the front: marked as known
+  await settled(page);
+  expect(await cardWord(page)).not.toBe(a);
+  await expect(page.getByTestId('undo')).toHaveCount(0);
+  const b = await cardWord(page);
+  await swipeUp(page);
+  await tap(page.getByTestId('panel-known'));
+  await expect(page.getByTestId('toast')).toContainText(`“${b}” marked as known · won’t be repeated`);
+  await expect(page.getByTestId('toast').getByRole('button', { name: 'Undo' })).toHaveCount(0);
+  // grading still offers Undo
+  await tapCard(page);
+  await expectPhase(page, 'back');
+  await swipeRight(page);
+  await expect(page.getByTestId('undo')).toBeVisible();
+  await page.goto(`/#/words/${id}`);
+  const row = page.getByTestId('word-row').first();
+  const w = (await row.getAttribute('data-word'))!;
+  await tap(row);
+  await tap(page.getByRole('button', { name: 'Mark as known' }));
+  await expect(page.getByTestId('toast')).toContainText(`“${w}” marked as known`);
+  await expect(page.getByTestId('toast').getByRole('button', { name: 'Undo' })).toHaveCount(0);
+});
