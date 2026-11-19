@@ -379,7 +379,9 @@
             {#if card.example}
               <p class="ex small" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
-            {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>{/if}
+            {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>
+            <!-- without links, the free space below balances the space above: the translation stays centred -->
+            {:else}<div class="balance" aria-hidden="true"></div>{/if}
             {#if review}
               <div class="foot small muted">{t('tap or swipe to continue')}</div>
             {:else if settings?.showBoxLevel && card.box > 0}
@@ -476,6 +478,7 @@
   .tr { font-size: clamp(24px, 7vw, 32px); font-weight: 600; line-height: 1.25; margin-top: auto; }
   .en { font-size: 12px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
   .def { font-size: 14px; color: var(--muted); margin: 8px 0 0; flex: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .balance { flex: none; margin-top: auto; }
   .links { flex: none; margin-top: auto; border-top: 1px solid var(--line); padding-top: 8px; }
   .dots { display: flex; gap: 6px; justify-content: center; align-items: center; flex: none; padding-top: 10px; }
   .dots i { width: 8px; height: 8px; border-radius: 4px; box-sizing: border-box; border: 1.5px solid var(--muted); opacity: 0.45; }

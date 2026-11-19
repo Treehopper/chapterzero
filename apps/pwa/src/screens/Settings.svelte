@@ -111,7 +111,7 @@
         <Info text={t('If you know a new card the very first time, you probably knew the word before. On: the card is retired at once and not shown again. Off: it is scheduled like every other card and comes back later.')} />
         <span class="small muted block">{s.retireOnFirstTry ? t('Retire the card') : t('Schedule normally')}</span></span>
         <input id="setting-3" type="checkbox" checked={s.retireOnFirstTry} onchange={(e) => save({ retireOnFirstTry: e.currentTarget.checked })} /></label>
-      <label class="list-row" for="setting-4"><span class="spacer">{t('Swipe right before flipping')}
+      <label class="list-row stack-row" for="setting-4"><span class="spacer">{t('Swipe right before flipping')}
         <Info text={t('What a right swipe does on a card you haven’t turned over. Ask: you are asked once, and your answer is kept. Mark as known: the card is taken out for good. Count as “knew it”: it is graded like a normal right swipe and comes back later. Not allowed: turn the card over first.')} />
         <span class="small muted block">{t('A swipe on a card you haven’t turned over never shows its back')}</span></span>
         <select id="setting-4" value={s.frontSwipe} onchange={(e) => save({ frontSwipe: e.currentTarget.value as Settings['frontSwipe'] })} data-testid="set-frontswipe" aria-label={t('Swipe right before flipping')}>
