@@ -48,7 +48,7 @@ export function segment(text: string, byForm: Map<string, Card>, used: Set<Card>
 export function readerService(ctx: Ctx) {
   return {
     /** books imported before Epic R have no stored text */
-    available: (bookId: string) => ctx.uow.run(async (tx) => !!(await tx.bookTexts.get(bookId))),
+    available: (bookId: string) => ctx.uow.run((tx) => tx.bookTexts.has(bookId)),
 
     open: (bookId: string): Promise<ReaderBook> =>
       ctx.uow.run(async (tx) => {

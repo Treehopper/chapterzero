@@ -59,6 +59,10 @@ describe('HttpPackInstaller + IdbWordList', () => {
     expect(progress.length).toBeGreaterThan(0);
     // offline after install: status still says installed
     expect((await new HttpPackInstaller(db, BASE, server({ offline: true }).fetchFn).status()).installed).toBe(true);
+    // start-up asks only what is installed: no request at all
+    const quiet = server();
+    expect(await new HttpPackInstaller(db, BASE, quiet.fetchFn).status({ remote: false })).toMatchObject({ installed: true, pair: { source: 'en', target: 'de' } });
+    expect(quiet.requests).toEqual([]);
   });
 
   it('accepts chunks a server already decompressed (Content-Encoding: gzip)', async () => {

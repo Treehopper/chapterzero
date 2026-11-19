@@ -9,7 +9,7 @@ export async function buildStatistics(tx: Repositories, session: StudySession, n
   const book = await tx.books.get(session.bookId);
   if (!book) throw new Error('Book not found');
   const [cards, lemmas, settings, allCards, log] = await Promise.all([
-    tx.cards.listByBook(book.id), tx.bookLemmas.listByBook(book.id), tx.settings.get(), tx.cards.listAll(),
+    tx.cards.listByBook(book.id), tx.bookLemmas.listByBook(book.id, 'unlisted'), tx.settings.get(), tx.cards.listAll(),
     tx.reviewLog.listSince(new Date(0)),
   ]);
   const progress = computeBookProgress(book, cards, lemmas, settings, now);

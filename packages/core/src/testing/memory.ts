@@ -50,6 +50,7 @@ function repos(d: Data): Repositories {
     },
     bookTexts: {
       get: async (id) => clone(d.texts.get(id)),
+      has: async (id) => d.texts.has(id),
       save: async (t) => void d.texts.set(t.bookId, clone(t)),
       getPosition: async (id) => clone(d.positions.get(id)),
       savePosition: async (p) => void d.positions.set(p.bookId, clone(p)),

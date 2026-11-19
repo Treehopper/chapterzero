@@ -101,6 +101,13 @@ class Overlay<T, K> {
     if (this.dels.has(k) || this.cleared) return undefined;
     return this.table.get(key as never);
   }
+  /** without reading the row (a book's text is megabytes) */
+  async has(key: K): Promise<boolean> {
+    const k = this.k(key);
+    if (this.puts.has(k)) return true;
+    if (this.dels.has(k) || this.cleared) return false;
+    return (await this.table.where(':id').equals(key as never).count()) > 0;
+  }
   async bulkGet(keys: K[]): Promise<(T | undefined)[]> {
     const fromDb = this.cleared ? keys.map(() => undefined) : await this.table.bulkGet(keys as never);
     return keys.map((key, i) => {
@@ -178,6 +185,7 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
     },
     bookTexts: {
       get: (id) => o.bookTexts.get(id),
+      has: (id) => o.bookTexts.has(id),
       save: async (t) => o.bookTexts.put([t]),
       getPosition: (id) => o.positions.get(id),
       savePosition: async (p) => o.positions.put([p]),

@@ -26,7 +26,7 @@
 
   onMount(async () => {
     try {
-      const [status, profile, state, settings] = await Promise.all([api.wordLists.status(), api.calibration.profile(), api.appState.get(), api.settings.get()]);
+      const [status, profile, state, settings] = await Promise.all([api.wordLists.status({ remote: false }), api.calibration.profile(), api.appState.get(), api.settings.get()]);
       ui.achievements = settings.achievementPopups;
       setUiLanguage(settings.uiLanguage);
       if (status.pair) ui.pair = status.pair;

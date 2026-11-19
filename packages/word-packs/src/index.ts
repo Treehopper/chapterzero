@@ -52,8 +52,8 @@ export class HttpPackInstaller implements PackInstaller {
     return v ?? { packs: [], complete: false };
   }
 
-  async status(): Promise<PackStatus> {
-    const [inst, m] = await Promise.all([this.installed(), this.manifest()]);
+  async status(opts: { remote?: boolean } = {}): Promise<PackStatus> {
+    const [inst, m] = await Promise.all([this.installed(), opts.remote === false ? undefined : this.manifest()]);
     const available = m?.packs.map(info);
     const updateAvailable = !!available && inst.complete
       && available.some((a) => inst.packs.find((p) => p.id === a.id)?.version !== a.version);

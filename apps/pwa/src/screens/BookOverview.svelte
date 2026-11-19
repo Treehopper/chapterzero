@@ -28,7 +28,9 @@
 
   async function load() {
     try {
-      [book, p, daily, active, readable] = await Promise.all([api.books.get(bookId), api.progress.book(bookId), api.progress.daily(1), api.study.active(bookId), api.reader.available(bookId)]);
+      let page;
+      [page, daily, active, readable] = await Promise.all([api.books.page(bookId), api.progress.daily(1), api.study.active(bookId), api.reader.available(bookId)]);
+      ({ book, progress: p } = page);
       cutoff = book.cutoffRank;
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   }

@@ -27,7 +27,8 @@ export function createApp(ports: Ports) {
 
   return {
     wordLists: {
-      status: () => ports.packs.status(),
+      /** remote: false = only what is installed, without asking the server (start-up) */
+      status: (opts?: { remote?: boolean }) => ports.packs.status(opts),
       install: (onProgress: (p: { loaded: number; total: number; phase: string }) => void) => ports.packs.install(onProgress),
       info: () => ports.wordList.info(),
     },
@@ -42,18 +43,24 @@ export function createApp(ports: Ports) {
         uow.run(async (tx) => {
           const [books, settings] = await Promise.all([tx.books.list(), tx.settings.get()]);
           const now = clock.now();
-          const out = [];
-          for (const b of books.sort((a, c) => c.importedAt.localeCompare(a.importedAt))) {
-            const [cards, lemmas] = await Promise.all([tx.cards.listByBook(b.id), tx.bookLemmas.listByBook(b.id)]);
-            out.push(bookOverview(b, computeBookProgress(b, cards, lemmas, settings, now)));
-          }
-          return out;
+          return Promise.all(books.sort((a, c) => c.importedAt.localeCompare(a.importedAt)).map(async (b) => {
+            const [cards, lemmas] = await Promise.all([tx.cards.listByBook(b.id), tx.bookLemmas.listByBook(b.id, 'unlisted')]);
+            return bookOverview(b, computeBookProgress(b, cards, lemmas, settings, now));
+          }));
         }),
       get: (id: string) =>
         uow.run(async (tx) => {
           const b = await tx.books.get(id);
           if (!b) throw new Error('Book not found');
           return bookOverview(b, await loadBookProgress(tx, id, clock.now()));
+        }),
+      /** the book screen: overview and progress from one computation */
+      page: (id: string) =>
+        uow.run(async (tx) => {
+          const b = await tx.books.get(id);
+          if (!b) throw new Error('Book not found');
+          const progress = await loadBookProgress(tx, id, clock.now());
+          return { book: bookOverview(b, progress), progress };
         }),
       chapters: (id: string) => uow.run(async (tx) => (await loadBookProgress(tx, id, clock.now())).chapters),
       delete: (id: string) =>

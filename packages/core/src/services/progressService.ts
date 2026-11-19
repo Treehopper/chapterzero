@@ -5,6 +5,7 @@ import { DEFAULT_PACE, estimateToReady, paceFrom, type Pace } from '../domain/es
 import type { Book, BookLemma, BookProgress, Card, ReviewLogEntry, Settings } from '../domain/types.ts';
 import type { Repositories } from '../ports/index.ts';
 
+/** `lemmas`: only the book's unlisted ones are used (read them with listByBook(id, 'unlisted'): a book has thousands of others) */
 export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma[], settings: Settings, now: Date, pace: Pace = DEFAULT_PACE): BookProgress {
   const est = new Map(estimateToReady(book, cards, settings.coverageTarget, pace).map((e) => [e.index, e]));
   const chapters = chapterProgress(book, cards, lemmas, settings.coverageTarget).map((c) => {
@@ -48,7 +49,7 @@ export async function loadBookProgress(tx: Repositories, bookId: string, now: Da
   const book = await tx.books.get(bookId);
   if (!book) throw new Error('Book not found');
   const [cards, lemmas, settings, log] = await Promise.all([
-    tx.cards.listByBook(bookId), tx.bookLemmas.listByBook(bookId), tx.settings.get(), tx.reviewLog.listSince(addDays(startOfDay(now), -30)),
+    tx.cards.listByBook(bookId), tx.bookLemmas.listByBook(bookId, 'unlisted'), tx.settings.get(), tx.reviewLog.listSince(addDays(startOfDay(now), -30)),
   ]);
   return computeBookProgress(book, cards, lemmas, settings, now, paceFrom(log));
 }

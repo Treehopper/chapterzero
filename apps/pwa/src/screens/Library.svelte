@@ -21,12 +21,15 @@
   let refiltering = $state('');
 
   async function load() {
-    const [b, p, s, daily] = await Promise.all([api.books.list(), api.calibration.profile(), api.appState.get(), api.progress.daily(60)]);
-    books = b; profile = p; hintDismissed = !!s.levelHintDismissed;
+    // the books first: the notes below them may come a moment later
+    const rest = Promise.all([api.calibration.profile(), api.appState.get(), api.progress.daily(60)]);
+    books = await api.books.list();
+    loaded = true;
+    const [p, s, daily] = await rest;
+    profile = p; hintDismissed = !!s.levelHintDismissed;
     const since = s.lastExportAt ? new Date(s.lastExportAt) : undefined;
     const studyDays = daily.days.filter((d) => d.reviews > 0 && (!since || new Date(d.day) > since)).length;
     backupDue = studyDays >= 7;
-    loaded = true;
   }
   onMount(load);
 

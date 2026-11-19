@@ -18,6 +18,8 @@ export interface BookRepository {
 
 export interface BookTextRepository {
   get(bookId: BookId): Promise<BookText | undefined>;
+  /** whether the book has its text, without reading it */
+  has(bookId: BookId): Promise<boolean>;
   save(text: BookText): Promise<void>;
   getPosition(bookId: BookId): Promise<ReadingPosition | undefined>;
   savePosition(p: ReadingPosition): Promise<void>;
@@ -126,7 +128,8 @@ export interface WordList {
 }
 
 export interface PackInstaller {
-  status(): Promise<PackStatus>;
+  /** remote: false skips the server's manifest (no update check, no network) */
+  status(opts?: { remote?: boolean }): Promise<PackStatus>;
   install(onProgress: (p: Progress) => void): Promise<void>;
 }
 
