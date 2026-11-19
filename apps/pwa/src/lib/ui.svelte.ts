@@ -1,12 +1,16 @@
 /** Toasts, banners and achievement pop-ups (G4): app-wide, queued. */
-import type { AchievementUnlock } from '@vocabfirst/core';
+import { LEGACY_PAIR, type AchievementUnlock, type LanguagePair } from '@vocabfirst/core';
+import { t } from './i18n/index.svelte';
+export { fmt, pct } from './i18n/index.svelte';
 
 export interface Toast { id: number; text: string; action?: { label: string; run: () => void }; ms: number }
 export interface Banner { id: number; kind: 'achievement' | 'chapter'; title: string; subtitle?: string; tier?: string }
 
 let nextId = 1;
 /** achievements: Settings › Achievements and streaks (loaded at boot, kept in step by the Settings screen) */
-export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean; changed: number }>({ banners: [], online: navigator.onLine, achievements: true, changed: 0 });
+/** pair: the word lists' languages (loaded at boot) */
+export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean; changed: number; pair: LanguagePair }>(
+  { banners: [], online: navigator.onLine, achievements: true, changed: 0, pair: LEGACY_PAIR });
 /** a toast's Undo can land after its screen is gone: whatever is on screen reloads */
 export const dataChanged = () => { ui.changed++; };
 
@@ -47,16 +51,18 @@ export function banner(b: Omit<Banner, 'id'>) {
   pump();
 }
 
-const TIER: Record<string, string> = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
+export const tierName = (tier: string) => ({ bronze: t('Bronze'), silver: t('Silver'), gold: t('Gold') })[tier] ?? tier;
+/** an achievement's name in the app's language; book achievements are "Ready for <title>" */
+export const achievementName = (u: { achievementId: string; name?: string }, title?: string) =>
+  u.achievementId.startsWith('ready:') ? t('Ready for {title}', { title: title ?? u.name?.replace(/^Ready for /, '') ?? '' }) : t(u.name ?? u.achievementId);
 export function announceUnlocks(unlocks: AchievementUnlock[], enabled: boolean) {
   if (!enabled) return;
   for (const u of unlocks) {
-    banner({ kind: 'achievement', title: `${u.name ?? u.achievementId}${u.tier && !u.achievementId.startsWith('ready:') ? ' · ' + TIER[u.tier] : ''}`,
-      subtitle: u.description, tier: u.tier });
+    banner({ kind: 'achievement', title: `${achievementName(u)}${u.tier && !u.achievementId.startsWith('ready:') ? ' · ' + tierName(u.tier) : ''}`,
+      subtitle: u.description && t(u.description), tier: u.tier });
   }
 }
 
 /** "≈ 25 min", "≈ 1 h 20 min" */
 export const duration = (min: number) => (min < 60 ? `≈ ${Math.max(1, min)} min` : `≈ ${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`);
-export const pct = (x: number, digits = 1) => `${(x * 100).toFixed(digits)} %`;
-export const fmt = (n: number) => n.toLocaleString('en-US');
+

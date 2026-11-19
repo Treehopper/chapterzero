@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoal: 20,
   coverageTarget: 0.98,
   retireOnFirstTry: true,
-  useEnglishDefinitions: true,
+  useDefinitions: true,
   skipCognates: true,
   requireFlipBeforeGrade: true,
   frontSwipe: 'ask',
@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
   undoAfterKnown: true,
   showBoxLevel: false,
   showLookupLinks: true,
+  uiLanguage: 'auto',
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,
 };
@@ -30,4 +31,10 @@ export function clampSettings(s: Settings): Settings {
     dailyGoal: Math.max(1, Math.min(500, Math.round(s.dailyGoal))),
     coverageTarget: Math.max(0.95, Math.min(1, s.coverageTarget)),
   };
+}
+
+/** stored settings of older versions: renamed fields */
+export function migrateSettings(s: Partial<Settings> & { useEnglishDefinitions?: boolean }): Partial<Settings> {
+  const { useEnglishDefinitions, ...rest } = s;
+  return useEnglishDefinitions === undefined || rest.useDefinitions !== undefined ? rest : { ...rest, useDefinitions: useEnglishDefinitions };
 }

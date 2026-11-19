@@ -4,6 +4,7 @@ import type {
   EpubContent, ImportDraft, LearnerStats, LemmaKind, PackInfo, PackStatus, Progress, ReadingPosition, ReviewLogEntry,
   SessionId, Settings, StudySession, VocabularyProfile, WordEntry,
 } from '../domain/types.ts';
+import type { LanguagePair } from '../domain/language.ts';
 
 export interface CardFilter { status?: Card['status'] }
 
@@ -114,6 +115,8 @@ export interface UnitOfWork {
 
 export interface WordList {
   info(): Promise<PackInfo[]>;
+  /** the languages of the installed lists */
+  pair(): Promise<LanguagePair>;
   /** token → lemma. '' = common word. Absent key = not in the lists. */
   resolve(tokens: string[]): Promise<Map<string, string>>;
   /** form → its only part of speech, for forms that have one ("chafed" → verb); others are absent */

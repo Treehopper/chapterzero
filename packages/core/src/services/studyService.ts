@@ -1,5 +1,6 @@
 /** StudyService (README §7.2–§7.4, Epic C). Every call is one UnitOfWork. */
 import { ACHIEVEMENTS, bookAchievement, newUnlocks, onGrade } from '../domain/achievements.ts';
+import type { LanguagePair } from '../domain/language.ts';
 import { bookCoverage, chapterCoverage, chapterProgress, displayTitle } from '../domain/coverage.ts';
 import { addDays, isSameDay, startOfDay } from '../domain/dates.ts';
 import { deepClone } from '../domain/clone.ts';
@@ -8,7 +9,7 @@ import type {
   AchievementUnlock, Book, BookLemma, Card, CardId, Grade, LearnerStats, Settings, StudySession,
 } from '../domain/types.ts';
 import type { Repositories } from '../ports/index.ts';
-import { cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
+import { bookPair, cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
 import { buildStatistics } from './statistics.ts';
 
 export interface SessionOptions { chapterIndex?: number; studyAhead?: boolean; cardLimit?: number; minutes?: number }
@@ -17,6 +18,8 @@ export interface SessionView {
   sessionId: string;
   bookId: string;
   bookTitle: string;
+  /** the book's language and its cards' translation language */
+  pair: LanguagePair;
   state: StudySession['state'];
   card?: CardView;
   phase?: 'front' | 'back' | 'wrongReview';
@@ -112,7 +115,7 @@ export function studyService(ctx: Ctx) {
       progress: { done: doneCount, total: doneCount + remaining }, startedAt: session.startedAt, endsAt: session.endsAt,
       firstCard: session.graded.length === 0 && session.counters.alreadyKnown === 0 && session.counters.removed === 0,
       canUndo: !!session.undo, undoKind: session.undo?.kind, frontSwipe: settings.frontSwipe,
-      newAchievements: [], lookupLinks: session.current && session.current.phase !== 'front' && card ? links(card.lemma, settings) : [],
+      newAchievements: [], lookupLinks: session.current && session.current.phase !== 'front' && card ? links(card.lemma, settings, bookPair(book)) : [], pair: bookPair(book),
       chapter: ch && { index: ch.index, title: displayTitle(book, ch), coverage: chapterCoverage(ch, cards) },
       retired: false,
       ...extra,

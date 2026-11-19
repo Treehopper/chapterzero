@@ -78,6 +78,8 @@ export class ZipEpubReader implements EpubReader {
     const title = clean(meta ? textOf(find(meta, (e) => local(e.name) === 'title') ?? ({ type: 'text', data: '' } as never)) : '') || 'Untitled';
     const creator = meta && find(meta, (e) => local(e.name) === 'creator');
     const author = creator ? clean(textOf(creator)) || undefined : undefined;
+    const lang = meta && find(meta, (e) => local(e.name) === 'language');
+    const language = lang ? clean(textOf(lang)) || undefined : undefined;
 
     const manifest = new Map<string, { href: string; type: string; props: string }>();
     for (const it of findAll(opf, (e) => local(e.name) === 'item')) {
@@ -121,7 +123,7 @@ export class ZipEpubReader implements EpubReader {
         if (!coverDataUrl && bytes.length < 200_000) coverDataUrl = `data:${cover.type};base64,${base64(bytes)}`;
       }
     }
-    return { meta: { title, author, coverDataUrl }, toc, sections };
+    return { meta: { title, author, language, coverDataUrl }, toc, sections };
   }
 
   private blocks(html: string, path: string, sectionOf: Map<string, number>): Block[] {

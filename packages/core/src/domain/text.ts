@@ -1,4 +1,5 @@
 /** Tokenising (README §7.1 step 5). */
+import { languageRules, type LanguageRules } from './language.ts';
 
 export interface RawWord { raw: string; index: number }
 export interface Sentence { text: string; words: RawWord[] }
@@ -8,26 +9,37 @@ export interface Sentence { text: string; words: RawWord[] }
  *  word because British dialogue uses single quotes. */
 const WORD = /[\p{L}\p{M}\p{N}]+(?:['’‐-][\p{L}\p{M}\p{N}]+)*(?:(?<=[sS])['’](?![\p{L}\p{N}]))?/gu;
 
-let sentenceSegmenter: Intl.Segmenter | undefined;
+const segmenters = new Map<string, Intl.Segmenter>();
+const segmenter = (lang: string, granularity: 'sentence' | 'word') => {
+  const k = `${lang}/${granularity}`;
+  let s = segmenters.get(k);
+  if (!s) segmenters.set(k, (s = new Intl.Segmenter(lang, { granularity })));
+  return s;
+};
+const EN = languageRules('en');
 
-export function splitSentences(text: string): string[] {
-  sentenceSegmenter ??= new Intl.Segmenter('en', { granularity: 'sentence' });
+export function splitSentences(text: string, lang: LanguageRules = EN): string[] {
   const out: string[] = [];
-  for (const s of sentenceSegmenter.segment(text)) {
+  for (const s of segmenter(lang.code, 'sentence').segment(text)) {
     const t = s.segment.trim();
     if (t) out.push(t);
   }
   return out;
 }
 
-export function words(text: string): RawWord[] {
+/** languages written without spaces between words get them from Intl.Segmenter */
+export function words(text: string, lang: LanguageRules = EN): RawWord[] {
   const out: RawWord[] = [];
+  if (lang.segmented) {
+    for (const s of segmenter(lang.code, 'word').segment(text)) if (s.isWordLike) out.push({ raw: s.segment, index: s.index });
+    return out;
+  }
   for (const m of text.matchAll(WORD)) out.push({ raw: m[0], index: m.index! });
   return out;
 }
 
-export function tokenizeBlock(text: string): Sentence[] {
-  return splitSentences(text).map((s) => ({ text: s, words: words(s) }));
+export function tokenizeBlock(text: string, lang: LanguageRules = EN): Sentence[] {
+  return splitSentences(text, lang).map((s) => ({ text: s, words: words(s, lang) }));
 }
 
 export type TokenKind = 'word' | 'digit' | 'contraction';
@@ -40,24 +52,26 @@ export interface NormalizedToken {
   capitalized: boolean;
 }
 
-export function normalizeToken(raw: string): NormalizedToken {
+export function normalizeToken(raw: string, lang: LanguageRules = EN): NormalizedToken {
   const nfc = raw.normalize('NFC').replace(/[’]/g, "'").replace(/‐/g, '-');
   const capitalized = /^\p{Lu}/u.test(nfc);
   const letters = nfc.replace(/[^\p{L}]/gu, '');
   const allCaps = letters.length >= 2 && letters === letters.toUpperCase() && letters !== letters.toLowerCase();
   if (/\p{N}/u.test(nfc)) return { kind: 'digit', norm: nfc.toLowerCase(), allCaps, capitalized };
   let norm = nfc.toLowerCase();
+  // elsewhere an apostrophe elides a short word in front ("l'homme", "dell'anno"): the word is what follows
+  if (lang.code !== 'en') return { kind: 'word', norm: norm.slice(norm.lastIndexOf("'") + 1), allCaps, capitalized };
   if (norm.endsWith("'s")) norm = norm.slice(0, -2);
   else if (norm.endsWith("s'")) norm = norm.slice(0, -1);
   if (norm.includes("'")) return { kind: 'contraction', norm, allCaps, capitalized };
   return { kind: 'word', norm, allCaps, capitalized };
 }
 
-export const wordCount = (text: string) => words(text).length;
+export const wordCount = (text: string, lang: LanguageRules = EN) => words(text, lang).length;
 
 /** Cut a sentence to at most `max` words around the word at char index `at`. */
-export function cutAround(text: string, at: number, max = 25): string {
-  const ws = words(text);
+export function cutAround(text: string, at: number, lang: LanguageRules = EN, max = 25): string {
+  const ws = words(text, lang);
   if (ws.length <= max) return text;
   let i = ws.findIndex((w) => w.index >= at);
   if (i < 0) i = ws.length - 1;
@@ -66,19 +80,4 @@ export function cutAround(text: string, at: number, max = 25): string {
   const from = ws[start].index;
   const to = ws[end].index + ws[end].raw.length;
   return (start > 0 ? '…' : '') + text.slice(from, to) + (end < ws.length - 1 ? '…' : '');
-}
-
-const AMERICAN: [RegExp, string][] = [
-  [/([a-z]{2})is(e|es|ed|ing|er|ers|ation|ations|able)$/, '$1iz$2'],   // realise → realize
-  [/([a-z]{2})ys(e|es|ed|ing|er|ers)$/, '$1yz$2'],                       // analyse → analyze
-  [/([a-z]{2})our(s|ed|ing|ful|less|able|ite|ites)?$/, '$1or$2'],        // colour → color
-  [/([a-z]{2}[^aeiou])re(s|d)?$/, '$1er$2'],                             // centre → center
-  [/([aeiou])ll(ed|ing|er|ers)$/, '$1l$2'],                              // travelled → traveled
-];
-
-/** American spellings to try for a word the word list doesn't know (British -ise, -our, -re, -lled…). */
-export function americanVariants(t: string): string[] {
-  const out = new Set<string>();
-  for (const [re, to] of AMERICAN) if (re.test(t)) out.add(t.replace(re, to));
-  return [...out];
 }

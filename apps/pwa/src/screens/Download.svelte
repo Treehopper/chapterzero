@@ -6,6 +6,7 @@
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { requestPersistence } from '../lib/platform';
+  import { ui } from '../lib/ui.svelte';
 
   let status = $state<PackStatus>();
   let progress = $state<{ loaded: number; total: number; phase: string }>();
@@ -22,6 +23,7 @@
     try {
       await api.wordLists.install((p) => (progress = p));
       await requestPersistence();
+      ui.pair = (await api.wordLists.status()).pair ?? ui.pair;
       const profile = await api.calibration.profile();
       go(profile ? 'library' : 'check');
     } catch (e) {

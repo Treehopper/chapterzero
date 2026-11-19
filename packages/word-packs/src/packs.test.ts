@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import Dexie from 'dexie';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -51,7 +52,8 @@ describe('HttpPackInstaller + IdbWordList', () => {
     expect([...await wl.formPos(['chafed', 'chafes', 'strode'])]).toEqual([['chafed', 'verb'], ['strode', 'verb']]);
     const chafe = (await wl.entries(['chafe'])).get('chafe')!;
     expect(chafe.pos[0]).toBe('noun');
-    expect(chafe.senses?.find((x) => x.pos === 'verb')?.de).toContain('ärgern');
+    expect(chafe.senses?.find((x) => x.pos === 'verb')?.tr).toContain('ärgern');
+    expect(await wl.pair()).toEqual({ source: 'en', target: 'de' });
     expect((await wl.firstAtOrAfter(10001, 15000))!.rank).toBeGreaterThanOrEqual(10001);
     expect(await wl.firstAtOrAfter(99999, 100000)).toBeUndefined();
     expect(progress.length).toBeGreaterThan(0);
@@ -111,5 +113,23 @@ describe('the whole app on IndexedDB', () => {
     expect(await app2.books.list()).toEqual([]);
     await app2.backup.import(backup);
     expect((await app2.books.list()).map((x) => x.title)).toEqual(['The Lantern Omnibus']);
+  });
+});
+
+describe('database upgrade to any language pair', () => {
+  it('renames the stored translations and the old setting', async () => {
+    const name = `t${dbn++}`;
+    const old = new Dexie(name);
+    old.version(2).stores({ words: 'lemma, rank', wordsFreedict: 'lemma', forms: 'form', meta: 'key' });
+    await old.table('words').put({ lemma: 'moor', rank: 10060, pos: ['noun'], de: ['Hochmoor'], def: 'heath', flags: 0 });
+    await old.table('wordsFreedict').put({ lemma: 'moor', de: ['Moor'] });
+    await old.table('meta').bulkPut([{ key: 'settings', value: { useEnglishDefinitions: false } }, { key: 'packs', value: { packs: [], complete: true } }]);
+    old.close();
+    const db = new VocabDb(name);
+    const e = (await new IdbWordList(db).entries(['moor'])).get('moor');
+    expect(e).toMatchObject({ tr: ['Hochmoor'], trExtra: ['Moor'] });
+    expect(await new IdbWordList(db).pair()).toEqual({ source: 'en', target: 'de' });
+    expect((await db.meta.get('settings'))?.value).toEqual({ useDefinitions: false });
+    expect(db.tables.map((t) => t.name)).not.toContain('wordsFreedict');
   });
 });

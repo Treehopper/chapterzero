@@ -12,6 +12,7 @@
   import GestureHints from '../components/GestureHints.svelte';
   import FrontSwipeKnown from '../components/FrontSwipeKnown.svelte';
   import Sheet from '../components/Sheet.svelte';
+  import { textAttrs } from '../lib/i18n/index.svelte';
 
   let { bookId, chapter, how: howParam }: { bookId: string; chapter?: string; how?: string } = $props();
 
@@ -52,6 +53,9 @@
   const flipped = $derived(!!view?.phase && view.phase !== 'front');
   const review = $derived(view?.phase === 'wrongReview');
   const hintsOn = $derived(settings?.gestureHints === 'everySession' && !!view?.firstCard && !!view?.card);
+  /** the book's language and the translations' (lang, dir) */
+  const src = $derived(textAttrs(view?.pair.source ?? ui.pair.source));
+  const tgt = $derived(textAttrs(view?.pair.target ?? ui.pair.target));
 
   onMount(async () => {
     try {
@@ -78,7 +82,7 @@
   onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); });
 
   async function afterView(v: SessionView) {
-    if (v.card) live = `${headword(v.card.lemma, v.card.pos)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
+    if (v.card) live = `${headword(v.card.lemma, v.card.pos, v.pair.source)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
     if (v.newAchievements.length) announceUnlocks(v.newAchievements, settings?.achievementPopups ?? true);
     if (v.chapterReady) banner({ kind: 'chapter', title: `${v.chapterReady.title} is ready to read`, subtitle: pct(v.chapterReady.coverage) });
     if (v.done && !v.nothingDue && v.sessionId) {
@@ -355,25 +359,25 @@
         <FlipCard {flipped} {dx} {fly} dim={openness > 0.5} {review} entering={!review} label="Card {card.lemma}">
           {#snippet front()}
             <div class="lvl small muted">{card.listLevel ? `Level ${card.listLevel}` : 'Added by hand'}</div>
-            <div class="word" data-testid="card-word">{headword(card.lemma, card.pos)}</div>
+            <div class="word" data-testid="card-word" {...src}>{headword(card.lemma, card.pos, src.lang)}</div>
             {#if card.example}
-              <p class="ex">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
+              <p class="ex" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
             <div class="foot small muted">{flipped || hintsOn ? '' : 'tap to flip'}</div>
           {/snippet}
           {#snippet back()}
             <div class="row head">
-              <span class="small-word">{review ? '✗ ' : ''}{headword(card.lemma, card.pos)}</span>
+              <span class="small-word" {...src}>{review ? '✗ ' : ''}{headword(card.lemma, card.pos, src.lang)}</span>
               <span class="spacer"></span>
               {#if card.pos.length}<span class="small muted">{card.pos.slice(0, 2).join(' · ')}</span>{/if}
             </div>
-            <div class="tr" data-testid="card-back">
+            <div class="tr" data-testid="card-back" {...(card.translations.length ? tgt : src)}>
               {#if card.translations.length}{card.translations.join(', ')}
-              {:else}<span class="en">EN</span> {card.definition}{/if}
+              {:else}<span class="en">{src.lang.toUpperCase()}</span> {card.definition}{/if}
             </div>
-            {#if card.translations.length && card.definition}<p class="def">{card.definition}</p>{/if}
+            {#if card.translations.length && card.definition}<p class="def" {...src}>{card.definition}</p>{/if}
             {#if card.example}
-              <p class="ex small">{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
+              <p class="ex small" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
             {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>{/if}
             {#if review}
@@ -422,7 +426,7 @@
 {#if editing && view?.card}
   <Sheet full label="Edit card" onclose={() => (editing = false)}>
     <div class="stack">
-      <div class="row"><h2 class="spacer">{headword(view.card.lemma, editPos ? [editPos] : view.card.pos)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      <div class="row"><h2 class="spacer" {...src}>{headword(view.card.lemma, editPos ? [editPos] : view.card.pos, src.lang)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
       {#if senses.length > 1}
         <div class="section-title">Part of speech</div>
         <div class="row senses" role="radiogroup" aria-label="Part of speech">
@@ -435,7 +439,7 @@
       <div class="section-title">Translations</div>
       {#each editList as _, i (i)}
         <div class="row">
-          <input type="text" bind:value={editList[i]} aria-label="Translation {i + 1}" />
+          <input type="text" bind:value={editList[i]} aria-label="Translation {i + 1}" {...tgt} />
           {#if editList.length > 1}
             <button class="iconbtn" aria-label="Move translation {i + 1} up" disabled={i === 0} onclick={() => moveTranslation(i, -1)}>↑</button>
             <button class="iconbtn" aria-label="Move translation {i + 1} down" disabled={i === editList.length - 1} onclick={() => moveTranslation(i, 1)}>↓</button>
@@ -445,7 +449,7 @@
       {/each}
       {#if editList.length < 4}<button class="linkbtn" onclick={() => (editList = [...editList, ''])}>＋ Add translation</button>{/if}
       <label class="stack small">English definition
-        <textarea rows="3" bind:value={editDef} aria-label="Definition" data-testid="edit-definition"></textarea></label>
+        <textarea rows="3" bind:value={editDef} aria-label="Definition" data-testid="edit-definition" {...src}></textarea></label>
       <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">Save</button>
       <div class="section-title">Other actions</div>
       <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>

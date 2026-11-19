@@ -1,5 +1,6 @@
 /** ImportService (README §7.1): analyse → preview → confirm, and reapplyFilter (B3, H4). */
 import { analyseContent } from '../domain/analysis.ts';
+import { primary } from '../domain/language.ts';
 import { cardFromLemma, classify, firstIncludedChapter, isProtectedCard, occursIn } from '../domain/classify.ts';
 import { chapterCoverage } from '../domain/coverage.ts';
 import { levelOfRank, startLevel } from '../domain/levels.ts';
@@ -53,6 +54,8 @@ function buildPreview(draft: ImportDraft, classified: Classified[], included: Se
     cutoffRank: cutoff, level: startLevel(cutoff), counts, cardsPerListLevel: perLevel,
     coverageBefore: tokens === 0 ? 1 : 1 - unknownOcc / tokens,
     includedChapters: [...included].sort((a, b) => a - b),
+    language: draft.book.language,
+    ...(draft.declaredLanguage && primary(draft.declaredLanguage) !== primary(draft.book.language) ? { otherLanguage: draft.declaredLanguage } : {}),
   };
 }
 

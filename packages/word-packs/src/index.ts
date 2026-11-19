@@ -1,15 +1,21 @@
 /** Word-pack download (A2, A3) and the IndexedDB-backed WordList (README §6). */
-import type { PackInfo, PackInstaller, PackStatus, Progress, WordEntry, WordList } from '@vocabfirst/core';
+import { LEGACY_PAIR, type LanguagePair, type PackInfo, type PackInstaller, type PackStatus, type Progress, type WordEntry, type WordList } from '@vocabfirst/core';
 import type { VocabDb } from '@vocabfirst/storage-idb';
 import { sha256Hex } from './sha256';
 
 export interface ManifestChunk { file: string; bytes: number; rows?: number; sha256: string; sha256Json?: string }
-export interface ManifestPack extends PackInfo { chunks: ManifestChunk[] }
-export interface Manifest { formatVersion: 1; name?: string; packs: ManifestPack[] }
+/** words: the word table; extra: a second dictionary's translations; forms: form → lemma (README §6.1) */
+export type PackRole = 'words' | 'extra' | 'forms';
+export interface ManifestPack extends PackInfo { role?: PackRole; chunks: ManifestChunk[] }
+/** `source` / `target`: the language pair; manifests without them are English → German */
+export interface Manifest { formatVersion: 1; name?: string; source?: string; target?: string; packs: ManifestPack[] }
+type Installed = { packs: PackInfo[]; complete: boolean; name?: string; pair?: LanguagePair };
 
-const STORE: Record<string, 'words' | 'wordsFreedict' | 'forms'> = {
-  'words-en-de': 'words', 'words-de-freedict': 'wordsFreedict', 'forms-en': 'forms',
-};
+const TABLE = { words: 'words', extra: 'wordsExtra', forms: 'forms' } as const;
+/** packs of manifests written before roles */
+const LEGACY_ROLE: Record<string, PackRole> = { 'words-en-de': 'words', 'words-de-freedict': 'extra', 'forms-en': 'forms' };
+const roleOf = (p: ManifestPack): PackRole | undefined => p.role ?? LEGACY_ROLE[p.id];
+const pairOf = (m: Manifest): LanguagePair => (m.source && m.target ? { source: m.source, target: m.target } : LEGACY_PAIR);
 
 async function gunzip(bytes: Uint8Array): Promise<string> {
   if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes); // already decoded by the server
@@ -17,10 +23,10 @@ async function gunzip(bytes: Uint8Array): Promise<string> {
   return new Response(stream).text();
 }
 
-const toRow = (packId: string, r: unknown[]) => {
-  switch (STORE[packId]) {
-    case 'words': return { lemma: r[0], rank: r[1], pos: r[2], de: r[3], def: r[4], flags: r[5], ...(r[6] ? { senses: r[6] } : {}) };
-    case 'wordsFreedict': return { lemma: r[0], de: r[1] };
+const toRow = (role: PackRole, r: unknown[]) => {
+  switch (role) {
+    case 'words': return { lemma: r[0], rank: r[1], pos: r[2], tr: r[3], def: r[4], flags: r[5], ...(r[6] ? { senses: r[6] } : {}) };
+    case 'extra': return { lemma: r[0], tr: r[1] };
     default: return { form: r[0], lemma: r[1], ...(r[2] ? { pos: r[2] } : {}) };
   }
 };
@@ -40,9 +46,9 @@ export class HttpPackInstaller implements PackInstaller {
     }
   }
 
-  private async installed(): Promise<{ packs: PackInfo[]; complete: boolean; name?: string }> {
+  private async installed(): Promise<Installed> {
     const row = await this.db.meta.get('packs');
-    const v = row?.value as { packs: PackInfo[]; complete: boolean; name?: string } | undefined;
+    const v = row?.value as Installed | undefined;
     return v ?? { packs: [], complete: false };
   }
 
@@ -51,7 +57,8 @@ export class HttpPackInstaller implements PackInstaller {
     const available = m?.packs.map(info);
     const updateAvailable = !!available && inst.complete
       && available.some((a) => inst.packs.find((p) => p.id === a.id)?.version !== a.version);
-    return { installed: inst.complete, packs: inst.packs, available, updateAvailable, name: inst.name ?? m?.name };
+    const pair = inst.complete ? inst.pair ?? LEGACY_PAIR : m && pairOf(m);
+    return { installed: inst.complete, packs: inst.packs, available, updateAvailable, name: inst.name ?? m?.name, ...(pair ? { pair } : {}) };
   }
 
   async install(onProgress: (p: Progress) => void): Promise<void> {
@@ -62,8 +69,9 @@ export class HttpPackInstaller implements PackInstaller {
     // a new version replaces the old rows of that pack
     for (const p of m.packs) {
       const old = inst.packs.find((x) => x.id === p.id);
-      const store = STORE[p.id];
-      if (!store) throw new Error(`Unknown pack ${p.id}`);
+      const role = roleOf(p);
+      if (!role) throw new Error(`Unknown pack ${p.id}`);
+      const store = TABLE[role];
       const chunksOfOtherVersion = await this.db.packChunks.filter((c) => c.packId === p.id && c.version !== p.version).count();
       if ((old && old.version !== p.version) || chunksOfOtherVersion) {
         await this.db.transaction('rw', [this.db[store], this.db.packChunks, this.db.meta], async () => {
@@ -100,8 +108,9 @@ export class HttpPackInstaller implements PackInstaller {
       const sha = await sha256Hex(bytes);
       if (!expected || sha !== expected) throw new Error(`Checksum mismatch for ${c.file}. Please try again.`);
       onProgress({ loaded: loaded + c.bytes, total, phase: 'installing' });
-      const rows = (JSON.parse(await gunzip(bytes)) as unknown[][]).map((r) => toRow(p.id, r));
-      const store = STORE[p.id];
+      const role = roleOf(p)!;
+      const rows = (JSON.parse(await gunzip(bytes)) as unknown[][]).map((r) => toRow(role, r));
+      const store = TABLE[role];
       await this.db.transaction('rw', [this.db[store], this.db.packChunks], async () => {
         await (this.db[store] as unknown as { bulkPut(r: unknown[]): Promise<unknown> }).bulkPut(rows);
         await this.db.packChunks.put({ packId: p.id, file: c.file, sha256: c.sha256, version: p.version });
@@ -109,7 +118,7 @@ export class HttpPackInstaller implements PackInstaller {
       loaded += c.bytes;
       onProgress({ loaded, total, phase: 'downloading' });
     }
-    await this.db.meta.put({ key: 'packs', value: { packs: m.packs.map(info), complete: true, name: m.name } });
+    await this.db.meta.put({ key: 'packs', value: { packs: m.packs.map(info), complete: true, name: m.name, pair: pairOf(m) } satisfies Installed });
     onProgress({ loaded: total, total, phase: 'done' });
   }
 }
@@ -119,7 +128,11 @@ export class IdbWordList implements WordList {
   constructor(private readonly db: VocabDb) {}
 
   info(): Promise<PackInfo[]> {
-    return this.db.meta.get('packs').then((row) => (row?.value as { packs: PackInfo[] } | undefined)?.packs ?? []);
+    return this.db.meta.get('packs').then((row) => (row?.value as Installed | undefined)?.packs ?? []);
+  }
+
+  pair(): Promise<LanguagePair> {
+    return this.db.meta.get('packs').then((row) => (row?.value as Installed | undefined)?.pair ?? LEGACY_PAIR);
   }
 
   resolve(tokens: string[]): Promise<Map<string, string>> {
@@ -143,13 +156,13 @@ export class IdbWordList implements WordList {
   }
 
   entries(lemmas: string[]): Promise<Map<string, WordEntry>> {
-    return Promise.all([this.db.words.bulkGet(lemmas), this.db.wordsFreedict.bulkGet(lemmas)]).then(([ws, fd]) => {
+    return Promise.all([this.db.words.bulkGet(lemmas), this.db.wordsExtra.bulkGet(lemmas)]).then(([ws, ex]) => {
       const out = new Map<string, WordEntry>();
       lemmas.forEach((l, i) => {
         const w = ws[i];
         if (!w) return;
-        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, de: w.de, deFreedict: fd[i]?.de ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1,
-          ...(w.senses ? { senses: w.senses.map(([pos, de, def]) => ({ pos, de, def: def ?? undefined })) } : {}) });
+        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, tr: w.tr, trExtra: ex[i]?.tr ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1,
+          ...(w.senses ? { senses: w.senses.map(([pos, tr, def]) => ({ pos, tr, def: def ?? undefined })) } : {}) });
       });
       return out;
     });

@@ -1,11 +1,14 @@
 /** Reader (Epic R): the book's text per chapter, with the words that are (or were) cards marked. */
 import { displayTitle } from '../domain/coverage.ts';
 import { normalizeToken, words } from '../domain/text.ts';
+import { languageRules, type LanguageRules } from '../domain/language.ts';
 import type { Card } from '../domain/types.ts';
-import { links, type Ctx } from './context.ts';
+import { bookPair, links, type Ctx } from './context.ts';
 
 export interface ReaderBook {
   bookId: string; title: string;
+  /** the book's language (lang and dir of the text) */
+  language: string;
   chapters: { index: number; title: string; included: boolean; blocks: number }[];
   /** where to open: the saved position, else the first included chapter */
   position: { chapter: number; block: number };
@@ -27,11 +30,11 @@ export interface ReaderChapter {
 }
 
 /** card words of a paragraph: every token that is one of a card's forms or its lemma */
-export function segment(text: string, byForm: Map<string, Card>, used: Set<Card>): ReaderSegment[] {
+export function segment(text: string, byForm: Map<string, Card>, used: Set<Card>, lang: LanguageRules): ReaderSegment[] {
   const out: ReaderSegment[] = [];
   let at = 0;
-  for (const w of words(text)) {
-    const card = byForm.get(normalizeToken(w.raw).norm);
+  for (const w of words(text, lang)) {
+    const card = byForm.get(normalizeToken(w.raw, lang).norm);
     if (!card) continue;
     if (w.index > at) out.push(text.slice(at, w.index));
     out.push({ t: w.raw, c: card.id });
@@ -54,7 +57,7 @@ export function readerService(ctx: Ctx) {
         if (!text) throw new Error('This book was imported before the reader existed; import it again to read it here');
         const chapters = book.chapters.map((c) => ({ index: c.index, title: displayTitle(book, c), included: c.included, blocks: text.chapters[c.index]?.blocks.length ?? 0 }));
         const first = chapters.find((c) => c.included && c.blocks) ?? chapters.find((c) => c.blocks) ?? chapters[0];
-        return { bookId, title: book.title, chapters, position: pos ? { chapter: pos.chapter, block: pos.block } : { chapter: first?.index ?? 0, block: 0 } };
+        return { bookId, title: book.title, language: book.language, chapters, position: pos ? { chapter: pos.chapter, block: pos.block } : { chapter: first?.index ?? 0, block: 0 } };
       }),
 
     chapter: (bookId: string, index: number): Promise<ReaderChapter> =>
@@ -69,11 +72,12 @@ export function readerService(ctx: Ctx) {
           for (const f of [c.lemma, ...c.forms]) byForm.set(f, c);
         }
         const used = new Set<Card>();
-        const blocks = (text.chapters[index]?.blocks ?? []).map((b) => ({ segs: segment(b.text, byForm, used), ...(b.note ? { note: true } : {}) }));
+        const lang = languageRules(book.language);
+        const blocks = (text.chapters[index]?.blocks ?? []).map((b) => ({ segs: segment(b.text, byForm, used, lang), ...(b.note ? { note: true } : {}) }));
         const out: Record<string, ReaderCard> = {};
         for (const c of used) {
           out[c.id] = { id: c.id, lemma: c.lemma, pos: c.pos, translations: c.translations, definition: c.definition,
-            status: c.status, box: c.level, links: links(c.lemma, settings) };
+            status: c.status, box: c.level, links: links(c.lemma, settings, bookPair(book)) };
         }
         return { index, title: displayTitle(book, ch), blocks, cards: out };
       }),

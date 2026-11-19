@@ -1,9 +1,12 @@
 {
   "formatVersion": 1,
   "name": "English → German",
+  "source": "en",
+  "target": "de",
   "packs": [
     {
       "id": "words-en-de",
+      "role": "words",
       "version": "2026-11-19",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
@@ -31,6 +34,7 @@
     },
     {
       "id": "words-de-freedict",
+      "role": "extra",
       "version": "2026-11-19",
       "sources": [
         "https://download.freedict.org/dictionaries/eng-deu/1.9-fd1/freedict-eng-deu-1.9-fd1.src.tar.xz"
@@ -50,6 +54,7 @@
     },
     {
       "id": "forms-en",
+      "role": "forms",
       "version": "2026-11-19",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",

@@ -75,7 +75,10 @@ const realEtym = new Map<string, Set<number>>();
 const spellingEtym = new Map<string, Set<number>>();
 const inflected = new Set<string>();
 const addTo = <K, V>(m: Map<K, Set<V>>, k: K, v: V) => { let x = m.get(k); if (!x) m.set(k, (x = new Set())); x.add(v); };
-const isDe = (t: Tr) => (t.lang_code ?? t.code) === 'de' && !!t.word;
+/** this builder makes the English → German lists; the app reads the pair from the manifest */
+const SOURCE = 'en';
+const TARGET = 'de';
+const isDe = (t: Tr) => (t.lang_code ?? t.code) === TARGET && !!t.word;
 let lines = 0;
 let deSeen = 0;
 log('reading Wiktextract');
@@ -84,7 +87,7 @@ for await (const line of rl) {
   lines++;
   if (lines % 200_000 === 0) log(`  ${lines} entries, ${lemmas.size} lemmas`);
   const e = JSON.parse(line) as Entry;
-  if (e.lang_code && e.lang_code !== 'en') continue;
+  if (e.lang_code && e.lang_code !== SOURCE) continue;
   if (!ALLOWED_POS.has(e.pos)) continue;
   if (!isUsableHeadword(e.word)) continue;
   const word = normWord(e.word);
@@ -267,7 +270,7 @@ formRows.sort(byFirst);
 if (existsSync(OUT_DIR)) rmSync(OUT_DIR, { recursive: true });
 mkdirSync(OUT_DIR, { recursive: true });
 const gz = (rows: unknown[]) => gzipSync(JSON.stringify(rows), { level: 9 });
-function writePack(id: string, rows: unknown[], meta: { sources: string[]; licence: string }) {
+function writePack(id: string, role: 'words' | 'extra' | 'forms', rows: unknown[], meta: { sources: string[]; licence: string }) {
   const chunks = planChunks(rows, (r) => gz(r).length, MAX_CHUNK);
   const out = chunks.map((c, i) => {
     const file = `${id}.${String(i).padStart(3, '0')}.json.gz`;
@@ -280,15 +283,15 @@ function writePack(id: string, rows: unknown[], meta: { sources: string[]; licen
   });
   const bytes = out.reduce((n, c) => n + c.bytes, 0);
   log(`${id}: ${rows.length} rows, ${out.length} chunks, ${(bytes / 1024 / 1024).toFixed(2)} MB`);
-  return { id, version: VERSION, ...meta, entryCount: rows.length, bytes, chunks: out };
+  return { id, role, version: VERSION, ...meta, entryCount: rows.length, bytes, chunks: out };
 }
 const packs = [
-  writePack('words-en-de', wordRows, { sources: [SOURCES.wiktextract.url, SOURCES.wordfreq.url], licence: SOURCES.wiktextract.licence }),
-  writePack('words-de-freedict', freedictRows, { sources: [SOURCES.freedict.url], licence: SOURCES.freedict.licence }),
-  writePack('forms-en', formRows, { sources: [SOURCES.wiktextract.url, SOURCES.wordfreq.url], licence: SOURCES.wiktextract.licence }),
+  writePack('words-en-de', 'words', wordRows, { sources: [SOURCES.wiktextract.url, SOURCES.wordfreq.url], licence: SOURCES.wiktextract.licence }),
+  writePack('words-de-freedict', 'extra', freedictRows, { sources: [SOURCES.freedict.url], licence: SOURCES.freedict.licence }),
+  writePack('forms-en', 'forms', formRows, { sources: [SOURCES.wiktextract.url, SOURCES.wordfreq.url], licence: SOURCES.wiktextract.licence }),
 ];
 const total = packs.reduce((n, p) => n + p.bytes, 0);
-writeFileSync(join(OUT_DIR, 'manifest.json'), JSON.stringify({ formatVersion: 1, name: 'English → German', packs }, null, 2));
+writeFileSync(join(OUT_DIR, 'manifest.json'), JSON.stringify({ formatVersion: 1, name: 'English → German', source: SOURCE, target: TARGET, packs }, null, 2));
 log(`total ${(total / 1024 / 1024).toFixed(2)} MB${total > 10 * 1024 * 1024 ? ' — OVER the 10 MB target' : ''}`);
 const perLevel: Record<number, number> = {};
 for (const w of wordRows) perLevel[levelOfRank(w[1])] = (perLevel[levelOfRank(w[1])] ?? 0) + 1;

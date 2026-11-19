@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { analyseContent } from '../domain/analysis.ts';
-import { forPos } from '../domain/cardContent.ts';
+import { forPos, headword } from '../domain/cardContent.ts';
 import { buildStructure, chapterKind, removeRepeatedBlocks } from '../domain/structure.ts';
-import { americanVariants, normalizeToken, cutAround, words } from '../domain/text.ts';
+import { normalizeToken, cutAround, words } from '../domain/text.ts';
+import { americanVariants, languageRules } from '../domain/language.ts';
 import { buildContent } from '../testing/content.ts';
 import { fixtureWordList } from '../testing/fixture.ts';
-import { MemoryWordList } from '../testing/memory.ts';
+import { MemoryEpubReader, MemoryWordList, memoryPorts } from '../testing/memory.ts';
+import { createApp } from '../app.ts';
 import { buf, filler, setup } from './helpers.ts';
 
 describe('tokens (§7.1 step 5)', () => {
@@ -154,7 +156,7 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
     expect(americanVariants('centres')).toEqual(['centers']);
     expect(americanVariants('travelled')).toEqual(['traveled']);
     expect(americanVariants('rise')).toEqual([]);
-    const entry = (lemma: string, rank: number) => ({ lemma, rank, pos: ['verb'], de: ['x'], deFreedict: [], cognate: false });
+    const entry = (lemma: string, rank: number) => ({ lemma, rank, pos: ['verb'], tr: ['x'], trExtra: [], cognate: false });
     const wl = new MemoryWordList([entry('realize', 3000), entry('materialize', 9000), entry('promise', 900)],
       [['realizing', 'realize'], ['realized', 'realize'], ['materialized', 'materialize']]);
     const r = await analyseContent(buildContent({ sections: [[
@@ -210,9 +212,9 @@ describe('analyse + classify (§7.1 steps 6–9)', () => {
   });
 
   it('forPos: another part of speech replaces translations and definition; unknown ones keep the entry', () => {
-    const e = { lemma: 'moor', rank: 10060, pos: ['noun', 'verb'], de: ['Hochmoor'], deFreedict: ['x'], def: 'heath', cognate: false,
-      senses: [{ pos: 'verb', de: ['anlegen'], def: 'To cast anchor.' }] };
-    expect(forPos(e, 'verb')).toMatchObject({ pos: ['verb', 'noun'], de: ['anlegen'], deFreedict: [], def: 'To cast anchor.' });
+    const e = { lemma: 'moor', rank: 10060, pos: ['noun', 'verb'], tr: ['Hochmoor'], trExtra: ['x'], def: 'heath', cognate: false,
+      senses: [{ pos: 'verb', tr: ['anlegen'], def: 'To cast anchor.' }] };
+    expect(forPos(e, 'verb')).toMatchObject({ pos: ['verb', 'noun'], tr: ['anlegen'], trExtra: [], def: 'To cast anchor.' });
     expect(forPos(e, 'noun')).toBe(e);
     expect(forPos(e, 'adj')).toBe(e);
     expect(forPos(e)).toBe(e);
@@ -255,5 +257,54 @@ describe('structure extensions', () => {
     });
     const s = buildStructure(c, c.sections.map((x) => x.blocks.map((b) => words(b.text).length)));
     expect(s.chapters.map((x) => x.title)).toEqual(['Part I · Chapter I', 'Part I · Chapter II', 'Part II · Chapter I', 'One', 'Two']);
+  });
+});
+
+describe('other languages (§6.5)', () => {
+  const entry = (lemma: string, rank: number, pos = ['noun']) => ({ lemma, rank, pos, tr: ['x'], trExtra: [], cognate: false });
+  const by = async (wl: MemoryWordList, text: string) =>
+    new Map((await analyseContent(buildContent({ sections: [[text]] }), wl)).lemmas.map((l) => [l.lemma, l]));
+
+  it('German: capitalised nouns are words, not names; an unknown capitalised word is a name', async () => {
+    const wl = new MemoryWordList([entry('haus', 2000), entry('laterne', 9000)], [['häuser', 'haus']], { source: 'de', target: 'en' });
+    const r = await by(wl, 'Die Laterne hing am Haus. Die Häuser von Gandorf standen still, und Gandorf schlief. Am Abend kam die Laterne wieder.');
+    expect(r.get('laterne')).toMatchObject({ listed: true, name: false, occurrences: 2 });
+    expect(r.get('haus')).toMatchObject({ listed: true, name: false, forms: ['haus', 'häuser'] });
+    expect(r.get('gandorf')).toMatchObject({ listed: false, name: true });
+    expect(r.get('die')).toMatchObject({ listed: false, name: false });
+  });
+
+  it('French: an elided article is not part of the word', async () => {
+    const wl = new MemoryWordList([entry('homme', 3000), entry('eau', 3000)], [], { source: 'fr', target: 'de' });
+    const r = await by(wl, "L'homme but de l'eau. Un homme, une eau claire, et encore l’homme.");
+    expect(r.get('homme')).toMatchObject({ listed: true, occurrences: 3 });
+    expect(r.get('eau')).toMatchObject({ listed: true, occurrences: 2 });
+    expect(normalizeToken("dell'anno", languageRules('it')).norm).toBe('anno');
+  });
+
+  it('Chinese and Japanese: words without spaces are found by the segmenter', () => {
+    expect(words('我喜欢读书。', languageRules('zh')).map((w) => w.raw).join('|')).toMatch(/读书|读\|书/);
+    expect(words('我喜欢读书。', languageRules('zh')).length).toBeGreaterThan(1);
+    expect(words('私は本を読みます。', languageRules('ja')).length).toBeGreaterThan(2);
+    expect(words('我喜欢读书。').length).toBe(1);   // the default rules see one run of letters
+  });
+
+  it('Arabic and Hebrew are right to left; the English "to" is English only', () => {
+    expect(languageRules('ar').rtl).toBe(true);
+    expect(languageRules('he-IL').rtl).toBe(true);
+    expect(languageRules('en').rtl).toBe(false);
+    expect(headword('gehen', ['verb'], 'de')).toBe('gehen');
+    expect(headword('go', ['verb'], 'en-GB')).toBe('to go');
+  });
+});
+
+describe('book language (§6.5)', () => {
+  it('a book in another language than the word lists is flagged in the preview', async () => {
+    const content = buildContent({ sections: [[`Le chat dort. ${filler(30)}`]] });
+    const make = (language?: string) => createApp(memoryPorts({ wordList: fixtureWordList(), epub: new MemoryEpubReader({ ...content, meta: { ...content.meta, language } }) }));
+    const fr = await make('fr-FR').books.analyse(buf);
+    expect(fr).toMatchObject({ language: 'en', otherLanguage: 'fr-FR' });
+    expect((await make('en-GB').books.analyse(buf)).otherLanguage).toBeUndefined();
+    expect((await make().books.analyse(buf)).otherLanguage).toBeUndefined();
   });
 });

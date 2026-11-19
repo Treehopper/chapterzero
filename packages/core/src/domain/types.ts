@@ -1,4 +1,5 @@
 /** Domain model (README §5). Plain JSON objects only. */
+import type { LanguagePair } from './language.ts';
 
 export type BookId = string;
 export type CardId = string;
@@ -22,7 +23,10 @@ export interface Book {
   id: BookId;
   title: string;
   author?: string;
-  language: 'en';
+  /** BCP 47 code of the book's language: the word list's source language at import */
+  language: string;
+  /** the language of the cards' translations; books imported before language pairs: 'de' */
+  translationLanguage?: string;
   importedAt: string;
   cutoffRank: number;
   stats: { wordTokens: number; distinctWords: number };
@@ -106,6 +110,8 @@ export interface ImportDraft {
   common: { token: string; chapters: number[] }[];
   /** the text for the reader, per chapter (Epic R) */
   text: BookTextChapter[];
+  /** the language the EPUB says it is in */
+  declaredLanguage?: string;
 }
 
 export interface PreviewCounts {
@@ -128,6 +134,9 @@ export interface ImportPreview {
   cardsPerListLevel: Record<number, number>;
   coverageBefore: number;
   includedChapters: number[];
+  /** the word lists' source language, and the EPUB's own when it says another one (wrong lists for this book) */
+  language: string;
+  otherLanguage?: string;
 }
 
 export interface ChapterProgress {
@@ -239,7 +248,7 @@ export interface VocabularyProfile {
   updatedAt: string;
 }
 
-export interface CalibrationItem { lemma: string; rank: number; level: number; de: string[]; pos?: string[]; def?: string; known?: boolean }
+export interface CalibrationItem { lemma: string; rank: number; level: number; tr: string[]; pos?: string[]; def?: string; known?: boolean }
 
 export interface CalibrationSession {
   items: CalibrationItem[];
@@ -281,7 +290,10 @@ export interface AchievementUnlock {
 
 export interface LookupProvider {
   id: string; name: string; enabled: boolean; order: number;
+  /** {word}; also {source} / {target} (language codes) and {sourceName} (English name: "English") */
   urlTemplate: string;
+  /** the language pairs it serves, "en-de" or "en-*"; none = all */
+  pairs?: string[];
 }
 
 export interface ReviewLogEntry {
@@ -302,7 +314,8 @@ export interface Settings {
   dailyGoal: number;
   coverageTarget: number;
   retireOnFirstTry: boolean;
-  useEnglishDefinitions: boolean;
+  /** a definition in the book's language when the lists have no translation */
+  useDefinitions: boolean;
   skipCognates: boolean;
   /** vocabulary check (H2): a swipe on the front only answers after the flip */
   requireFlipBeforeGrade: boolean;
@@ -320,6 +333,8 @@ export interface Settings {
   showBoxLevel: boolean;
   /** the lookup links on the card back (C17) */
   showLookupLinks: boolean;
+  /** the app's own language; 'auto' follows the device (English unless it is German) */
+  uiLanguage: 'auto' | 'en' | 'de';
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }
@@ -338,12 +353,16 @@ export interface WordEntry {
   lemma: string;
   rank: number;
   pos: string[];
-  de: string[];
-  deFreedict: string[];
+  /** translations into the target language */
+  tr: string[];
+  /** translations from a second dictionary, used when `tr` is empty */
+  trExtra: string[];
+  /** definition in the source language */
   def?: string;
+  /** looks and means nearly the same in the target language */
   cognate: boolean;
-  /** other parts of speech with their own translations / definition (pos[0]'s are de and def) */
-  senses?: { pos: string; de: string[]; def?: string }[];
+  /** other parts of speech with their own translations / definition (pos[0]'s are tr and def) */
+  senses?: { pos: string; tr: string[]; def?: string }[];
 }
 
 export interface PackInfo {
@@ -359,12 +378,15 @@ export interface PackStatus {
   available?: PackInfo[];
   updateAvailable: boolean;
   name?: string;
+  /** the installed lists' languages, else what the server offers */
+  pair?: LanguagePair;
 }
 
 export interface Progress { loaded: number; total: number; phase: string }
 
 export interface EpubContent {
-  meta: { title: string; author?: string; coverDataUrl?: string };
+  /** language: the EPUB's dc:language, if given */
+  meta: { title: string; author?: string; language?: string; coverDataUrl?: string };
   toc: { title: string; depth: number; section: number; anchorId?: string }[];
   sections: {
     blocks: {

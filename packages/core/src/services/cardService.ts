@@ -3,9 +3,10 @@ import { resolveCardContent, senseOptions, type SenseOption } from '../domain/ca
 import { chapterProgress, displayTitle } from '../domain/coverage.ts';
 import { levelOfRank } from '../domain/levels.ts';
 import { normalizeToken } from '../domain/text.ts';
+import { languageRules } from '../domain/language.ts';
 import type { Book, BookLemma, Card, LemmaKind } from '../domain/types.ts';
 import type { Repositories, WordList } from '../ports/index.ts';
-import { cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
+import { bookPair, cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
 
 export type WordsTab = 'unlisted' | 'active' | 'known' | 'removed' | 'skipped';
 
@@ -41,7 +42,7 @@ const firstChapter = (byChapter: Record<number, number>) => {
 /** Typed text is matched like a book token (D8, §7.1 steps 5–6). */
 export async function matchTyped(wordList: WordList, typed: string): Promise<{ lemma: string; listed: boolean }> {
   const first = typed.trim().split(/\s+/)[0] ?? '';
-  const t = normalizeToken(first);
+  const t = normalizeToken(first, languageRules((await wordList.pair()).source));
   const norm = t.norm.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '');
   if (!norm) return { lemma: '', listed: false };
   const r = await wordList.resolve([norm]);
@@ -75,7 +76,7 @@ export function cardService(ctx: Ctx) {
     const book = await getBook(tx, bookId);
     const settings = await tx.settings.get();
     const m = await matchTyped(ctx.wordList, typed);
-    const out: WordSuggestion = { lemma: m.lemma, lookupLinks: m.lemma ? links(m.lemma, settings) : [] };
+    const out: WordSuggestion = { lemma: m.lemma, lookupLinks: m.lemma ? links(m.lemma, settings, bookPair(book)) : [] };
     if (!m.lemma) return out;
     const entry = m.listed ? (await ctx.wordList.entries([m.lemma])).get(m.lemma) : undefined;
     if (entry) {

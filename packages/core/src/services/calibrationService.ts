@@ -4,6 +4,7 @@ import { DEFAULT_CUTOFF, LEVELS, startLevel } from '../domain/levels.ts';
 import type { CalibrationItem, CalibrationSession, Settings, VocabularyProfile } from '../domain/types.ts';
 import type { Random, Repositories, WordList } from '../ports/index.ts';
 import { links, type Ctx } from './context.ts';
+import { languageRules, type LanguagePair, type LanguageRules } from '../domain/language.ts';
 
 export const STAGE1_PER_LEVEL = 2;
 export const STAGE2_LEVELS = 4;
@@ -11,24 +12,28 @@ export const STAGE2_PER_LEVEL = 10;
 export const TOTAL = LEVELS.length * STAGE1_PER_LEVEL + STAGE2_LEVELS * STAGE2_PER_LEVEL;
 
 export interface CalibrationView {
-  word?: { lemma: string; de: string[]; pos?: string[]; def?: string; level: number; lookupLinks: { name: string; url: string }[] };
+  word?: { lemma: string; tr: string[]; pos?: string[]; def?: string; level: number; lookupLinks: { name: string; url: string }[] };
+  pair: LanguagePair;
   position: number;
   total: number;
   stage: 1 | 2;
   result?: { cutoffRank: number; level: number; r50?: number; k?: number };
 }
 
-const acceptable = (lemma: string) => /^[a-z]+$/.test(lemma) && lemma.length >= 4;
+/** a plain word: letters only, no capitals (names, abbreviations), not too short where words are spelled out */
+const acceptable = (lemma: string, lang: LanguageRules) =>
+  /^[\p{L}\p{M}]+$/u.test(lemma) && lemma === lemma.toLowerCase() && (lang.segmented || [...lemma].length >= 4);
 
 export async function sampleLevel(wordList: WordList, random: Random, level: number, count: number, taken: Set<string>): Promise<CalibrationItem[]> {
   const l = LEVELS[level - 1];
   const out: CalibrationItem[] = [];
+  const lang = languageRules((await wordList.pair()).source);
   for (let draws = 0; draws < 200 && out.length < count; draws++) {
     const rank = l.from + Math.floor(random.next() * (l.to - l.from + 1));
     const e = await wordList.firstAtOrAfter(rank, l.to);
-    if (!e || !acceptable(e.lemma) || !e.de.length || e.cognate || taken.has(e.lemma)) continue;
+    if (!e || !acceptable(e.lemma, lang) || !e.tr.length || e.cognate || taken.has(e.lemma)) continue;
     taken.add(e.lemma);
-    out.push({ lemma: e.lemma, rank: e.rank, level, de: e.de.slice(0, 3), pos: e.pos, def: e.def });
+    out.push({ lemma: e.lemma, rank: e.rank, level, tr: e.tr.slice(0, 3), pos: e.pos, def: e.def });
   }
   return out;
 }
@@ -44,9 +49,10 @@ export function nearestLevels(r50: number, n = STAGE2_LEVELS): number[] {
 }
 
 export function calibrationService(ctx: Ctx) {
-  const view = (s: CalibrationSession, settings: Settings, result?: CalibrationView['result']): CalibrationView => {
+  const view = async (s: CalibrationSession, settings: Settings, result?: CalibrationView['result']): Promise<CalibrationView> => {
     const it = s.items[s.position];
-    return { word: it && !result ? { lemma: it.lemma, de: it.de, pos: it.pos, def: it.def, level: it.level, lookupLinks: links(it.lemma, settings) } : undefined,
+    const pair = await ctx.wordList.pair();
+    return { word: it && !result ? { lemma: it.lemma, tr: it.tr, pos: it.pos, def: it.def, level: it.level, lookupLinks: links(it.lemma, settings, pair) } : undefined, pair,
       position: s.position, total: TOTAL, stage: s.stage, result };
   };
 

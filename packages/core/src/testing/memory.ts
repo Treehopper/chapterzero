@@ -1,5 +1,6 @@
 /** In-memory implementations of all ports (tests, and a reference for the adapters). */
 import { deepClone as clone } from '../domain/clone.ts';
+import { LEGACY_PAIR, type LanguagePair } from '../domain/language.ts';
 import { DEFAULT_SETTINGS, EMPTY_STATS } from '../domain/settings.ts';
 import type {
   AchievementUnlock, AppState, BackupV1, Book, BookLemma, BookText, CalibrationSession, Card, EpubContent, ImportDraft,
@@ -179,11 +180,12 @@ export class MemoryWordList implements WordList {
   readonly words = new Map<string, WordEntry>();
   readonly forms = new Map<string, string>();
   readonly posOf = new Map<string, string>();
-  constructor(words: WordEntry[], forms: ([string, string] | [string, string, string?])[]) {
+  constructor(words: WordEntry[], forms: ([string, string] | [string, string, string?])[], private readonly languages: LanguagePair = LEGACY_PAIR) {
     for (const w of words) this.words.set(w.lemma, w);
     for (const [f, l, p] of forms) { this.forms.set(f, l); if (p) this.posOf.set(f, p); }
   }
   async info() { return []; }
+  async pair() { return this.languages; }
   async resolve(tokens: string[]) {
     const out = new Map<string, string>();
     for (const t of tokens) {

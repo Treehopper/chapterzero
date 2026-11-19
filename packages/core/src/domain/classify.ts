@@ -8,9 +8,9 @@ export interface ClassifyInput {
 }
 
 export function classify(l: ClassifyInput, entry: WordEntry | undefined, cutoffRank: number,
-  known: Set<string>, settings: Pick<Settings, 'useEnglishDefinitions' | 'skipCognates'>): LemmaKind {
+  known: Set<string>, settings: Pick<Settings, 'useDefinitions' | 'skipCognates'>): LemmaKind {
   if (l.name) return 'name';
-  if (!l.listed || !entry || !resolveCardContent(entry, settings.useEnglishDefinitions)) return 'unlisted';
+  if (!l.listed || !entry || !resolveCardContent(entry, settings.useDefinitions)) return 'unlisted';
   if (entry.rank <= cutoffRank) return 'belowLevel';
   if (known.has(l.lemma)) return 'known';
   if (entry.cognate && settings.skipCognates) return 'cognate';
@@ -26,11 +26,11 @@ export function firstIncludedChapter(byChapter: Record<number, number>, included
 }
 
 export function cardFromLemma(bookId: string, row: Omit<BookLemma, 'bookId' | 'kind'>, entry: WordEntry,
-  settings: Pick<Settings, 'useEnglishDefinitions'>, chapterIndex: number): Card {
+  settings: Pick<Settings, 'useDefinitions'>, chapterIndex: number): Card {
   // the part of speech the book uses picks the translations ("chafed": scheuern, not Schürfwunde)
   const e = forPos(entry, row.pos);
-  const own = resolveCardContent(e, settings.useEnglishDefinitions);
-  const content = own ?? resolveCardContent(entry, settings.useEnglishDefinitions)!;
+  const own = resolveCardContent(e, settings.useDefinitions);
+  const content = own ?? resolveCardContent(entry, settings.useDefinitions)!;
   return {
     id: `${bookId}:${row.lemma}`, bookId, lemma: row.lemma, forms: row.forms, occurrences: row.occurrences,
     occurrencesByChapter: row.occurrencesByChapter, firstPosition: row.firstPosition, chapterIndex, example: row.example,

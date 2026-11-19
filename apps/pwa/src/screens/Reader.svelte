@@ -6,6 +6,8 @@
   import { go, replace } from '../lib/router.svelte';
   import Sheet from '../components/Sheet.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
+  import { textAttrs } from '../lib/i18n/index.svelte';
+  import { ui } from '../lib/ui.svelte';
 
   let { bookId, chapter: chapterParam }: { bookId: string; chapter?: string } = $props();
   let book = $state<ReaderBook>();
@@ -79,7 +81,7 @@
   {#if error}<p class="error">{error}</p>{/if}
   {#if ch}
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-    <article class="text" bind:this={text} onclick={tapWord} data-testid="reader-text">
+    <article class="text" bind:this={text} onclick={tapWord} data-testid="reader-text" {...textAttrs(book?.language ?? ui.pair.source)}>
       {#each ch.blocks as b, i (i)}
         <p data-b={i} class:note={b.note}>{#each b.segs as s, j (j)}{#if typeof s === 'string'}{s}{:else}<span class="w" class:active={ch.cards[s.c]?.status === 'active'} data-c={s.c} role="button" tabindex="-1">{s.t}</span>{/if}{/each}</p>
       {:else}
@@ -110,9 +112,9 @@
   {@const c = card}
   <Sheet label="Card {c.lemma}" onclose={() => (card = undefined)}>
     <div class="stack" data-testid="reader-card">
-      <div class="row"><h2 class="spacer">{headword(c.lemma, c.pos)}</h2><span class="pill">{statusLabel[c.status] ?? c.status}</span></div>
-      {#if c.translations.length}<div class="tr">{c.translations.join(', ')}</div>{/if}
-      {#if c.definition}<p class="small muted">{c.definition}</p>{/if}
+      <div class="row"><h2 class="spacer" {...textAttrs(book?.language ?? ui.pair.source)}>{headword(c.lemma, c.pos, book?.language)}</h2><span class="pill">{statusLabel[c.status] ?? c.status}</span></div>
+      {#if c.translations.length}<div class="tr" {...textAttrs(ui.pair.target)}>{c.translations.join(', ')}</div>{/if}
+      {#if c.definition}<p class="small muted" {...textAttrs(book?.language ?? ui.pair.source)}>{c.definition}</p>{/if}
       <LookupLinks links={c.links} />
     </div>
   </Sheet>

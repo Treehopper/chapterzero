@@ -116,7 +116,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await tapCard(page);
     await expect(page.getByTestId('check-replace')).toBeVisible();
     await page.evaluate(() => {
-      const de = document.querySelector('.back .de')!;
+      const de = document.querySelector('.back .tr')!;
       de.textContent = 'Glücksspiel um hohe Einsätze, Hasardspiel, Zockerei';
       de.classList.add('long');
       const def = document.querySelector('.back .def') ?? de.insertAdjacentElement('afterend', Object.assign(document.createElement('p'), { className: 'def small muted' }))!;

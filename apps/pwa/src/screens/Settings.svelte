@@ -63,6 +63,7 @@
     try {
       await api.wordLists.install((p) => (progress = `${Math.round((p.loaded / Math.max(1, p.total)) * 100)} %`));
       packs = await api.wordLists.status();
+      if (packs.pair) ui.pair = packs.pair;
       toast('Word lists updated');
     } catch (e) { toast(e instanceof Error ? e.message : String(e)); } finally { updating = false; progress = ''; }
   }
@@ -115,7 +116,7 @@
     <div class="section-title">Word selection (new imports and re-filtering)</div>
     <div class="list">
       <label class="list-row"><span class="spacer">Use English definitions when no German translation exists</span>
-        <input type="checkbox" checked={s.useEnglishDefinitions} onchange={(e) => save({ useEnglishDefinitions: e.currentTarget.checked })} /></label>
+        <input type="checkbox" checked={s.useDefinitions} onchange={(e) => save({ useDefinitions: e.currentTarget.checked })} /></label>
       <label class="list-row"><span class="spacer">Skip words nearly identical in German</span>
         <input type="checkbox" checked={s.skipCognates} onchange={(e) => save({ skipCognates: e.currentTarget.checked })} /></label>
     </div>

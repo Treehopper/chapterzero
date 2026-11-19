@@ -1,16 +1,18 @@
 /** IndexedDB adapters (Dexie) for the core repository ports (README §10). */
 import Dexie, { type Table } from 'dexie';
 import {
-  DEFAULT_SETTINGS, EMPTY_STATS,
+  DEFAULT_SETTINGS, EMPTY_STATS, migrateSettings,
   type AchievementUnlock, type AppState, type BackupV1, type Book, type BookLemma, type BookText, type Card, type ImportDraft,
   type LearnerStats, type ReadingPosition, type Repositories, type ReviewLogEntry, type Settings, type StudySession, type UnitOfWork,
   type VocabularyProfile,
 } from '@vocabfirst/core';
 
-export type WordRow = { lemma: string; rank: number; pos: string[]; de: string[]; def: string | null; flags: number;
-  /** other parts of speech: [pos, de, def] */
+/** a word-list row: translations into the target language (`tr`), a definition in the source language */
+export type WordRow = { lemma: string; rank: number; pos: string[]; tr: string[]; def: string | null; flags: number;
+  /** other parts of speech: [pos, tr, def] */
   senses?: [string, string[], string | null][] };
-export type FreedictRow = { lemma: string; de: string[] };
+/** translations from a second dictionary (FreeDict for English → German) */
+export type ExtraRow = { lemma: string; tr: string[] };
 export type FormRow = { form: string; lemma: string; /** the form's only part of speech, if it has one */ pos?: string };
 export type PackChunkRow = { packId: string; file: string; sha256: string; version: string };
 type Meta = { key: string; value: unknown };
@@ -26,7 +28,7 @@ export class VocabDb extends Dexie {
   knownWords!: Table<Known, string>;
   achievementUnlocks!: Table<AchievementUnlock, [string, string]>;
   words!: Table<WordRow, string>;
-  wordsFreedict!: Table<FreedictRow, string>;
+  wordsExtra!: Table<ExtraRow, string>;
   forms!: Table<FormRow, string>;
   packChunks!: Table<PackChunkRow, [string, string]>;
   meta!: Table<Meta, string>;
@@ -52,6 +54,14 @@ export class VocabDb extends Dexie {
     });
     // Epic R: the reader's text and position, per book
     this.version(2).stores({ bookTexts: 'bookId', readingPositions: 'bookId' });
+    // any language pair: translations are `tr`, not `de`; the second dictionary's table has a neutral name
+    this.version(3).stores({ wordsExtra: 'lemma', wordsFreedict: null }).upgrade(async (tx) => {
+      await tx.table('words').toCollection().modify((r: { de?: string[]; tr?: string[] }) => { r.tr = r.de ?? []; delete r.de; });
+      const extra = (await tx.table('wordsFreedict').toArray()) as { lemma: string; de: string[] }[];
+      await tx.table('wordsExtra').bulkPut(extra.map((r) => ({ lemma: r.lemma, tr: r.de })));
+      const s = await tx.table('meta').get('settings');
+      if (s) await tx.table('meta').put({ key: 'settings', value: migrateSettings(s.value) });
+    });
   }
 }
 
@@ -233,7 +243,7 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
       saveCalibration: (s) => setMeta('calibration', s),
     },
     settings: {
-      get: async () => ({ ...DEFAULT_SETTINGS, ...(await getMeta<Partial<Settings>>('settings', {})) }),
+      get: async () => ({ ...DEFAULT_SETTINGS, ...migrateSettings(await getMeta<Partial<Settings>>('settings', {})) }),
       save: (s) => setMeta('settings', s),
     },
     appState: {
@@ -251,7 +261,7 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
         profile: await getMeta<VocabularyProfile | undefined>('profile', undefined),
         stats: await getMeta<LearnerStats>('stats', EMPTY_STATS),
         unlocks: await o.unlocks.query(() => db.achievementUnlocks.toArray(), () => true),
-        settings: { ...DEFAULT_SETTINGS, ...(await getMeta<Partial<Settings>>('settings', {})) },
+        settings: { ...DEFAULT_SETTINGS, ...migrateSettings(await getMeta<Partial<Settings>>('settings', {})) },
       }),
       replace: async (b: BackupV1) => {
         const appState = await getMeta<AppState>('appState', {});
@@ -274,7 +284,7 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
         o.unlocks.put(b.unlocks.map((x) => ({ ...x, tier: x.tier ?? 'gold' })));
         if (b.profile) await setMeta('profile', b.profile);
         await setMeta('stats', b.stats);
-        await setMeta('settings', b.settings);
+        await setMeta('settings', { ...DEFAULT_SETTINGS, ...migrateSettings(b.settings) });
         await setMeta('appState', { ...appState, lastBookId: undefined, lastRoute: undefined });
       },
     },

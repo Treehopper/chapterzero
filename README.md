@@ -532,7 +532,7 @@ type CardStatus = 'active' | 'removed' | 'known';
 
 interface Book {
   id: BookId;
-  title: string; author?: string; language: 'en';
+  title: string; author?: string; language: string;   // BCP 47, the lists' source language (§6.5); translationLanguage?: string
   importedAt: string;               // ISO
   cutoffRank: number;               // cutoff used for this book
   stats: { wordTokens: number; distinctWords: number };
@@ -721,7 +721,7 @@ interface Settings {
   dailyGoal: number;                // 20 reviews
   coverageTarget: number;           // 0.98
   retireOnFirstTry: boolean;        // true
-  useEnglishDefinitions: boolean;   // true
+  useDefinitions: boolean;          // true; a definition in the book's language when there is no translation (stored as useEnglishDefinitions before)
   skipCognates: boolean;            // true
   requireFlipBeforeGrade: boolean;  // true; vocabulary check only: the first swipe on a front asks once whether to turn it off
   frontSwipe: 'ask' | 'known' | 'grade' | 'off';  // 'ask'; study (C20): a right swipe on a card never turned over.
@@ -778,21 +778,24 @@ Every listed word has a **rank** (1 = most common English lemma). Levels are ran
 ```json
 {
   "formatVersion": 1,
+  "name": "English → German", "source": "en", "target": "de",
   "packs": [
-    { "id": "words-en-de", "version": "2026-11-01", "sources": ["https://kaikki.org/…"],
+    { "id": "words-en-de", "role": "words", "version": "2026-11-01", "sources": ["https://kaikki.org/…"],
       "licence": "CC BY-SA 4.0", "entryCount": 0,
       "chunks": [ { "file": "words-en-de.000.json.gz", "bytes": 0, "sha256": "…" } ] },
-    { "id": "words-de-freedict", "…": "…" },
-    { "id": "forms-en", "…": "…" }
+    { "id": "words-de-freedict", "role": "extra", "…": "…" },
+    { "id": "forms-en", "role": "forms", "…": "…" }
   ]
 }
 ```
 
-| Pack | Licence | Chunk content (JSON array of rows, sorted by first element) | IndexedDB store |
+`source` and `target` are the language pair (BCP 47); a manifest without them is English → German. Each pack has a `role`; the app knows packs by role, not by id (ids without a role: the three below).
+
+| Pack (role) | Licence | Chunk content (JSON array of rows, sorted by first element) | IndexedDB store |
 |---|---|---|---|
-| `words-en-de` | CC BY-SA | `[lemma, rank, pos[], de[], def \| null, flags, others?]` — `de`/`def` belong to `pos[0]`; `others` = `[pos, de[], def \| null][]` for the other parts of speech with their own translations or definition; archaic, obsolete and rare senses only when nothing else exists; `flags` bit 0 = cognate | `words`, key `lemma`, index `rank` |
-| `words-de-freedict` | GPL | `[lemma, de[]]` — only list lemmas whose Wiktionary `de` is empty | `wordsFreedict`, key `lemma` |
-| `forms-en` | CC BY-SA | `[form, lemma, pos?]` — `lemma` is `""` for forms of common words; `pos` when the form belongs to one part of speech only ("chafed" → verb, not "chafes") | `forms`, key `form` |
+| `words-en-de` (`words`) | CC BY-SA | `[lemma, rank, pos[], tr[], def \| null, flags, others?]` — `tr` are the translations into the target language, `def` a definition in the source language; both belong to `pos[0]`; `others` = `[pos, tr[], def \| null][]` for the other parts of speech with their own translations or definition; archaic, obsolete and rare senses only when nothing else exists; `flags` bit 0 = cognate | `words`, key `lemma`, index `rank` |
+| `words-de-freedict` (`extra`) | GPL | `[lemma, tr[]]` — a second dictionary; only list lemmas whose Wiktionary `tr` is empty | `wordsExtra`, key `lemma` |
+| `forms-en` (`forms`) | CC BY-SA | `[form, lemma, pos?]` — `lemma` is `""` for forms of common words; `pos` when the form belongs to one part of speech only ("chafed" → verb, not "chafes") | `forms`, key `form` |
 
 Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two translation packs stay separate files and stores because their licences differ. Target size for all packs together: under 10 MB compressed (CI prints the real sizes; if exceeded, drop `def` for entries that have German translations).
 
@@ -809,7 +812,7 @@ Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two tr
 **Card content from a `WordEntry`** (`resolveCardContent`, pure):
 1. `de` non-empty → `translations = de.slice(0, 4)`, `definition = def`, source `list`.
 2. else `deFreedict` non-empty → `translations = deFreedict.slice(0, 4)`, `definition = def`, source `list`.
-3. else `def` exists and `settings.useEnglishDefinitions` → `translations = []`, `definition = def`, source `definition`.
+3. else `def` exists and `settings.useDefinitions` → `translations = []`, `definition = def`, source `definition`.
 4. else → the word is treated as not in the lists.
 
 ### 6.4 Matching word forms
@@ -840,6 +843,20 @@ Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two tr
 3. else: absent from the result = not in the lists.
 
 `ImportService` normalises tokens before calling `resolve` and handles compounds (§7.1, steps 5–6). Known trade-off: when a form belongs to both a common and a rare word, the rare reading is ignored. Such a word can still be added by hand (D8).
+
+### 6.5 Any language pair
+
+Nothing outside the word lists and `domain/language.ts` assumes English or German. Another pair needs only another set of packs (the builder in `tools/build-word-packs` makes English → German; `SOURCE`/`TARGET` there and the FreeDict and cognate rules are the parts to change).
+
+- **The pair** comes from the manifest and is stored with the installed packs (`WordList.pair()`, `PackStatus.pair`). A book records its `language` (the source) and `translationLanguage` at import; links, `lang`/`dir` and the headword use the book's pair. One pair is installed at a time.
+- **Language rules** (`languageRules(code)`), everything else is generic:
+  - *segmented* (zh, ja, th, lo, km, my, bo): no spaces between words, so `Intl.Segmenter` finds them. Its word boundaries are good, not perfect.
+  - *right to left* (ar, he, fa, ur, yi, ps, dv, ckb, sd, ug): book text, words and translations get `dir="rtl"`; the layout and the swipes stay physical (right = knew it in every language).
+  - *capital letters mark names* except in German and Luxembourgish (every noun has one): there a name is a word the lists don't know that is always capitalised. Scripts without capitals have no name detection.
+  - English only: British → American spelling fallback (§7.1), possessive `'s`, contractions as common words, verb and noun cues for the part of speech, "to" before verbs. Elsewhere an apostrophe elides a short word in front ("l'homme" → "homme").
+- **Lookup links** may name the pairs they serve (`pairs: ["en-de", "en-*"]`) and use `{source}`, `{target}`, `{sourceName}`; the built-in ones always use their current template, custom ones show for every pair.
+- **Mismatch**: an EPUB whose `dc:language` differs from the lists' source language is flagged in the import preview.
+- **Known limits**: no readings (pinyin, furigana) on cards; vertically written books are shown horizontally; Chinese and Japanese have no name detection.
 
 ---
 

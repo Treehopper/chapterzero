@@ -1,7 +1,8 @@
 export * from './domain/types.ts';
 export * from './ports/index.ts';
 export { createApp, type VocabApp, type AchievementView } from './app.ts';
-export { DEFAULT_SETTINGS, EMPTY_STATS } from './domain/settings.ts';
+export { DEFAULT_SETTINGS, EMPTY_STATS, migrateSettings } from './domain/settings.ts';
+export { LEGACY_PAIR, isRtl, languageRules, primary, type LanguagePair, type LanguageRules } from './domain/language.ts';
 export { DEFAULT_LOOKUP_PROVIDERS, isValidTemplate, lookupLinks } from './domain/lookup.ts';
 export { LEVELS, levelOfRank, startLevel, DEFAULT_CUTOFF, COMMON_MAX_RANK } from './domain/levels.ts';
 export { ACHIEVEMENTS } from './domain/achievements.ts';

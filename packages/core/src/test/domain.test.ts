@@ -61,8 +61,8 @@ const card = (over: Partial<Card> = {}): Card => ({
 
 describe('sense options for editing (C13)', () => {
   it('lists each part of speech with its own translations and definition, main first', () => {
-    const e = { lemma: 'chafe', rank: 9000, pos: ['noun', 'verb'], de: ['Scheuerstelle'], deFreedict: [], def: 'a sore from rubbing', cognate: false,
-      senses: [{ pos: 'verb', de: ['scheuern', 'reiben'], def: 'to rub' }, { pos: 'noun', de: ['x'] }, { pos: 'adj', de: [] }] };
+    const e = { lemma: 'chafe', rank: 9000, pos: ['noun', 'verb'], tr: ['Scheuerstelle'], trExtra: [], def: 'a sore from rubbing', cognate: false,
+      senses: [{ pos: 'verb', tr: ['scheuern', 'reiben'], def: 'to rub' }, { pos: 'noun', tr: ['x'] }, { pos: 'adj', tr: [] }] };
     expect(senseOptions(e)).toEqual([
       { pos: 'noun', translations: ['Scheuerstelle'], definition: 'a sore from rubbing' },
       { pos: 'verb', translations: ['scheuern', 'reiben'], definition: 'to rub' },
@@ -149,12 +149,23 @@ describe('achievements (§7.6)', () => {
   });
 });
 
+const EN_DE = { source: 'en', target: 'de' };
 describe('lookup links (C16–C17)', () => {
   it('encodes the lemma into enabled https templates in order', () => {
-    const l = lookupLinks('relinquish', DEFAULT_LOOKUP_PROVIDERS);
+    const l = lookupLinks('relinquish', DEFAULT_LOOKUP_PROVIDERS, EN_DE);
     expect(l.map((x) => x.name)).toEqual(['Wiktionary', 'dict.cc', 'LEO', 'Linguee', 'Cambridge']);
     expect(l[0].url).toBe('https://en.wiktionary.org/wiki/relinquish#English');
-    expect(lookupLinks('a b', [{ ...DEFAULT_LOOKUP_PROVIDERS[1] }])[0].url).toBe('https://www.dict.cc/?s=a%20b');
+    expect(lookupLinks('a b', [{ ...DEFAULT_LOOKUP_PROVIDERS[1] }], EN_DE)[0].url).toBe('https://www.dict.cc/?s=a%20b');
+  });
+  it('shows only the dictionaries for the language pair; custom ones everywhere', () => {
+    const custom = { id: 'c1', name: 'Mine', enabled: true, order: 9, urlTemplate: 'https://x.test/{source}-{target}/{word}' };
+    const fr = lookupLinks('homme', [...DEFAULT_LOOKUP_PROVIDERS, custom], { source: 'fr', target: 'es' });
+    expect(fr.map((x) => x.name)).toEqual(['Wiktionary', 'Mine']);
+    expect(fr.map((x) => x.url)).toEqual(['https://en.wiktionary.org/wiki/homme#French', 'https://x.test/fr-es/homme']);
+    expect(lookupLinks('moor', DEFAULT_LOOKUP_PROVIDERS, { source: 'en', target: 'fr' }).map((x) => x.name)).toEqual(['Wiktionary', 'Cambridge']);
+    // settings stored before pairs: the built-in template and pairs still apply
+    const stored = { ...DEFAULT_LOOKUP_PROVIDERS[0], urlTemplate: 'https://en.wiktionary.org/wiki/{word}#English' };
+    expect(lookupLinks('Haus', [stored], { source: 'de', target: 'en' })[0].url).toBe('https://en.wiktionary.org/wiki/Haus#German');
   });
   it('accepts only https templates with {word}', () => {
     expect(isValidTemplate('https://example.com/?q={word}')).toBe(true);
@@ -165,10 +176,10 @@ describe('lookup links (C16–C17)', () => {
 });
 
 describe('resolveCardContent (§6.3)', () => {
-  const e = { lemma: 'x', rank: 5000, pos: [], de: [], deFreedict: [], cognate: false };
+  const e = { lemma: 'x', rank: 5000, pos: [], tr: [], trExtra: [], cognate: false };
   it('prefers Wiktionary, then FreeDict, then the definition', () => {
-    expect(resolveCardContent({ ...e, de: ['a', 'b', 'c', 'd', 'e'], def: 'D' }, true)).toEqual({ translations: ['a', 'b', 'c', 'd'], definition: 'D', translationSource: 'list' });
-    expect(resolveCardContent({ ...e, deFreedict: ['f'], def: 'D' }, true)?.translations).toEqual(['f']);
+    expect(resolveCardContent({ ...e, tr: ['a', 'b', 'c', 'd', 'e'], def: 'D' }, true)).toEqual({ translations: ['a', 'b', 'c', 'd'], definition: 'D', translationSource: 'list' });
+    expect(resolveCardContent({ ...e, trExtra: ['f'], def: 'D' }, true)?.translations).toEqual(['f']);
     expect(resolveCardContent({ ...e, def: 'D' }, true)).toEqual({ translations: [], definition: 'D', translationSource: 'definition' });
     expect(resolveCardContent({ ...e, def: 'D' }, false)).toBeUndefined();
   });

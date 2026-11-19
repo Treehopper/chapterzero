@@ -5,11 +5,12 @@
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
-  import { fmt } from '../lib/ui.svelte';
+  import { fmt, ui } from '../lib/ui.svelte';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
   import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
+  import { textAttrs } from '../lib/i18n/index.svelte';
 
   let view = $state<CalibrationView>();
   let flipped = $state(false);
@@ -152,13 +153,13 @@
     {#key `${view.position}:${view.word?.lemma}`}
       <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
         {#snippet front()}
-          <div class="word" data-testid="check-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
+          <div class="word" data-testid="check-word" {...textAttrs(ui.pair.source)}>{view?.word ? headword(view.word.lemma, view.word.pos, ui.pair.source) : ''}</div>
           <div class="hint muted">{flipped || showHints ? '' : 'Tap to see the translation'}</div>
         {/snippet}
         {#snippet back()}
-          <div class="word small-word">{view?.word ? headword(view.word.lemma, view.word.pos) : ''}</div>
-          <div class="de" class:long={(view?.word?.de.join(', ').length ?? 0) > 24}>{view?.word?.de.join(', ')}</div>
-          {#if view?.word?.def}<p class="def small muted">{view.word.def}</p>{/if}
+          <div class="word small-word" {...textAttrs(ui.pair.source)}>{view?.word ? headword(view.word.lemma, view.word.pos, ui.pair.source) : ''}</div>
+          <div class="tr" class:long={(view?.word?.tr.join(', ').length ?? 0) > 24} {...textAttrs(ui.pair.target)}>{view?.word?.tr.join(', ')}</div>
+          {#if view?.word?.def}<p class="def small muted" {...textAttrs(ui.pair.source)}>{view.word.def}</p>{/if}
           <LookupLinks links={view?.word?.lookupLinks ?? []} />
           <div class="hint muted">Swipe right if you knew it, left if not</div>
         {/snippet}
@@ -196,8 +197,8 @@
   .counter { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
   .word { font-family: var(--serif); font-size: clamp(30px, 9vw, 44px); font-weight: 700; text-align: center; margin: auto 0 8px; overflow-wrap: anywhere; }
   .small-word { font-size: 22px; margin: 0 0 16px; color: var(--muted); }
-  .de { font-size: 26px; text-align: center; }
-  .de.long { font-size: 20px; }
+  .tr { font-size: 26px; text-align: center; }
+  .tr.long { font-size: 20px; }
   .def { text-align: center; margin: 12px 0 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; flex: none; }
   .replace { display: flex; flex-direction: column; align-items: center; }
   .cardpos.nudge { animation: nudge 0.35s; }

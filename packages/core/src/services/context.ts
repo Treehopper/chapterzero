@@ -1,5 +1,6 @@
 import { DEFAULT_CUTOFF, startLevel } from '../domain/levels.ts';
 import { lookupLinks } from '../domain/lookup.ts';
+import { LEGACY_PAIR, type LanguagePair } from '../domain/language.ts';
 import type { Book, BookProgress, Card, Settings } from '../domain/types.ts';
 import type { Ports, Repositories } from '../ports/index.ts';
 
@@ -23,7 +24,9 @@ export const cardView = (c: Card): CardView => ({
   seen: c.stats.correct + c.stats.wrong > 0,
 });
 
-export const links = (lemma: string, s: Settings) => lookupLinks(lemma, s.lookupProviders);
+export const links = (lemma: string, s: Settings, pair: LanguagePair) => lookupLinks(lemma, s.lookupProviders, pair);
+/** the languages of a book's cards */
+export const bookPair = (b: Book): LanguagePair => ({ source: b.language, target: b.translationLanguage ?? LEGACY_PAIR.target });
 
 export interface BookOverview {
   id: string; title: string; author?: string; coverDataUrl?: string; importedAt: string; cutoffRank: number;

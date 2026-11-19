@@ -1,7 +1,8 @@
 /** Import steps 5–8 (README §7.1): tokenise, match, names, aggregate. */
 import type { WordList } from '../ports/index.ts';
 import { buildStructure, removeRepeatedBlocks, splitSectionsAtTocAnchors, type PlacedBlock } from './structure.ts';
-import { americanVariants, cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
+import { languageRules, type LanguageRules } from './language.ts';
+import { cutAround, normalizeToken, tokenizeBlock, type Sentence } from './text.ts';
 import type { BookTextChapter, Chapter, EpubContent, ImportDraft } from './types.ts';
 
 interface TokenStat {
@@ -24,10 +25,6 @@ export type AnalysisResult = Omit<ImportDraft, 'id' | 'createdAt'>;
 
 const BATCH = 2000;
 
-/** the word before tells the part of speech of ambiguous words ("to moor" / "the moor") */
-const VERB_CUES = new Set(['to', 'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must', 'did', 'does', 'do',
-  "didn't", "don't", "doesn't", "won't", "wouldn't", "can't", "couldn't", "shouldn't", "mustn't", 'i', 'we', 'they']);
-const NOUN_CUES = new Set(['the', 'a', 'an', 'his', 'its', 'their', 'my', 'your', 'our', 'this', 'these', 'those', 'every', 'each']);
 
 async function resolveBatched(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -38,11 +35,11 @@ async function resolveBatched(wordList: WordList, tokens: string[]): Promise<Map
   return out;
 }
 
-/** Resolves tokens; one the list doesn't know gets a second chance as its American spelling. */
-async function resolveAll(wordList: WordList, tokens: string[]): Promise<Map<string, string>> {
+/** Resolves tokens; one the list doesn't know gets a second chance as another spelling (English: American). */
+async function resolveAll(wordList: WordList, tokens: string[], lang: LanguageRules): Promise<Map<string, string>> {
   const out = await resolveBatched(wordList, tokens);
   const variants = new Map<string, string[]>();
-  for (const t of tokens) if (!out.has(t)) { const v = americanVariants(t); if (v.length) variants.set(t, v); }
+  for (const t of tokens) if (!out.has(t)) { const v = lang.spellingVariants(t); if (v.length) variants.set(t, v); }
   const r = await resolveBatched(wordList, [...new Set([...variants.values()].flat())]);
   for (const [t, vs] of variants) {
     const hit = vs.find((v) => r.has(v));
@@ -62,10 +59,12 @@ export async function analyseContent(
   raw: EpubContent, wordList: WordList, onProgress?: (done: number, total: number, phase: string) => void,
 ): Promise<AnalysisResult> {
   const content = splitSectionsAtTocAnchors(removeRepeatedBlocks(raw));
+  const pair = await wordList.pair();
+  const lang = languageRules(pair.source);
   onProgress?.(0, 1, 'tokenising');
-  const tokenized: Sentence[][][] = content.sections.map((s) => s.blocks.map((b) => tokenizeBlock(b.text)));
+  const tokenized: Sentence[][][] = content.sections.map((s) => s.blocks.map((b) => tokenizeBlock(b.text, lang)));
   const blockTokens = tokenized.map((sec) =>
-    sec.map((sents) => sents.reduce((n, s) => n + s.words.filter((w) => normalizeToken(w.raw).kind !== 'digit').length, 0)));
+    sec.map((sents) => sents.reduce((n, s) => n + s.words.filter((w) => normalizeToken(w.raw, lang).kind !== 'digit').length, 0)));
   const structure = buildStructure(content, blockTokens);
 
   const chapterTokens = new Array<number>(structure.chapters.length).fill(0);
@@ -80,7 +79,7 @@ export async function analyseContent(
       let first = true;
       let prev = '';
       for (const w of sent.words) {
-        const t = normalizeToken(w.raw);
+        const t = normalizeToken(w.raw, lang);
         if (t.kind === 'digit') { prev = ''; continue; }
         const initial = first;
         first = false;
@@ -102,8 +101,8 @@ export async function analyseContent(
           stats.set(t.norm, st);
         }
         st.count++;
-        if (VERB_CUES.has(before)) st.cues.verb++;
-        else if (NOUN_CUES.has(before)) st.cues.noun++;
+        if (lang.verbCues.has(before)) st.cues.verb++;
+        else if (lang.nounCues.has(before)) st.cues.noun++;
         st.byChapter.set(pb.chapter, (st.byChapter.get(pb.chapter) ?? 0) + 1);
         if (t.allCaps) st.caps++;
         if (initial) { st.initial++; if (t.capitalized) st.initialCap++; }
@@ -119,7 +118,7 @@ export async function analyseContent(
   // ---- match (step 6)
   onProgress?.(0, 1, 'matching');
   const distinct = [...stats.keys()];
-  const resolved = await resolveAll(wordList, distinct);
+  const resolved = await resolveAll(wordList, distinct, lang);
   const hyphenParts = new Map<string, string[]>();
   const partTokens = new Set<string>();
   for (const t of distinct) {
@@ -128,7 +127,7 @@ export async function analyseContent(
     hyphenParts.set(t, parts);
     for (const p of parts) partTokens.add(p);
   }
-  const partResolved = await resolveAll(wordList, [...partTokens].filter((p) => !resolved.has(p)));
+  const partResolved = await resolveAll(wordList, [...partTokens].filter((p) => !resolved.has(p)), lang);
   const lookup = (t: string) => (resolved.has(t) ? resolved.get(t) : partResolved.get(t));
   const formPos = await wordList.formPos(distinct.filter((t) => resolved.get(t)));
 
@@ -179,12 +178,13 @@ export async function analyseContent(
       if (st.firstPos < first.firstPos) first = st;
       if (st.firstGood && (!good || st.firstGood.pos < good.pos)) good = st.firstGood;
     }
-    // names (step 7, B5): capitals only, or capitalised in ≥ 90 % of non-initial occurrences
-    const name = caps === count
-      || (nonInitial > 0 && nonInitialCap / nonInitial >= 0.9)
-      || (!a.listed && nonInitial === 0 && initial > 0 && initialCap === initial);
+    // names (step 7, B5): capitals only, or capitalised in ≥ 90 % of non-initial occurrences;
+    // where every noun has a capital (German), only a word the list doesn't know and always capitalised
+    const name = lang.capitalNames
+      ? caps === count || (nonInitial > 0 && nonInitialCap / nonInitial >= 0.9) || (!a.listed && nonInitial === 0 && initial > 0 && initialCap === initial)
+      : !a.listed && initialCap + nonInitialCap === count;
     const f = first.first;
-    const example = f.wc >= 8 && f.wc <= 25 ? f.text : good ? good.text : cutAround(f.text, f.at);
+    const example = f.wc >= 8 && f.wc <= 25 ? f.text : good ? good.text : cutAround(f.text, f.at, lang);
     lemmas.push({ lemma: a.lemma, listed: a.listed, name, forms: [...a.forms].sort(), occurrences: count,
       occurrencesByChapter: byChapter, firstPosition: first.firstPos, example, pos: bookPos(votes) });
   }
@@ -194,7 +194,7 @@ export async function analyseContent(
   const commonList = [...common.entries()].map(([token, set]) => ({ token, chapters: [...set].sort((a, b) => a - b) }));
   return {
     book: {
-      title: content.meta.title, author: content.meta.author, language: 'en', coverDataUrl: content.meta.coverDataUrl,
+      title: content.meta.title, author: content.meta.author, language: pair.source, translationLanguage: pair.target, coverDataUrl: content.meta.coverDataUrl,
       stats: { wordTokens: pos, distinctWords: lemmas.length + commonList.length },
       works: structure.works, chapters,
     },
@@ -203,6 +203,7 @@ export async function analyseContent(
     nameLemmas: lemmas.filter((l) => l.name).map((l) => l.lemma),
     common: commonList,
     text: bookText(content, structure.order, structure.chapters.length),
+    ...(content.meta.language ? { declaredLanguage: content.meta.language } : {}),
   };
 }
 

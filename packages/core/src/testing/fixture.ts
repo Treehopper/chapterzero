@@ -6,9 +6,9 @@ type WordRow = [string, number, string[], string[], string | null, number, [stri
 
 export function rowsToEntries(words: WordRow[], freedict: [string, string[]][]): WordEntry[] {
   const fd = new Map(freedict);
-  return words.map(([lemma, rank, pos, de, def, flags, others]) => ({
-    lemma, rank, pos, de, deFreedict: fd.get(lemma) ?? [], def: def ?? undefined, cognate: (flags & 1) === 1,
-    ...(others ? { senses: others.map(([p, d, df]) => ({ pos: p, de: d, def: df ?? undefined })) } : {}),
+  return words.map(([lemma, rank, pos, tr, def, flags, others]) => ({
+    lemma, rank, pos, tr, trExtra: fd.get(lemma) ?? [], def: def ?? undefined, cognate: (flags & 1) === 1,
+    ...(others ? { senses: others.map(([p, d, df]) => ({ pos: p, tr: d, def: df ?? undefined })) } : {}),
   }));
 }
 

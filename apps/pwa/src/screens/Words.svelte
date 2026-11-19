@@ -4,9 +4,10 @@
   import { headword, type ChapterProgress, type WordRow, type WordsTab, type WordSuggestion } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
-  import { dataChanged, fmt, toast } from '../lib/ui.svelte';
+  import { dataChanged, fmt, toast, ui } from '../lib/ui.svelte';
   import Sheet from '../components/Sheet.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
+  import { textAttrs } from '../lib/i18n/index.svelte';
 
   let { bookId, tab: tabParam, chapter: chapterParam }: { bookId: string; tab?: string; chapter?: string } = $props();
   const TABS: { id: WordsTab; label: string }[] = [
@@ -194,10 +195,10 @@
       <button class="list-row word" onclick={() => tapRow(r)} onpointerdown={(e) => rowDown(e, r)} onpointermove={rowMove} onpointerup={() => rowUp(r)}
         onpointercancel={() => (swipe = undefined)} style:transform={swipe?.lemma === r.lemma ? `translateX(${swipe.x}px)` : ''} data-testid="word-row" data-word={r.lemma}>
         <span class="stack grow">
-          <span class="row"><strong class="spacer">{headword(r.lemma, r.pos)}{#if r.name} <span class="pill">name</span>{/if}</strong>
+          <span class="row"><strong class="spacer" {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}{#if r.name} <span class="pill">name</span>{/if}</strong>
             {#if r.occurrences}<span class="muted small">×{r.occurrences}</span>{/if}
             {#if r.chapterTitle}<span class="muted small ch">{r.chapterTitle}</span>{/if}</span>
-          {#if r.translations?.length || r.definition}<span class="small">{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
+          {#if r.translations?.length || r.definition}<span class="small" {...textAttrs(r.translations?.length ? ui.pair.target : ui.pair.source)}>{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
           {#if r.example}<span class="small muted ex">“{r.example}”</span>{/if}
         </span>
       </button>
@@ -236,7 +237,7 @@
   {@const r = editingRow}
   <Sheet label="Card {r.lemma}" onclose={() => (editingRow = undefined)}>
     <div class="stack">
-      <h2>{headword(r.lemma, r.pos)}</h2>
+      <h2 {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}</h2>
       {#if r.card?.status === 'active'}
         <label class="stack small">Translations (comma separated)<input type="text" bind:value={editText} /></label>
         <button class="btn primary" onclick={saveTranslation}>Save</button>
