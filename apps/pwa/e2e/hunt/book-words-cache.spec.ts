@@ -56,7 +56,7 @@ test.describe('Words screen cache', () => {
     await tap(page.getByRole('button', { name: 'Mark as known' }));
     await expect(page.getByTestId('toast')).toContainText(`“${word}” marked as known`);
     await expect(page.getByTestId('word-row')).toHaveCount(34);
-    expect(await tabCount(page, /Known/)).toBe(1);
+    await expect.poll(() => tabCount(page, /Known/)).toBe(1);
     await tap(page.getByRole('tab', { name: /Known/ }));
     await expect(page.getByTestId('word-row')).toHaveCount(1);
     await expect(page.getByTestId('word-row')).toHaveAttribute('data-word', word);

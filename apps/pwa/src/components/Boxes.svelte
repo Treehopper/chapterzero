@@ -1,14 +1,15 @@
 <script lang="ts">
   /** Cards per learning box as shelves filling up (E2). */
+  import { t } from '../lib/i18n/index.svelte';
   let { boxes, moved = 0 }: { boxes: number[]; moved?: number } = $props();
   const max = $derived(Math.max(1, ...boxes));
-  const days = (i: number) => (i === 0 ? 'new / missed' : `${2 ** (i - 1)} d`);
+  const days = (i: number) => (i === 0 ? t('new / missed') : t('{n} d', { n: 2 ** (i - 1) }));
 </script>
 
-<div class="shelves card-box" role="list" aria-label="Cards per box">
+<div class="shelves card-box" role="list" aria-label={t('Cards per box')}>
   {#each boxes as n, i (i)}
-    <div class="shelf" role="listitem" aria-label="Box {i}: {n} cards">
-      <span class="lbl small muted">{i === boxes.length - 1 ? 'mastered' : days(i)}</span>
+    <div class="shelf" role="listitem" aria-label={t('Box {i}: {n} cards', { i, n })}>
+      <span class="lbl small muted">{i === boxes.length - 1 ? t('mastered') : days(i)}</span>
       <span class="fill"><span style:width="{(n / max) * 100}%" class:up={moved > 0 && i > 0}></span></span>
       <span class="n">{n}</span>
     </div>

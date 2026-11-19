@@ -4,7 +4,8 @@
   import type { ImportPreview } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
-  import { fmt, pct } from '../lib/ui.svelte';
+  import { fmt, pct, ui } from '../lib/ui.svelte';
+  import { languageName, t } from '../lib/i18n/index.svelte';
 
   let { draftId }: { draftId: string } = $props();
   let preview = $state<ImportPreview>();
@@ -66,11 +67,14 @@
 
 <main class="screen">
   <header class="topbar">
-    <button class="iconbtn" aria-label="Cancel import" onclick={discard}>‹</button>
-    <h1>Import</h1>
+    <button class="iconbtn" aria-label={t('Cancel import')} onclick={discard}>‹</button>
+    <h1>{t('Import')}</h1>
   </header>
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p class="error" role="alert">{t(error)}</p>{/if}
   {#if preview}
+    {#if preview.otherLanguage}
+      <p class="error" role="alert" data-testid="language-warning">{t('This book seems to be in {book}, but your word lists are for {lists}. The cards will not fit.', { book: languageName(preview.otherLanguage), lists: languageName(preview.language) })}</p>
+    {/if}
     <section class="card-box stack head">
       <div class="row">
         {#if preview.coverDataUrl}<img src={preview.coverDataUrl} alt="" class="cover" />{/if}
@@ -79,18 +83,18 @@
           {#if preview.author}<div class="muted">{preview.author}</div>{/if}
         </div>
       </div>
-      <div class="big" data-testid="preview-cards">Level {preview.level} · {fmt(preview.counts.cards)} cards</div>
-      <div class="muted">estimated coverage now {pct(preview.coverageBefore)}</div>
+      <div class="big" data-testid="preview-cards">{t('Level {level} · {n} cards', { level: preview.level, n: fmt(preview.counts.cards) })}</div>
+      <div class="muted">{t('estimated coverage now {pct}', { pct: pct(preview.coverageBefore) })}</div>
     </section>
 
-    <div class="section-title">Works and chapters</div>
+    <div class="section-title">{t('Works and chapters')}</div>
     <div class="list" data-testid="chapter-list">
       {#each preview.works as w (w.index)}
         {#if preview.works.length > 1 && w.chapters.length > 1}
           {@const all = w.chapters.every((c) => included.has(c.index))}
           {@const some = w.chapters.some((c) => included.has(c.index))}
           <div class="list-row">
-            <input type="checkbox" checked={all} indeterminate={some && !all} onchange={() => toggleWork(w)} aria-label="Include {w.title}" />
+            <input type="checkbox" checked={all} indeterminate={some && !all} onchange={() => toggleWork(w)} aria-label={t('Include {title}', { title: w.title })} />
             <button class="grow" onclick={() => toggleOpen(w.index)} aria-expanded={open.has(w.index)}>
               <strong>{w.title}</strong> <span class="muted">{open.has(w.index) ? '▾' : '▸'}</span>
             </button>
@@ -100,7 +104,7 @@
             {#each w.chapters as c (c.index)}
               <label class="list-row sub">
                 <input type="checkbox" checked={included.has(c.index)} onchange={() => toggleChapter(c.index)} />
-                <span class="grow">{c.title} {#if kindLabel[c.kind]}<span class="pill">{kindLabel[c.kind]}</span>{/if}</span>
+                <span class="grow">{c.title} {#if kindLabel[c.kind]}<span class="pill">{t(kindLabel[c.kind])}</span>{/if}</span>
                 <span class="muted small num">{fmt(c.wordTokens)}</span>
               </label>
             {/each}
@@ -110,7 +114,7 @@
             <label class="list-row">
               <input type="checkbox" checked={included.has(c.index)} onchange={() => toggleChapter(c.index)} />
               <span class="grow">{preview.works.length > 1 && w.title !== c.title ? `${w.title} · ` : ''}{c.title}
-                {#if kindLabel[c.kind]}<span class="pill">{kindLabel[c.kind]}</span>{/if}</span>
+                {#if kindLabel[c.kind]}<span class="pill">{t(kindLabel[c.kind])}</span>{/if}</span>
               <span class="muted small num">{fmt(c.wordTokens)}</span>
             </label>
           {/each}
@@ -118,30 +122,30 @@
       {/each}
     </div>
 
-    <div class="section-title">Words</div>
+    <div class="section-title">{t('Words')}</div>
     <div class="card-box stack small" data-testid="preview-counts">
-      <div class="row"><span class="spacer">Distinct words</span><strong>{fmt(preview.counts.distinctWords)}</strong></div>
-      <div class="row"><span class="spacer">Cards</span><strong>{fmt(preview.counts.cards)}</strong></div>
-      <div class="row muted"><span class="spacer">Common words</span><span>{fmt(preview.counts.common)}</span></div>
-      <div class="row muted"><span class="spacer">Below your level</span><span>{fmt(preview.counts.belowLevel)}</span></div>
-      <div class="row muted"><span class="spacer">Already known</span><span>{fmt(preview.counts.known)}</span></div>
-      <div class="row muted"><span class="spacer">Nearly the same in German</span><span>{fmt(preview.counts.cognates)}</span></div>
-      <div class="row muted"><span class="spacer">Names skipped</span><span>{fmt(preview.counts.names)}</span></div>
-      <div class="row muted"><span class="spacer">Not in the lists</span><span>{fmt(preview.counts.unlisted)}</span></div>
+      <div class="row"><span class="spacer">{t('Distinct words')}</span><strong>{fmt(preview.counts.distinctWords)}</strong></div>
+      <div class="row"><span class="spacer">{t('Cards')}</span><strong>{fmt(preview.counts.cards)}</strong></div>
+      <div class="row muted"><span class="spacer">{t('Common words')}</span><span>{fmt(preview.counts.common)}</span></div>
+      <div class="row muted"><span class="spacer">{t('Below your level')}</span><span>{fmt(preview.counts.belowLevel)}</span></div>
+      <div class="row muted"><span class="spacer">{t('Already known')}</span><span>{fmt(preview.counts.known)}</span></div>
+      <div class="row muted"><span class="spacer">{t('Nearly the same in {language}', { language: languageName(ui.pair.target) })}</span><span>{fmt(preview.counts.cognates)}</span></div>
+      <div class="row muted"><span class="spacer">{t('Names skipped')}</span><span>{fmt(preview.counts.names)}</span></div>
+      <div class="row muted"><span class="spacer">{t('Not in the lists')}</span><span>{fmt(preview.counts.unlisted)}</span></div>
       {#if Object.keys(preview.cardsPerListLevel).length}
-        <div class="levels" aria-label="Cards per list level">
+        <div class="levels" aria-label={t('Cards per list level')}>
           {#each Object.entries(preview.cardsPerListLevel) as [lv, n] (lv)}<span class="pill">L{lv}: {n}</span>{/each}
         </div>
       {/if}
     </div>
-    <p class="small muted">{fmt(preview.counts.unlisted)} words are not in the lists · {fmt(preview.counts.names)} names skipped. You can add any of them by hand later.</p>
+    <p class="small muted">{t('{unlisted} words are not in the lists · {names} names skipped. You can add any of them by hand later.', { unlisted: fmt(preview.counts.unlisted), names: fmt(preview.counts.names) })}</p>
     <div class="cta">
       <button class="btn primary block" onclick={create} disabled={creating || included.size === 0} data-testid="create-cards">
-        {creating ? 'Creating…' : `Create ${fmt(preview.counts.cards)} cards`}
+        {creating ? t('Creating…') : t('Create {n} cards', { n: fmt(preview.counts.cards) })}
       </button>
     </div>
   {:else if !error}
-    <p class="muted">Loading preview…</p>
+    <p class="muted">{t('Loading preview…')}</p>
   {/if}
 </main>
 

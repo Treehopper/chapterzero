@@ -9,6 +9,7 @@
   import Sheet from '../components/Sheet.svelte';
   import Boxes from '../components/Boxes.svelte';
   import StartStudy from '../components/StartStudy.svelte';
+  import { t, tn } from '../lib/i18n/index.svelte';
 
   let { bookId }: { bookId: string } = $props();
   let book = $state<BookOverview>();
@@ -50,84 +51,84 @@
   function toggle(i: number) { const n = new Set(closed); if (n.has(i)) n.delete(i); else n.add(i); closed = n; }
 
   async function del() {
-    if (!confirm(`Delete “${book?.title}” and all its cards? This cannot be undone.`)) return;
+    if (!confirm(t('Delete “{title}” and all its cards? This cannot be undone.', { title: book?.title ?? '' }))) return;
     await api.books.delete(bookId);
-    toast('Book deleted');
+    toast(t('Book deleted'));
     go('library');
   }
   async function applyRefilter() {
     const r = await api.books.reapplyFilter(bookId, { cutoffRank: cutoff });
     refilter = false;
-    toast(`${fmt(r.cards)} cards at level ${r.level}`);
+    toast(t('{n} cards at level {level}', { n: fmt(r.cards), level: r.level }));
     await load();
   }
 </script>
 
 <main class="screen">
   <header class="topbar">
-    <button class="iconbtn" aria-label="Back to library" onclick={() => go('library')}>‹</button>
+    <button class="iconbtn" aria-label={t('Back to library')} onclick={() => go('library')}>‹</button>
     <h1 class="t">{book?.title ?? ''}</h1>
-    <button class="iconbtn" aria-label="Book options" onclick={() => (menu = true)}>⋯</button>
+    <button class="iconbtn" aria-label={t('Book options')} onclick={() => (menu = true)}>⋯</button>
   </header>
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error">{t(error)}</p>{/if}
   {#if book && p}
     <section class="hero card-box">
-      <Ring value={p.coverage} size={112} stroke={11} label={pct(p.coverage)} sublabel="estimated" mark={p.coverageTarget}
+      <Ring value={p.coverage} size={112} stroke={11} label={pct(p.coverage)} sublabel={t('estimated')} mark={p.coverageTarget}
         color={p.coverage >= p.coverageTarget ? 'var(--good)' : 'var(--accent)'} />
       <div class="stack hero-text">
-        <strong data-testid="book-coverage">{p.unknownEvery ? `about one unknown word every ${p.unknownEvery} words` : 'no unknown words left'}</strong>
-        <span class="small muted">You know {fmt(p.rareWordsKnown)} of this book's {fmt(p.rareWordsTotal)} rare words.</span>
+        <strong data-testid="book-coverage">{p.unknownEvery ? t('about one unknown word every {n} words', { n: p.unknownEvery }) : t('no unknown words left')}</strong>
+        <span class="small muted">{t("You know {known} of this book's {total} rare words.", { known: fmt(p.rareWordsKnown), total: fmt(p.rareWordsTotal) })}</span>
         {#if p.toReady.cards}
-          <span class="small eta" data-testid="book-eta"><strong>{duration(p.toReady.minutes)}</strong> of practice until ready to read
-            <span class="muted">· {fmt(p.toReady.cards)} words, about {p.toReady.days} {p.toReady.days === 1 ? 'day' : 'days'} at your daily limit</span></span>
+          <span class="small eta" data-testid="book-eta"><strong>{duration(p.toReady.minutes)}</strong> {t('of practice until ready to read')}
+            <span class="muted">· {t('{n} words, about {days} at your daily limit', { n: fmt(p.toReady.cards), days: tn(p.toReady.days, '{n} day', '{n} days') })}</span></span>
         {/if}
         {#if p.ready}
-          {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">Ready to read · open ›</button>
-          {:else}<span class="pill good">Ready to read</span>{/if}
+          {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">{t('Ready to read · open ›')}</button>
+          {:else}<span class="pill good">{t('Ready to read')}</span>{/if}
         {/if}
       </div>
     </section>
 
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
-        {#if active}Continue · {active.progress.done} / {active.progress.total}
-        {:else if !p.ready}Get ready for reading
-        {:else}Review{p.due ? ` · ${p.due} due` : ''}{/if}</button>
-      {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">Read</button>{/if}
-      <button class="btn" onclick={() => go('words', bookId)}>Words</button>
+        {#if active}{t('Continue · {done} / {total}', { done: active.progress.done, total: active.progress.total })}
+        {:else if !p.ready}{t('Get ready for reading')}
+        {:else}{t('Review')}{p.due ? ` · ${t('{n} due', { n: p.due })}` : ''}{/if}</button>
+      {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">{t('Read')}</button>{/if}
+      <button class="btn" onclick={() => go('words', bookId)}>{t('Words')}</button>
     </div>
 
     {#each groups(p) as g, gi (gi)}
       {#if g.work}
         <button class="work section-title" onclick={() => toggle(g.work!.index)} aria-expanded={!closed.has(g.work.index)}>{closed.has(g.work.index) ? '▸' : '▾'} {g.work.title}</button>
-      {:else}<div class="section-title">{gi === 0 && p.works.length === 1 ? 'Chapters' : ''}</div>{/if}
+      {:else}<div class="section-title">{gi === 0 && p.works.length === 1 ? t('Chapters') : ''}</div>{/if}
       {#if !g.work || !closed.has(g.work.index)}
         <div class="list">
           {#each g.chapters as c (c.index)}
             <button class="list-row ch {c.state}" onclick={() => (sheet = c)} data-testid="chapter-row">
               <span class="icon" aria-hidden="true">{stateIcon[c.state]}</span>
               <span class="stack grow">
-                <span class="row"><span class="spacer name">{g.work ? c.title : c.displayTitle}</span><span class="num" data-testid="chapter-to-target">{c.included ? `${pct(c.toTarget, 0)} to target` : ''}</span></span>
+                <span class="row"><span class="spacer name">{g.work ? c.title : c.displayTitle}</span><span class="num" data-testid="chapter-to-target">{c.included ? t('{pct} to target', { pct: pct(c.toTarget, 0) }) : ''}</span></span>
                 {#if c.included}
                   <span class="cbar" aria-hidden="true"><span style:width="{c.toTarget * 100}%"></span></span>
                 {/if}
-                <span class="small muted">{stateLabel[c.state]}{#if c.included}{' · '}{pct(c.coverage)} known{/if}{#if c.state === 'learning'}{' · '}{c.cards.unseen} new{/if}{#if c.toReady}{' · '}<span data-testid="chapter-eta">{duration(c.toReady.minutes)}</span>{/if}</span>
+                <span class="small muted">{t(stateLabel[c.state])}{#if c.included}{' · '}{t('{pct} known', { pct: pct(c.coverage) })}{/if}{#if c.state === 'learning'}{' · '}{t('{n} new', { n: c.cards.unseen })}{/if}{#if c.toReady}{' · '}<span data-testid="chapter-eta">{duration(c.toReady.minutes)}</span>{/if}</span>
               </span>
             </button>
           {/each}
         </div>
       {/if}
     {/each}
-    <p class="small muted" data-testid="bars-note">Bars show how far each chapter is on the way to your {pct(p.coverageTarget)} target: full = ready to read. “Known” is the estimated share of the chapter's words you know; words not in the lists count as known.</p>
+    <p class="small muted" data-testid="bars-note">{t("Bars show how far each chapter is on the way to your {target} target: full = ready to read. “Known” is the estimated share of the chapter's words you know; words not in the lists count as known.", { target: pct(p.coverageTarget) })}</p>
 
-    <div class="section-title">Boxes</div>
+    <div class="section-title">{t('Boxes')}</div>
     <Boxes boxes={p.boxes} />
 
     {#if daily}
-      <div class="section-title">Today</div>
+      <div class="section-title">{t('Today')}</div>
       <div class="card-box row">
-        {#if ui.achievements}<span class="flame" aria-label="{daily.streakDays} day streak">🔥 <strong>{daily.streakDays}</strong> <span class="small muted">day streak</span></span>
-        {:else}<span class="small muted">Reviews today</span>{/if}
+        {#if ui.achievements}<span class="flame" aria-label={t('{n} day streak', { n: daily.streakDays })}>🔥 <strong>{daily.streakDays}</strong> <span class="small muted">{t('day streak')}</span></span>
+        {:else}<span class="small muted">{t('Reviews today')}</span>{/if}
         <span class="spacer"></span>
         <Ring value={daily.reviewsToday / daily.dailyGoal} size={56} stroke={6} label={String(daily.reviewsToday)} sublabel="/ {daily.dailyGoal}" color="var(--good)" />
       </div>
@@ -140,44 +141,44 @@
   <Sheet label={c.displayTitle} onclose={() => (sheet = undefined)}>
     <div class="stack">
       <h2>{c.displayTitle}</h2>
-      <div class="muted">{stateLabel[c.state]}{c.included ? ` · ${pct(c.coverage)} of the words known` : ''}{c.unknownEvery ? ` · one unknown in ${c.unknownEvery}` : ''}</div>
+      <div class="muted">{t(stateLabel[c.state])}{c.included ? ` · ${t('{pct} of the words known', { pct: pct(c.coverage) })}` : ''}{c.unknownEvery ? ` · ${t('one unknown in {n}', { n: c.unknownEvery })}` : ''}</div>
       <div class="row counts">
-        <div><strong>{c.cards.unseen}</strong><span class="small muted">unseen</span></div>
-        <div><strong>{c.cards.learning}</strong><span class="small muted">learning</span></div>
-        <div><strong>{c.cards.learned}</strong><span class="small muted">learned</span></div>
+        <div><strong>{c.cards.unseen}</strong><span class="small muted">{t('unseen')}</span></div>
+        <div><strong>{c.cards.learning}</strong><span class="small muted">{t('learning')}</span></div>
+        <div><strong>{c.cards.learned}</strong><span class="small muted">{t('learned')}</span></div>
       </div>
       {#if c.toReady}
-        <p class="small" data-testid="sheet-eta"><strong>{duration(c.toReady.minutes)}</strong> of practice ({c.toReady.cards} words) until this chapter is ready to read<span class="muted">, once the chapters before it are</span>.</p>
+        <p class="small" data-testid="sheet-eta"><strong>{duration(c.toReady.minutes)}</strong> {t('of practice ({n} words) until this chapter is ready to read', { n: c.toReady.cards })}<span class="muted">{t(', once the chapters before it are')}</span>.</p>
       {/if}
-      <p class="small muted">100 % = all {c.cards.unseen + c.cards.learning + c.cards.learned} cards learned.</p>
+      <p class="small muted">{t('100 % = all {n} cards learned.', { n: c.cards.unseen + c.cards.learning + c.cards.learned })}</p>
       {#if c.included}
         {@const same = active?.chapterIndex === c.index}
         <button class="btn primary" data-testid="study-chapter"
           onclick={() => { if (same) go('study', bookId); else starting = { chapter: { index: c.index, title: c.displayTitle } }; sheet = undefined; }}>
-          {same && active ? `Continue · ${active.progress.done} / ${active.progress.total}` : c.state === 'ready' ? 'Review this chapter' : 'Get this chapter ready'}</button>
+          {same && active ? t('Continue · {done} / {total}', { done: active.progress.done, total: active.progress.total }) : c.state === 'ready' ? t('Review this chapter') : t('Get this chapter ready')}</button>
       {/if}
     </div>
   </Sheet>
 {/if}
 
 {#if menu}
-  <Sheet label="Book options" onclose={() => (menu = false)}>
+  <Sheet label={t('Book options')} onclose={() => (menu = false)}>
     <div class="stack">
-      <button class="btn" onclick={() => { menu = false; refilter = true; }}>Change level for this book…</button>
-      <button class="btn danger" onclick={del}>Delete book</button>
-      <button class="btn" onclick={() => (menu = false)}>Cancel</button>
+      <button class="btn" onclick={() => { menu = false; refilter = true; }}>{t('Change level for this book…')}</button>
+      <button class="btn danger" onclick={del}>{t('Delete book')}</button>
+      <button class="btn" onclick={() => (menu = false)}>{t('Cancel')}</button>
     </div>
   </Sheet>
 {/if}
 
 {#if refilter}
-  <Sheet label="Change level" onclose={() => (refilter = false)}>
+  <Sheet label={t('Change level')} onclose={() => (refilter = false)}>
     <div class="stack">
-      <h2>Level {startLevel(cutoff)} for this book</h2>
-      <p class="small muted">Listed words more common than rank {fmt(cutoff)} won't be cards. Cards you studied, edited or added stay.</p>
-      <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="lv" aria-label="Cutoff rank" />
+      <h2>{t('Level {level} for this book', { level: startLevel(cutoff) })}</h2>
+      <p class="small muted">{t("Listed words more common than rank {rank} won't be cards. Cards you studied, edited or added stay.", { rank: fmt(cutoff) })}</p>
+      <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="lv" aria-label={t('Cutoff rank')} />
       <datalist id="lv">{#each LEVELS as l (l.level)}<option value={l.from - 1}></option>{/each}</datalist>
-      <button class="btn primary" onclick={applyRefilter}>Re-filter</button>
+      <button class="btn primary" onclick={applyRefilter}>{t('Re-filter')}</button>
     </div>
   </Sheet>
 {/if}
@@ -191,6 +192,8 @@
   .left { text-align: left; padding-left: 0; }
   .actions { margin: 12px 0 4px; gap: 8px; }
   .actions .btn { padding: 0 14px; white-space: nowrap; }
+  /* a long label (German) wraps instead of pushing the other buttons off screen */
+  .actions .btn.primary { white-space: normal; min-width: 0; line-height: 1.2; }
   .work { background: none; border: none; text-align: left; width: 100%; padding: 0; }
   .ch { align-items: flex-start; }
   .icon { width: 18px; font-weight: 800; color: var(--muted); margin-top: 2px; }

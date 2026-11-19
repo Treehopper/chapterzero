@@ -1,5 +1,6 @@
 <script lang="ts">
   /** Dictionary links (C16, D9): real anchors, greyed out offline. */
+  import { t } from '../lib/i18n/index.svelte';
   import { ui } from '../lib/ui.svelte';
   let { links }: { links: { name: string; url: string }[] } = $props();
 </script>
@@ -9,7 +10,7 @@
     <a href={ui.online ? l.url : undefined} target="_blank" rel="noopener noreferrer" class:off={!ui.online} aria-disabled={!ui.online}>{l.name} ↗</a>
   {/each}
 </div>
-{#if !ui.online}<div class="small muted">offline — lookup links need a connection</div>{/if}
+{#if !ui.online}<div class="small muted">{t('offline — lookup links need a connection')}</div>{/if}
 
 <style>
   /* flex: none — as a scrolling flex item it could otherwise be squeezed and clip the buttons on a full card */

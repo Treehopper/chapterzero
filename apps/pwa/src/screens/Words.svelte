@@ -7,7 +7,7 @@
   import { dataChanged, fmt, toast, ui } from '../lib/ui.svelte';
   import Sheet from '../components/Sheet.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
-  import { textAttrs } from '../lib/i18n/index.svelte';
+  import { languageName, t, textAttrs } from '../lib/i18n/index.svelte';
 
   let { bookId, tab: tabParam, chapter: chapterParam }: { bookId: string; tab?: string; chapter?: string } = $props();
   const TABS: { id: WordsTab; label: string }[] = [
@@ -15,7 +15,7 @@
     { id: 'skipped', label: 'Skipped' }, { id: 'unlisted', label: 'Not in lists' },
   ];
   // the screen is re-created per route, so the initial props are all it needs
-  let tab = $state<WordsTab>(untrack(() => TABS.find((t) => t.id === tabParam)?.id ?? 'active'));
+  let tab = $state<WordsTab>(untrack(() => TABS.find((x) => x.id === tabParam)?.id ?? 'active'));
   let chapterIndex = $state<number | undefined>(untrack(() => (chapterParam ? Number(chapterParam) : undefined)));
   let search = $state('');
   let names = $state(false);
@@ -99,7 +99,7 @@
       const ts = translation.split(/[,;]/).map((t) => t.trim()).filter(Boolean);
       const c = await api.cards.addWord(bookId, typed, ts);
       adding = undefined;
-      toast(`“${c.lemma}” added as a card`);
+      toast(t('“{word}” added as a card', { word: c.lemma }));
       await load();
     } catch (e) { addError = e instanceof Error ? e.message : String(e); }
   }
@@ -107,7 +107,7 @@
   async function ignore(row: WordRow) {
     adding = undefined;
     await api.cards.ignoreUnlisted(bookId, row.lemma, true);
-    toast(`“${row.lemma}” hidden`, { label: 'Undo', run: async () => { await api.cards.ignoreUnlisted(bookId, row.lemma, false); dataChanged(); await load(); } });
+    toast(t('“{word}” hidden', { word: row.lemma }), { label: t('Undo'), run: async () => { await api.cards.ignoreUnlisted(bookId, row.lemma, false); dataChanged(); await load(); } });
     await load();
   }
 
@@ -115,9 +115,10 @@
     if (!row.card) return;
     const before = row.card.status;
     await api.cards.setStatus(row.card.id, status);
-    const label = status === 'removed' ? 'removed' : status === 'known' ? 'marked as known' : 'restored';
+    const word = row.lemma;
+    const text = status === 'removed' ? t('“{word}” removed', { word }) : status === 'known' ? t('“{word}” marked as known', { word }) : t('“{word}” restored', { word });
     const offer = status !== 'known' || (await api.settings.get()).undoAfterKnown;
-    toast(`“${row.lemma}” ${label}`, offer ? { label: 'Undo', run: async () => { await api.cards.setStatus(row.card!.id, before); dataChanged(); await load(); } } : undefined);
+    toast(text, offer ? { label: t('Undo'), run: async () => { await api.cards.setStatus(row.card!.id, before); dataChanged(); await load(); } } : undefined);
     editingRow = undefined;
     await load();
   }
@@ -128,7 +129,7 @@
       await api.cards.editTranslation(editingRow.card.id, editText.split(/[,;]/).map((t) => t.trim()).filter(Boolean));
       editingRow = undefined;
       await load();
-    } catch (e) { toast(e instanceof Error ? e.message : String(e)); }
+    } catch (e) { toast(t(e instanceof Error ? e.message : String(e))); }
   }
 
   function tapRow(r: WordRow) {
@@ -154,40 +155,41 @@
     const s = suggestion;
     if (!s || !s.lemma) return '';
     const parts: string[] = [];
-    if (s.existingCardId) parts.push(s.existingStatus === 'active' ? 'already a card' : `a ${s.existingStatus} card (adding restores it)`);
+    if (s.existingCardId) parts.push(s.existingStatus === 'active' ? t('already a card') : s.existingStatus === 'removed' ? t('a removed card (adding restores it)')
+      : s.existingStatus === 'known' ? t('a known card (adding restores it)') : t('a {status} card (adding restores it)', { status: s.existingStatus ?? '' }));
     if (s.listed) {
-      parts.push(`in the lists, level ${s.listed.level}`);
-      if (s.inBook?.kind === 'belowLevel') parts.push('skipped as below your level');
-      if (s.inBook?.kind === 'cognate') parts.push('skipped as nearly the same in German');
-    } else parts.push('not in the lists');
-    parts.push(s.inBook ? `appears ${s.inBook.occurrences}× in this book` : 'not in this book');
+      parts.push(t('in the lists, level {level}', { level: s.listed.level }));
+      if (s.inBook?.kind === 'belowLevel') parts.push(t('skipped as below your level'));
+      if (s.inBook?.kind === 'cognate') parts.push(t('skipped as nearly the same in {language}', { language: languageName(ui.pair.target) }));
+    } else parts.push(t('not in the lists'));
+    parts.push(s.inBook ? t('appears {n}× in this book', { n: s.inBook.occurrences }) : t('not in this book'));
     return parts.join(' · ');
   });
 </script>
 
 <main class="screen">
   <header class="topbar">
-    <button class="iconbtn" aria-label="Back to the book" onclick={() => go('book', bookId)}>‹</button>
-    <h1>Words</h1>
-    <button class="iconbtn" aria-label="Add a word" onclick={() => openAdd()} data-testid="add-word">＋</button>
+    <button class="iconbtn" aria-label={t('Back to the book')} onclick={() => go('book', bookId)}>‹</button>
+    <h1>{t('Words')}</h1>
+    <button class="iconbtn" aria-label={t('Add a word')} onclick={() => openAdd()} data-testid="add-word">＋</button>
   </header>
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error">{t(error)}</p>{/if}
   <div class="tabs" role="tablist">
-    {#each TABS as t (t.id)}
-      <button role="tab" aria-selected={tab === t.id} class:on={tab === t.id} onclick={() => setTab(t.id)}>
-        {t.label}{#if counts[t.id] !== undefined}{' '}<span class="c">{fmt(counts[t.id])}</span>{/if}
+    {#each TABS as tb (tb.id)}
+      <button role="tab" aria-selected={tab === tb.id} class:on={tab === tb.id} onclick={() => setTab(tb.id)}>
+        {t(tb.label)}{#if counts[tb.id] !== undefined}{' '}<span class="c">{fmt(counts[tb.id])}</span>{/if}
       </button>
     {/each}
   </div>
   <div class="row filters">
-    <input type="search" placeholder="Search" bind:value={search} oninput={() => show()} aria-label="Search words" />
-    <select bind:value={chapterIndex} onchange={() => show()} aria-label="Chapter">
-      <option value={undefined}>All chapters</option>
+    <input type="search" placeholder={t('Search')} bind:value={search} oninput={() => show()} aria-label={t('Search words')} />
+    <select bind:value={chapterIndex} onchange={() => show()} aria-label={t('Chapter')}>
+      <option value={undefined}>{t('All chapters')}</option>
       {#each chapters as c (c.index)}<option value={c.index}>{c.displayTitle}</option>{/each}
     </select>
   </div>
   {#if tab === 'unlisted'}
-    <label class="row small names"><input type="checkbox" bind:checked={names} onchange={() => show()} /> Show names ({fmt(counts.names ?? 0)})</label>
+    <label class="row small names"><input type="checkbox" bind:checked={names} onchange={() => show()} /> {t('Show names ({n})', { n: fmt(counts.names ?? 0) })}</label>
   {/if}
 
   <div class="list" data-testid="word-list">
@@ -195,7 +197,7 @@
       <button class="list-row word" onclick={() => tapRow(r)} onpointerdown={(e) => rowDown(e, r)} onpointermove={rowMove} onpointerup={() => rowUp(r)}
         onpointercancel={() => (swipe = undefined)} style:transform={swipe?.lemma === r.lemma ? `translateX(${swipe.x}px)` : ''} data-testid="word-row" data-word={r.lemma}>
         <span class="stack grow">
-          <span class="row"><strong class="spacer" {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}{#if r.name} <span class="pill">name</span>{/if}</strong>
+          <span class="row"><strong class="spacer" {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}{#if r.name} <span class="pill">{t('name')}</span>{/if}</strong>
             {#if r.occurrences}<span class="muted small">×{r.occurrences}</span>{/if}
             {#if r.chapterTitle}<span class="muted small ch">{r.chapterTitle}</span>{/if}</span>
           {#if r.translations?.length || r.definition}<span class="small" {...textAttrs(r.translations?.length ? ui.pair.target : ui.pair.source)}>{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
@@ -203,31 +205,31 @@
         </span>
       </button>
     {:else}
-      {#if !loading}<div class="list-row muted">Nothing here.</div>{/if}
+      {#if !loading}<div class="list-row muted">{t('Nothing here.')}</div>{/if}
     {/each}
   </div>
-  {#if rows.length > limit}<button class="btn block more" onclick={() => (limit += 200)}>Show more ({fmt(rows.length - limit)})</button>{/if}
-  {#if tab === 'active' || tab === 'unlisted'}<p class="small muted">Swipe a row left to {tab === 'unlisted' ? 'hide it' : 'remove the card'}.</p>{/if}
+  {#if rows.length > limit}<button class="btn block more" onclick={() => (limit += 200)}>{t('Show more ({n})', { n: fmt(rows.length - limit) })}</button>{/if}
+  {#if tab === 'active' || tab === 'unlisted'}<p class="small muted">{tab === 'unlisted' ? t('Swipe a row left to hide it.') : t('Swipe a row left to remove the card.')}</p>{/if}
 </main>
 
 {#if adding}
-  <Sheet label="Add a word" onclose={() => (adding = undefined)}>
+  <Sheet label={t('Add a word')} onclose={() => (adding = undefined)}>
     <div class="stack" data-testid="add-sheet">
-      <h2>Add a word</h2>
+      <h2>{t('Add a word')}</h2>
       {#if adding.editable}
-        <input type="text" bind:value={typed} oninput={() => suggest(typed)} placeholder="Type a word" aria-label="Word" autocapitalize="off" autocomplete="off" />
+        <input type="text" bind:value={typed} oninput={() => suggest(typed)} placeholder={t('Type a word')} aria-label={t('Word')} autocapitalize="off" autocomplete="off" />
       {:else}<div class="big">{typed}</div>{/if}
       {#if status}<div class="small muted" data-testid="suggest-status">{suggestion?.lemma && suggestion.lemma !== typed.trim().toLowerCase() ? `→ ${suggestion.lemma} · ` : ''}{status}</div>{/if}
       {#if suggestion?.inBook?.example || adding.row?.example}<div class="small ex">“{suggestion?.inBook?.example ?? adding.row?.example}”</div>{/if}
       {#if suggestion?.listed?.definition}<div class="small muted">{suggestion.listed.definition}</div>{/if}
-      <label class="stack small">Translation
-        <input type="text" bind:value={translation} placeholder="e.g. Lasergewehr" aria-label="Translation" />
+      <label class="stack small">{t('Translation')}
+        <input type="text" bind:value={translation} placeholder={t('e.g. Lasergewehr')} aria-label={t('Translation')} />
       </label>
       {#if suggestion?.lookupLinks.length}<LookupLinks links={suggestion.lookupLinks} />{/if}
-      {#if addError}<div class="error small" role="alert">{addError}</div>{/if}
+      {#if addError}<div class="error small" role="alert">{t(addError)}</div>{/if}
       <div class="row">
-        <button class="btn primary spacer" onclick={add} disabled={!typed.trim()} data-testid="add-card">Add card</button>
-        {#if adding.row && adding.row.kind === 'unlisted'}<button class="btn" onclick={() => ignore(adding!.row!)}>Ignore</button>{/if}
+        <button class="btn primary spacer" onclick={add} disabled={!typed.trim()} data-testid="add-card">{t('Add card')}</button>
+        {#if adding.row && adding.row.kind === 'unlisted'}<button class="btn" onclick={() => ignore(adding!.row!)}>{t('Ignore')}</button>{/if}
       </div>
     </div>
   </Sheet>
@@ -235,16 +237,16 @@
 
 {#if editingRow?.card}
   {@const r = editingRow}
-  <Sheet label="Card {r.lemma}" onclose={() => (editingRow = undefined)}>
+  <Sheet label={t('Card {word}', { word: r.lemma })} onclose={() => (editingRow = undefined)}>
     <div class="stack">
       <h2 {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}</h2>
       {#if r.card?.status === 'active'}
-        <label class="stack small">Translations (comma separated)<input type="text" bind:value={editText} /></label>
-        <button class="btn primary" onclick={saveTranslation}>Save</button>
-        <button class="btn danger" onclick={() => setStatus(r, 'removed')}>Remove card</button>
-        <button class="btn" onclick={() => setStatus(r, 'known')}>Mark as known</button>
+        <label class="stack small">{t('Translations (comma separated)')}<input type="text" bind:value={editText} /></label>
+        <button class="btn primary" onclick={saveTranslation}>{t('Save')}</button>
+        <button class="btn danger" onclick={() => setStatus(r, 'removed')}>{t('Remove card')}</button>
+        <button class="btn" onclick={() => setStatus(r, 'known')}>{t('Mark as known')}</button>
       {:else}
-        <button class="btn primary" onclick={() => setStatus(r, 'active')}>Restore card</button>
+        <button class="btn primary" onclick={() => setStatus(r, 'active')}>{t('Restore card')}</button>
       {/if}
     </div>
   </Sheet>

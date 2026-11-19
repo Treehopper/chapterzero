@@ -1,17 +1,21 @@
 <script lang="ts">
+  import { t } from '../lib/i18n/index.svelte';
   /** Gesture hints over a flip card (C13): each hint goes away once its gesture has been used. */
   let { flipped, used, grade = true, extra = false }: {
     flipped: boolean; used: Set<string>; grade?: boolean; extra?: boolean;
   } = $props();
 </script>
 
+<!-- one word per line, as before -->
+{#snippet lines(text: string)}{#each text.split(' ') as w, i (i)}{#if i}<br />{/if}{w}{/each}{/snippet}
+
 <div class="hints" aria-hidden="true" data-testid="hints">
-  {#if !flipped && !used.has('tap')}<div class="h mid">◉ tap to flip</div>{/if}
+  {#if !flipped && !used.has('tap')}<div class="h mid">◉ {t('tap to flip')}</div>{/if}
   {#if flipped && grade}
-    {#if !used.has('left')}<div class="h left" data-testid="hint-left"><span class="arrow">←</span><br />swipe<br /><span class="sub">didn't<br />know</span></div>{/if}
-    {#if !used.has('right')}<div class="h right" data-testid="hint-right"><span class="arrow">→</span><br />swipe<br /><span class="sub">knew<br />it</span></div>{/if}
+    {#if !used.has('left')}<div class="h left" data-testid="hint-left"><span class="arrow">←</span><br />{t('swipe')}<br /><span class="sub">{@render lines(t("didn't know"))}</span></div>{/if}
+    {#if !used.has('right')}<div class="h right" data-testid="hint-right"><span class="arrow">→</span><br />{t('swipe')}<br /><span class="sub">{@render lines(t('knew it'))}</span></div>{/if}
   {/if}
-  {#if extra && !used.has('up')}<div class="h bottom" data-testid="hint-up">↑ swipe up<br /><span class="sub">to edit the card or end the session</span></div>{/if}
+  {#if extra && !used.has('up')}<div class="h bottom" data-testid="hint-up">↑ {t('swipe up')}<br /><span class="sub">{t('to edit the card or end the session')}</span></div>{/if}
 </div>
 
 <style>

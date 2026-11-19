@@ -1336,6 +1336,19 @@ Buttons at the bottom: *Keep going* and *Done* (back to Book overview). Mileston
 
 ---
 
+### 8.3 Details on demand
+
+Settings that are hard to guess from their name (vocabulary level, new cards per day, coverage target, first-try correct, swipe right before flipping, flip before answering in the check, box level, definitions, nearly identical words, lookup links, your own dictionary) have a small (i) after the name. A tap shows two to four sentences right below the setting; another tap hides them. The (i) never toggles the setting.
+
+### 8.4 App language
+
+The app speaks English and German (`apps/pwa/src/lib/i18n`). Settings › Language › App language: *Like the device* (default; German when the device's first language is German, else English), *English*, *Deutsch*; stored as `settings.uiLanguage` and applied at once.
+
+- Texts are keyed by their English wording: `t('Get ready for reading')`, `t('{n} cards at level {level}', { n, level })`, `tn(n, '{n} day', '{n} days')`. A missing German text shows the English one; messages from the core arrive in English and go through `t` too.
+- German lives in `i18n/de/*.ts`; informal *du*. A unit test fails for any `t()` text without German, and for German that loses a `{placeholder}`.
+- Numbers and percentages follow the app language (`fmt`, `pct`); language names come from `Intl.DisplayNames` (`languageName`), so texts name the word lists' languages instead of "English" and "German".
+- The app's language is independent of the language pair (§6.5): a German speaker learning English and an English speaker learning German use different word lists, not different app languages.
+
 ## 9. iOS-specific notes
 
 - Manifest `display: "standalone"`, `apple-touch-icon`, `apple-mobile-web-app-status-bar-style: black-translucent`, splash images.

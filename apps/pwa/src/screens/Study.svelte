@@ -12,7 +12,7 @@
   import GestureHints from '../components/GestureHints.svelte';
   import FrontSwipeKnown from '../components/FrontSwipeKnown.svelte';
   import Sheet from '../components/Sheet.svelte';
-  import { textAttrs } from '../lib/i18n/index.svelte';
+  import { languageName, t, textAttrs } from '../lib/i18n/index.svelte';
 
   let { bookId, chapter, how: howParam }: { bookId: string; chapter?: string; how?: string } = $props();
 
@@ -84,7 +84,7 @@
   async function afterView(v: SessionView) {
     if (v.card) live = `${headword(v.card.lemma, v.card.pos, v.pair.source)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
     if (v.newAchievements.length) announceUnlocks(v.newAchievements, settings?.achievementPopups ?? true);
-    if (v.chapterReady) banner({ kind: 'chapter', title: `${v.chapterReady.title} is ready to read`, subtitle: pct(v.chapterReady.coverage) });
+    if (v.chapterReady) banner({ kind: 'chapter', title: t('{title} is ready to read', { title: v.chapterReady.title }), subtitle: pct(v.chapterReady.coverage) });
     if (v.done && !v.nothingDue && v.sessionId) {
       await api.study.finish(v.sessionId);
       go('stats', v.sessionId);
@@ -97,7 +97,7 @@
   function enqueue(fn: () => Promise<void>): Promise<boolean> {
     pending++;
     busy = true;
-    const done = chain.then(fn).then(() => true, (e) => { toast(e instanceof Error ? e.message : String(e)); return false; })
+    const done = chain.then(fn).then(() => true, (e) => { toast(t(e instanceof Error ? e.message : String(e))); return false; })
       .finally(() => { if (--pending === 0) busy = false; });
     chain = done;
     return done;
@@ -154,7 +154,7 @@
         const [v] = await Promise.all([api.study.removeCurrent(view.sessionId, 'known'), new Promise((r) => setTimeout(r, 260))]);
         cardKey++;
         view = v;
-        if (settings?.undoAfterKnown ?? true) showUndo(`“${lemma}” known · Undo`);
+        if (settings?.undoAfterKnown ?? true) showUndo(t('“{word}” known · Undo', { word: lemma }));
         await afterView(v);
       } finally {
         dx = 0;
@@ -186,9 +186,9 @@
       if (view.phase === 'front' && !view.seenBack) {
         // never turned over: a swipe is for words you are sure of, and never shows the back (C7)
         dx = 0;
-        if (dir === -1) return shake('Tap to flip the card first');
+        if (dir === -1) return shake(t('Tap to flip the card first'));
         if (view.frontSwipe === 'ask') { askFront = true; return; }
-        if (view.frontSwipe === 'off') return shake('Tap to flip the card first (Settings › Swipe right before flipping)');
+        if (view.frontSwipe === 'off') return shake(t('Tap to flip the card first (Settings › Swipe right before flipping)'));
         if (view.frontSwipe === 'known') { void markKnownFromFront(); return; }
       }
       useHint(dir === 1 ? 'right' : 'left');
@@ -199,7 +199,7 @@
         const [v] = await Promise.all([api.study.grade(view.sessionId, dir === 1 ? 'known' : 'unknown'), new Promise((r) => setTimeout(r, 260))]);
         if (v.phase !== 'wrongReview') cardKey++;
         view = v;
-        if (v.canUndo && (settings?.undoAfterGrade ?? true)) showUndo(v.retired ? 'Already known · Undo' : 'Undo');
+        if (v.canUndo && (settings?.undoAfterGrade ?? true)) showUndo(v.retired ? t('Already known · Undo') : t('Undo'));
         await afterView(v);
       } finally {
         dx = 0;
@@ -272,9 +272,9 @@
     const lemma = view?.card?.lemma;
     supersede();
     if (!(await run(() => api.study.removeCurrent(view!.sessionId, as), { newCard: true }))) return;
-    const text = as === 'known' ? `“${lemma}” marked as known · won’t be repeated` : `“${lemma}” removed`;
+    const text = as === 'known' ? t('“{word}” marked as known · won’t be repeated', { word: lemma ?? '' }) : t('“{word}” removed', { word: lemma ?? '' });
     // the last card ends the session, and a finished session has nothing to undo
-    toast(text, view?.done || (as === 'known' && !(settings?.undoAfterKnown ?? true)) ? undefined : { label: 'Undo', run: undo });
+    toast(text, view?.done || (as === 'known' && !(settings?.undoAfterKnown ?? true)) ? undefined : { label: t('Undo'), run: undo });
   }
   async function finish() {
     panel = false;
@@ -324,17 +324,17 @@
 <svelte:window onkeydown={key} />
 
 {#if error}
-  <main class="screen"><p class="error">{error}</p><button class="btn" onclick={() => go('book', bookId)}>Back</button></main>
+  <main class="screen"><p class="error">{t(error)}</p><button class="btn" onclick={() => go('book', bookId)}>{t('Back')}</button></main>
 {:else if view?.nothingDue}
   <main class="screen stack nothing" data-testid="nothing-due">
-    <h1>All done for now</h1>
-    <p class="muted">Nothing is due and today's new cards are used up. You can get ahead if you have time before reading.</p>
-    <button class="btn primary block" onclick={studyAhead}>Get ahead</button>
-    <button class="btn block" onclick={() => go('book', bookId)}>Back to the book</button>
+    <h1>{t('All done for now')}</h1>
+    <p class="muted">{t("Nothing is due and today's new cards are used up. You can get ahead if you have time before reading.")}</p>
+    <button class="btn primary block" onclick={studyAhead}>{t('Get ahead')}</button>
+    <button class="btn block" onclick={() => go('book', bookId)}>{t('Back to the book')}</button>
   </main>
 {:else if view?.card}
   {@const card = view.card}
-  <main class="stage" aria-label="Study" data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
+  <main class="stage" aria-label={t('Study')} data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
     use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
       onDragY: (y) => { if (!fly) dy = panel ? Math.max(0, y) : Math.min(0, y); },
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => { dx = 0; dy = 0; }, width: () => Math.min(innerWidth * 0.88, 440) }}>
@@ -342,12 +342,12 @@
     <div class="topbar">
       {#if left !== undefined && view.endsAt}
         {@const total = new Date(view.endsAt).getTime() - new Date(view.startedAt).getTime()}
-        <div class="progress" data-testid="progress" aria-label="{clock(left)} left">
+        <div class="progress" data-testid="progress" aria-label={t('{time} left', { time: clock(left) })}>
           <div class="track"><div style:width="{(1 - left / Math.max(1, total)) * 100}%"></div></div>
-          <span data-testid="time-left">{left > 0 ? `${clock(left)} left` : 'last card'}</span>
+          <span data-testid="time-left">{left > 0 ? t('{time} left', { time: clock(left) }) : t('last card')}</span>
         </div>
       {:else}
-        <div class="progress" data-testid="progress" aria-label="{view.progress.done} of {view.progress.total} cards done">
+        <div class="progress" data-testid="progress" aria-label={t('{done} of {total} cards done', { done: view.progress.done, total: view.progress.total })}>
           <div class="track"><div style:width="{(view.progress.done / Math.max(1, view.progress.total)) * 100}%"></div></div>
           <span>{view.progress.done} / {view.progress.total}</span>
         </div>
@@ -356,14 +356,14 @@
 
     <div class="cardpos" class:nudge class:dragging={dy !== 0} style:translate="0 {-CARD_LIFT * openness}px">
       {#key cardKey}
-        <FlipCard {flipped} {dx} {fly} dim={openness > 0.5} {review} entering={!review} label="Card {card.lemma}">
+        <FlipCard {flipped} {dx} {fly} dim={openness > 0.5} {review} entering={!review} label={t('Card {word}', { word: card.lemma })}>
           {#snippet front()}
-            <div class="lvl small muted">{card.listLevel ? `Level ${card.listLevel}` : 'Added by hand'}</div>
+            <div class="lvl small muted">{card.listLevel ? t('Level {level}', { level: card.listLevel }) : t('Added by hand')}</div>
             <div class="word" data-testid="card-word" {...src}>{headword(card.lemma, card.pos, src.lang)}</div>
             {#if card.example}
               <p class="ex" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
-            <div class="foot small muted">{flipped || hintsOn ? '' : 'tap to flip'}</div>
+            <div class="foot small muted">{flipped || hintsOn ? '' : t('tap to flip')}</div>
           {/snippet}
           {#snippet back()}
             <div class="row head">
@@ -381,9 +381,9 @@
             {/if}
             {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>{/if}
             {#if review}
-              <div class="foot small muted">tap or swipe to continue</div>
+              <div class="foot small muted">{t('tap or swipe to continue')}</div>
             {:else if settings?.showBoxLevel && card.box > 0}
-              <div class="dots" aria-label="Box {card.box} of 8" data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">box {card.box}/8</span></div>
+              <div class="dots" aria-label={t('Box {box} of 8', { box: card.box })} data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">{t('box {box}/8', { box: card.box })}</span></div>
             {/if}
           {/snippet}
         </FlipCard>
@@ -393,7 +393,7 @@
     {#if hintsOn}<GestureHints {flipped} {used} grade={!review} extra />{/if}
 
     {#if !panel}
-      <button class="grab" onclick={() => vertical(-1)} aria-label="Card options" data-testid="grab" data-nogesture><span></span></button>
+      <button class="grab" onclick={() => vertical(-1)} aria-label={t('Card options')} data-testid="grab" data-nogesture><span></span></button>
     {/if}
 
     {#if undoPill && !panel}
@@ -402,57 +402,57 @@
 
     {#if panelShown}
       <div class="panel" class:dragging={dy !== 0} in:slideIn inert={!panel} data-testid="panel" bind:offsetHeight={panelH} style:transform="translateY({(1 - openness) * 100}%)">
-        <button class="pbtn" onclick={openEdit}>Edit card</button>
-        <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">Mark as known</button>
-        <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
+        <button class="pbtn" onclick={openEdit}>{t('Edit card')}</button>
+        <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">{t('Mark as known')}</button>
+        <button class="pbtn cancel" onclick={finish} data-testid="finish">{t('Cancel session')}</button>
       </div>
     {/if}
 
-    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. Tap to flip, swipe right if you knew it, left if not, up to edit the card or end the session.' : ''}</div>
+    <div class="sr-only" aria-live="polite">{live}{hintsOn ? '. ' + t('Tap to flip, swipe right if you knew it, left if not, up to edit the card or end the session.') : ''}</div>
     <div class="sr-only">
-      <button onclick={flip}>Flip</button>
-      <button onclick={() => grade(1)}>Knew it</button>
-      <button onclick={() => grade(-1)}>Didn't know</button>
-      <button onclick={() => vertical(-1)}>Card options</button>
-      {#if view.canUndo}<button onclick={undo}>Undo</button>{/if}
+      <button onclick={flip}>{t('Flip')}</button>
+      <button onclick={() => grade(1)}>{t('Knew it')}</button>
+      <button onclick={() => grade(-1)}>{t("Didn't know")}</button>
+      <button onclick={() => vertical(-1)}>{t('Card options')}</button>
+      {#if view.canUndo}<button onclick={undo}>{t('Undo')}</button>{/if}
     </div>
   </main>
 {:else if view && !view.done}
-  <main class="screen"><p class="muted">Loading…</p></main>
+  <main class="screen"><p class="muted">{t('Loading…')}</p></main>
 {/if}
 
 {#if askFront && view?.card}<FrontSwipeKnown word={view.card.lemma} onanswer={frontSwipeAnswer} />{/if}
 
 {#if editing && view?.card}
-  <Sheet full label="Edit card" onclose={() => (editing = false)}>
+  <Sheet full label={t('Edit card')} onclose={() => (editing = false)}>
     <div class="stack">
-      <div class="row"><h2 class="spacer" {...src}>{headword(view.card.lemma, editPos ? [editPos] : view.card.pos, src.lang)}</h2><button class="linkbtn" onclick={() => (editing = false)}>Cancel</button></div>
+      <div class="row"><h2 class="spacer" {...src}>{headword(view.card.lemma, editPos ? [editPos] : view.card.pos, src.lang)}</h2><button class="linkbtn" onclick={() => (editing = false)}>{t('Cancel')}</button></div>
       {#if senses.length > 1}
-        <div class="section-title">Part of speech</div>
-        <div class="row senses" role="radiogroup" aria-label="Part of speech">
+        <div class="section-title">{t('Part of speech')}</div>
+        <div class="row senses" role="radiogroup" aria-label={t('Part of speech')}>
           {#each senses as s (s.pos)}
             <button class="chip" class:on={editPos === s.pos} role="radio" aria-checked={editPos === s.pos} onclick={() => pickSense(s)} data-testid="sense-{s.pos}">{s.pos}</button>
           {/each}
         </div>
-        <p class="small muted">Picking one fills in the lists' translations and definition for it.</p>
+        <p class="small muted">{t("Picking one fills in the lists' translations and definition for it.")}</p>
       {/if}
-      <div class="section-title">Translations</div>
+      <div class="section-title">{t('Translations')}</div>
       {#each editList as _, i (i)}
         <div class="row">
-          <input type="text" bind:value={editList[i]} aria-label="Translation {i + 1}" {...tgt} />
+          <input type="text" bind:value={editList[i]} aria-label={t('Translation {n}', { n: i + 1 })} {...tgt} />
           {#if editList.length > 1}
-            <button class="iconbtn" aria-label="Move translation {i + 1} up" disabled={i === 0} onclick={() => moveTranslation(i, -1)}>↑</button>
-            <button class="iconbtn" aria-label="Move translation {i + 1} down" disabled={i === editList.length - 1} onclick={() => moveTranslation(i, 1)}>↓</button>
+            <button class="iconbtn" aria-label={t('Move translation {n} up', { n: i + 1 })} disabled={i === 0} onclick={() => moveTranslation(i, -1)}>↑</button>
+            <button class="iconbtn" aria-label={t('Move translation {n} down', { n: i + 1 })} disabled={i === editList.length - 1} onclick={() => moveTranslation(i, 1)}>↓</button>
           {/if}
-          <button class="iconbtn" aria-label="Remove translation" onclick={() => (editList = editList.filter((__, j) => j !== i))}>×</button>
+          <button class="iconbtn" aria-label={t('Remove translation')} onclick={() => (editList = editList.filter((__, j) => j !== i))}>×</button>
         </div>
       {/each}
-      {#if editList.length < 4}<button class="linkbtn" onclick={() => (editList = [...editList, ''])}>＋ Add translation</button>{/if}
-      <label class="stack small">English definition
-        <textarea rows="3" bind:value={editDef} aria-label="Definition" data-testid="edit-definition" {...src}></textarea></label>
-      <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">Save</button>
-      <div class="section-title">Other actions</div>
-      <button class="btn block danger" onclick={() => removeAs('removed')}>Remove card</button>
+      {#if editList.length < 4}<button class="linkbtn" onclick={() => (editList = [...editList, ''])}>＋ {t('Add translation')}</button>{/if}
+      <label class="stack small">{t('{language} definition', { language: languageName(src.lang) })}
+        <textarea rows="3" bind:value={editDef} aria-label={t('Definition')} data-testid="edit-definition" {...src}></textarea></label>
+      <button class="btn primary block" onclick={saveEdit} data-testid="save-edit">{t('Save')}</button>
+      <div class="section-title">{t('Other actions')}</div>
+      <button class="btn block danger" onclick={() => removeAs('removed')}>{t('Remove card')}</button>
     </div>
   </Sheet>
 {/if}

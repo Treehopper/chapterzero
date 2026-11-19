@@ -6,7 +6,7 @@
   import { go, replace } from '../lib/router.svelte';
   import Sheet from '../components/Sheet.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
-  import { textAttrs } from '../lib/i18n/index.svelte';
+  import { t, textAttrs } from '../lib/i18n/index.svelte';
   import { ui } from '../lib/ui.svelte';
 
   let { bookId, chapter: chapterParam }: { bookId: string; chapter?: string } = $props();
@@ -74,18 +74,18 @@
 
 <main class="screen reader" data-testid="reader">
   <header class="topbar bar">
-    <button class="iconbtn" aria-label="Back to the book" onclick={() => go('book', bookId)}>‹</button>
+    <button class="iconbtn" aria-label={t('Back to the book')} onclick={() => go('book', bookId)}>‹</button>
     <h1 class="t">{ch?.title ?? book?.title ?? ''}</h1>
-    <button class="iconbtn" aria-label="Contents" onclick={() => (contents = true)} data-testid="contents">☰</button>
+    <button class="iconbtn" aria-label={t('Contents')} onclick={() => (contents = true)} data-testid="contents">☰</button>
   </header>
-  {#if error}<p class="error">{error}</p>{/if}
+  {#if error}<p class="error">{t(error)}</p>{/if}
   {#if ch}
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <article class="text" bind:this={text} onclick={tapWord} data-testid="reader-text" {...textAttrs(book?.language ?? ui.pair.source)}>
       {#each ch.blocks as b, i (i)}
         <p data-b={i} class:note={b.note}>{#each b.segs as s, j (j)}{#if typeof s === 'string'}{s}{:else}<span class="w" class:active={ch.cards[s.c]?.status === 'active'} data-c={s.c} role="button" tabindex="-1">{s.t}</span>{/if}{/each}</p>
       {:else}
-        <p class="muted">This chapter has no text.</p>
+        <p class="muted">{t('This chapter has no text.')}</p>
       {/each}
     </article>
     <nav class="row pager">
@@ -96,9 +96,9 @@
 </main>
 
 {#if contents && book}
-  <Sheet label="Contents" onclose={() => (contents = false)}>
+  <Sheet label={t('Contents')} onclose={() => (contents = false)}>
     <div class="stack">
-      <h2>Contents</h2>
+      <h2>{t('Contents')}</h2>
       <div class="list">
         {#each book.chapters.filter((c) => c.blocks) as c (c.index)}
           <button class="list-row toc" class:on={c.index === ch?.index} class:muted={!c.included} onclick={() => show(c.index)} data-testid="toc-row">{c.title}</button>
@@ -110,9 +110,9 @@
 
 {#if card}
   {@const c = card}
-  <Sheet label="Card {c.lemma}" onclose={() => (card = undefined)}>
+  <Sheet label={t('Card {word}', { word: c.lemma })} onclose={() => (card = undefined)}>
     <div class="stack" data-testid="reader-card">
-      <div class="row"><h2 class="spacer" {...textAttrs(book?.language ?? ui.pair.source)}>{headword(c.lemma, c.pos, book?.language)}</h2><span class="pill">{statusLabel[c.status] ?? c.status}</span></div>
+      <div class="row"><h2 class="spacer" {...textAttrs(book?.language ?? ui.pair.source)}>{headword(c.lemma, c.pos, book?.language)}</h2><span class="pill">{statusLabel[c.status] ? t(statusLabel[c.status]) : c.status}</span></div>
       {#if c.translations.length}<div class="tr" {...textAttrs(ui.pair.target)}>{c.translations.join(', ')}</div>{/if}
       {#if c.definition}<p class="small muted" {...textAttrs(book?.language ?? ui.pair.source)}>{c.definition}</p>{/if}
       <LookupLinks links={c.links} />

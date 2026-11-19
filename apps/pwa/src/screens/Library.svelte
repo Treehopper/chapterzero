@@ -8,6 +8,7 @@
   import Ring from '../components/Ring.svelte';
   import StartStudy from '../components/StartStudy.svelte';
   import Icon from '../components/Icon.svelte';
+  import { i18n, t } from '../lib/i18n/index.svelte';
 
   let books = $state<BookOverview[]>([]);
   let loaded = $state(false);
@@ -53,7 +54,7 @@
     refiltering = b.id;
     try {
       const r = await api.books.reapplyFilter(b.id, { cutoffRank: profile!.cutoffRank });
-      toast(`${r.title}: ${fmt(r.cards)} cards at level ${r.level}`);
+      toast(t('{title}: {n} cards at level {level}', { title: r.title, n: fmt(r.cards), level: r.level }));
       await load();
     } finally { refiltering = ''; }
   }
@@ -63,6 +64,7 @@
     await api.appState.update({ levelHintDismissed: true });
   }
   const phaseLabel: Record<string, string> = { reading: 'Reading the book…', tokenising: 'Finding the words…', matching: 'Matching the word lists…', done: 'Preparing preview…' };
+  const ringLabel = (x: number) => (x * 100).toLocaleString(i18n.locale === 'de' ? 'de-DE' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   let starting = $state<{ bookId: string; due: number }>();
   /** an open session continues; otherwise the start options (C19) */
   async function study(bookId: string, due = 0) {
@@ -72,75 +74,74 @@
 
 <main class="screen">
   <header class="topbar">
-    <h1>Library</h1>
-    {#if ui.achievements}<button class="iconbtn" aria-label="Achievements" onclick={() => go('achievements')}><Icon name="trophy" /></button>{/if}
-    <button class="iconbtn" aria-label="Settings" onclick={() => go('settings')}><Icon name="settings" /></button>
+    <h1>{t('Library')}</h1>
+    {#if ui.achievements}<button class="iconbtn" aria-label={t('Achievements')} onclick={() => go('achievements')}><Icon name="trophy" /></button>{/if}
+    <button class="iconbtn" aria-label={t('Settings')} onclick={() => go('settings')}><Icon name="settings" /></button>
   </header>
 
   {#if profile?.source === 'default' && !hintDismissed}
     <div class="note card-box row" data-testid="level-hint">
-      <span class="spacer">Check your level for better word selection.</span>
-      <button class="linkbtn" onclick={() => go('check')}>Check</button>
-      <button class="iconbtn" aria-label="Dismiss" onclick={dismissHint}>×</button>
+      <span class="spacer">{t('Check your level for better word selection.')}</span>
+      <button class="linkbtn" onclick={() => go('check')}>{t('Check')}</button>
+      <button class="iconbtn" aria-label={t('Dismiss')} onclick={dismissHint}>×</button>
     </div>
   {/if}
 
   {#if mismatched.length && !refilterHidden}
     <div class="note card-box stack" data-testid="refilter-offer">
-      <strong>Your level changed</strong>
-      <span class="small muted">Re-filter your books to the new cutoff (rank {fmt(profile!.cutoffRank)})? Cards you studied, edited or added stay.</span>
+      <strong>{t('Your level changed')}</strong>
+      <span class="small muted">{t('Re-filter your books to the new cutoff (rank {rank})? Cards you studied, edited or added stay.', { rank: fmt(profile!.cutoffRank) })}</span>
       {#each mismatched as b (b.id)}
         <div class="row"><span class="spacer">{b.title}</span>
-          <button class="btn" disabled={refiltering === b.id} onclick={() => refilter(b)}>{refiltering === b.id ? 'Re-filtering…' : 'Re-filter'}</button></div>
+          <button class="btn" disabled={refiltering === b.id} onclick={() => refilter(b)}>{refiltering === b.id ? t('Re-filtering…') : t('Re-filter')}</button></div>
       {/each}
-      <button class="linkbtn" onclick={() => (refilterHidden = true)}>Not now</button>
+      <button class="linkbtn" onclick={() => (refilterHidden = true)}>{t('Not now')}</button>
     </div>
   {/if}
 
   {#if backupDue}
     <div class="note card-box row" data-testid="backup-reminder">
-      <span class="spacer">You studied on 7 days since your last backup. Export one to keep your progress safe.</span>
-      <button class="linkbtn" onclick={() => go('settings')}>Back up</button>
+      <span class="spacer">{t('You studied on 7 days since your last backup. Export one to keep your progress safe.')}</span>
+      <button class="linkbtn" onclick={() => go('settings')}>{t('Back up')}</button>
     </div>
   {/if}
 
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p class="error" role="alert">{t(error)}</p>{/if}
 
   {#if loaded && books.length === 0}
     <div class="empty stack">
       <div class="art" aria-hidden="true">📚</div>
-      <h2>Import your first book</h2>
-      <p class="muted">Pick an EPUB from the Files app. VocabFirst finds its rare words and turns them into cards, chapter by chapter,
-        so you can read without stopping.</p>
+      <h2>{t('Import your first book')}</h2>
+      <p class="muted">{t('Pick an EPUB from the Files app. VocabFirst finds its rare words and turns them into cards, chapter by chapter, so you can read without stopping.')}</p>
     </div>
   {/if}
 
   <div class="books">
     {#each books as b (b.id)}
       <article class="tile card-box" data-testid="book-tile">
-        <button class="open" onclick={() => go('book', b.id)} aria-label="Open {b.title}">
+        <button class="open" onclick={() => go('book', b.id)} aria-label={t('Open {title}', { title: b.title })}>
           {#if b.coverDataUrl}<img src={b.coverDataUrl} alt="" class="cover" />{:else}<div class="cover placeholder" aria-hidden="true">{b.title.slice(0, 1)}</div>{/if}
           <div class="meta">
             <strong class="title">{b.title}</strong>
             {#if b.author}<span class="small muted">{b.author}</span>{/if}
             {#if b.learningChapter}
               <span class="small">{b.learningChapter.displayTitle} · {pct(b.learningChapter.coverage)}</span>
-            {:else if b.ready}<span class="small good">Ready to read</span>{/if}
+            {:else if b.ready}<span class="small good">{t('Ready to read')}</span>{/if}
             <span class="row small">
-              {#if b.due}<span class="pill accent" data-testid="due-badge">{b.due} due</span>{/if}
-              <span class="pill">Level {b.level}</span><span class="pill">{fmt(b.cards)} cards</span>
+              {#if b.due}<span class="pill accent" data-testid="due-badge">{t('{n} due', { n: fmt(b.due) })}</span>{/if}
+              <span class="pill">{t('Level {level}', { level: b.level })}</span><span class="pill">{t('{n} cards', { n: fmt(b.cards) })}</span>
             </span>
           </div>
-          <Ring value={b.coverage} size={64} stroke={7} label={(b.coverage * 100).toFixed(1)} sublabel="%" mark={b.coverageTarget} />
+          <Ring value={b.coverage} size={64} stroke={7} label={ringLabel(b.coverage)} sublabel="%" mark={b.coverageTarget} />
         </button>
-        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.ready ? 'Review' : 'Get ready for reading'}</button>
+        <button class="btn primary block" onclick={() => study(b.id, b.due)}>{b.ready ? t('Review') : t('Get ready for reading')}</button>
       </article>
     {/each}
   </div>
 
   {#if loaded}<label class="btn block import" class:primary={books.length === 0}>
     <input type="file" accept=".epub,application/epub+zip" onchange={pick} class="sr-only" data-testid="file-input" />
-    ＋ Import EPUB
+    ＋ {t('Import EPUB')}
   </label>{/if}
 </main>
 
@@ -148,7 +149,7 @@
   <div class="busy" role="status" aria-live="polite" data-testid="analysing">
     <div class="card-box stack">
       <strong class="filename" title={analysing.name} data-testid="analysing-name">{analysing.name}</strong>
-      <span class="muted">{phaseLabel[analysing.phase] ?? 'Working…'}</span>
+      <span class="muted">{phaseLabel[analysing.phase] ? t(phaseLabel[analysing.phase]) : t('Working…')}</span>
       <div class="progressbar"><div style:width="{analysing.total ? (analysing.loaded / analysing.total) * 100 : 0}%"></div></div>
     </div>
   </div>

@@ -4,7 +4,7 @@
   import { router, replace } from './lib/router.svelte';
   import { isStandalone } from './lib/platform';
   import { ui } from './lib/ui.svelte';
-  import { setUiLanguage } from './lib/i18n/index.svelte';
+  import { setUiLanguage, t } from './lib/i18n/index.svelte';
   import Overlays from './components/Overlays.svelte';
   import InstallGuide from './screens/InstallGuide.svelte';
   import Download from './screens/Download.svelte';
@@ -55,7 +55,7 @@
 </script>
 
 {#if fatal}
-  <main class="screen"><h1>Something went wrong</h1><p class="error">{fatal}</p><button class="btn" onclick={() => location.reload()}>Reload</button></main>
+  <main class="screen"><h1>{t('Something went wrong')}</h1><p class="error">{t(fatal)}</p><button class="btn" onclick={() => location.reload()}>{t('Reload')}</button></main>
 {:else if booted}
   <!-- Words and the reader keep themselves across tab and chapter changes (only the URL is updated) -->
   {#key router.route.name === 'words' || router.route.name === 'read' ? `${router.route.name}/${router.route.params[0]}` : router.route.name + '/' + router.route.params.join('/')}

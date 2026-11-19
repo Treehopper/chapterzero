@@ -4,7 +4,8 @@
   import type { SessionStatistics } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
-  import { fmt, pct, ui } from '../lib/ui.svelte';
+  import { achievementName, fmt, pct, tierName, ui } from '../lib/ui.svelte';
+  import { t, tn } from '../lib/i18n/index.svelte';
   import Ring from '../components/Ring.svelte';
   import Boxes from '../components/Boxes.svelte';
   import Confetti from '../components/Confetti.svelte';
@@ -24,7 +25,7 @@
       const graded = s.session.reviewed + s.session.alreadyKnown > 0;
       const celebrate = graded && (s.perfect || (ui.achievements && s.achievements.some((a) => a.tier === 'gold')) || (s.coverage.chapter && s.coverage.chapter.before < s.book.coverageTarget && s.coverage.chapter.after >= s.book.coverageTarget));
       if (celebrate) setTimeout(() => fire++, 300);
-      const t = setInterval(() => { if (!s || revealed >= s.achievements.length) clearInterval(t); else revealed++; }, 450);
+      const timer = setInterval(() => { if (!s || revealed >= s.achievements.length) clearInterval(timer); else revealed++; }, 450);
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
       // a relaunch must not come back to a dead end
@@ -33,67 +34,67 @@
   });
 
   const dur = (sec: number) => (sec < 60 ? `${sec} s` : `${Math.floor(sec / 60)} min ${sec % 60} s`);
-  const medal = (t?: string) => (t === 'gold' ? '🥇' : t === 'silver' ? '🥈' : t === 'bronze' ? '🥉' : '🏅');
+  const medal = (tier?: string) => (tier === 'gold' ? '🥇' : tier === 'silver' ? '🥈' : tier === 'bronze' ? '🥉' : '🏅');
 </script>
 
 <Confetti {fire} />
 <main class="screen stats" data-testid="statistics">
-  {#if error}<p class="error">{error}</p><button class="btn" onclick={() => go('library')} data-testid="stats-back">To the library</button>{/if}
+  {#if error}<p class="error">{t(error)}</p><button class="btn" onclick={() => go('library')} data-testid="stats-back">{t('To the library')}</button>{/if}
   {#if s}
-    <h1 class="title">Session complete</h1>
+    <h1 class="title">{t('Session complete')}</h1>
     {#if ui.achievements}
       <!-- what was earned comes first: no scrolling to find it -->
       {#if s.overall.streakDays > 0}
         <section class="card-box row streak" data-testid="stat-streak">
           <span class="flame">🔥</span>
-          <span class="stack"><strong>{s.overall.streakDays}-day streak</strong>
-            <span class="small muted">{s.overall.streakDays >= s.overall.longestStreak ? 'your best yet' : `best ${s.overall.longestStreak} days`}</span></span>
+          <span class="stack"><strong>{t('{n}-day streak', { n: s.overall.streakDays })}</strong>
+            <span class="small muted">{s.overall.streakDays >= s.overall.longestStreak ? t('your best yet') : t('best {n} days', { n: s.overall.longestStreak })}</span></span>
         </section>
       {/if}
       {#if s.achievements.length}
         <div class="medals" data-testid="stat-achievements">
           {#each s.achievements.slice(0, revealed) as a (a.achievementId + (a.tier ?? ''))}
-            <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{a.name}</strong><span class="small muted">{a.tier ?? ''}</span></div>
+            <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{achievementName(a)}</strong><span class="small muted">{a.tier ? tierName(a.tier) : ''}</span></div>
           {/each}
         </div>
       {/if}
     {/if}
     <section class="card-box hero">
-      <Ring value={s.session.firstTryAccuracy} size={120} stroke={12} label={pct(s.session.firstTryAccuracy, 0)} sublabel="first try" color="var(--good)" />
+      <Ring value={s.session.firstTryAccuracy} size={120} stroke={12} label={pct(s.session.firstTryAccuracy, 0)} sublabel={t('first try')} color="var(--good)" />
       <div class="stack figures">
-        <div><strong data-testid="stat-reviewed">{s.session.reviewed}</strong> {s.session.reviewed === 1 ? 'card' : 'cards'} reviewed</div>
-        {#if s.session.promoted}<div class="up"><strong>{s.session.promoted}</strong> {s.session.promoted === 1 ? 'card' : 'cards'} moved up a box</div>{/if}
-        {#if s.session.removed}<div><strong>{s.session.removed}</strong> removed</div>{/if}
+        <div><strong data-testid="stat-reviewed">{s.session.reviewed}</strong> {tn(s.session.reviewed, 'card reviewed', 'cards reviewed')}</div>
+        {#if s.session.promoted}<div class="up"><strong>{s.session.promoted}</strong> {tn(s.session.promoted, 'card moved up a box', 'cards moved up a box')}</div>{/if}
+        {#if s.session.removed}<div><strong>{s.session.removed}</strong> {t('removed')}</div>{/if}
         <div class="muted small">{dur(s.session.durationSec)}</div>
       </div>
     </section>
     {#if s.session.alreadyKnown}
-      <p class="known" data-testid="stat-known">{s.session.alreadyKnown} {s.session.alreadyKnown === 1 ? 'word' : 'words'} you already knew {s.session.alreadyKnown === 1 ? 'was' : 'were'} removed.</p>
+      <p class="known" data-testid="stat-known">{tn(s.session.alreadyKnown, '{n} word you already knew was removed.', '{n} words you already knew were removed.')}</p>
     {/if}
 
-    <div class="section-title">Overall</div>
+    <div class="section-title">{t('Overall')}</div>
     <div class="card-box stack">
       {#if s.coverage.chapter}
         <div class="row"><span class="spacer">{s.coverage.chapter.displayTitle}</span>
           <strong>{pct(s.coverage.chapter.before)} → {pct(s.coverage.chapter.after)}</strong></div>
       {/if}
       <div class="row"><span class="spacer">{s.book.title}</span><strong>{pct(s.coverage.book.before)} → {pct(s.coverage.book.after)}</strong></div>
-      <div class="small muted">estimated coverage{s.book.unknownEvery ? ` · one unknown word every ${s.book.unknownEvery}` : ''}</div>
+      <div class="small muted">{t('estimated coverage')}{s.book.unknownEvery ? ` · ${t('one unknown word every {n}', { n: s.book.unknownEvery })}` : ''}</div>
     </div>
-    <div class="section-title">Boxes</div>
+    <div class="section-title">{t('Boxes')}</div>
     <Boxes boxes={s.book.boxes} moved={s.session.promoted} />
     <div class="card-box row goal">
-      <span class="small muted">Reviews today</span>
+      <span class="small muted">{t('Reviews today')}</span>
       <span class="spacer"></span>
       <Ring value={s.overall.reviewsToday / s.overall.dailyGoal} size={60} stroke={6} label={String(s.overall.reviewsToday)} sublabel="/ {s.overall.dailyGoal}" color="var(--good)" />
     </div>
-    <p class="small muted">{fmt(s.overall.wordsLearnedAllBooks)} words learned across all books.</p>
+    <p class="small muted">{t('{n} words learned across all books.', { n: fmt(s.overall.wordsLearnedAllBooks) })}</p>
 
     <div class="cta row">
-      <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">Keep going</button>
-      <button class="btn primary spacer" onclick={() => go('book', s!.bookId)} data-testid="done">Done</button>
+      <button class="btn spacer" onclick={() => (starting = true)} data-testid="study-more">{t('Keep going')}</button>
+      <button class="btn primary spacer" onclick={() => go('book', s!.bookId)} data-testid="done">{t('Done')}</button>
     </div>
-  {:else if !error}<p class="muted">Loading…</p>{/if}
+  {:else if !error}<p class="muted">{t('Loading…')}</p>{/if}
 </main>
 
 {#if starting && s}<StartStudy bookId={s.bookId} due={s.book.due} onclose={() => (starting = false)} />{/if}

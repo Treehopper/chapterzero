@@ -10,7 +10,7 @@
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
   import FrontSwipeConfirm from '../components/FrontSwipeConfirm.svelte';
-  import { textAttrs } from '../lib/i18n/index.svelte';
+  import { languageName, t, textAttrs } from '../lib/i18n/index.svelte';
 
   let view = $state<CalibrationView>();
   let flipped = $state(false);
@@ -112,81 +112,82 @@
     else if (e.key === 'ArrowLeft') void answer(false);
   }
   const level = $derived(startLevel(cutoff));
+  const rankParts = $derived(t("Words more common than rank {rank} won't become cards.").split('{rank}'));
 </script>
 
 <svelte:window onkeydown={key} />
 
 {#if result}
   <main class="screen stack result" data-testid="check-result">
-    <h1 class="muted center small up">Your English level</h1>
-    <div class="big center">You start at level <span data-testid="start-level">{level}</span></div>
+    <h1 class="muted center small up">{t('Your {language} level', { language: languageName(ui.pair.source) })}</h1>
+    <div class="big center">{t('You start at level')} <span data-testid="start-level">{level}</span></div>
     <div class="levels" aria-hidden="true">
       {#each LEVELS as l (l.level)}
         <span class:skip={l.level < level} class:here={l.level === level}>{l.level}</span>
       {/each}
     </div>
-    <p class="center">Words more common than rank <strong data-testid="cutoff">{fmt(cutoff)}</strong> won't become cards.
-      {#if level > 1}Levels 1–{level - 1} are skipped.{/if}</p>
-    <p class="center small muted">Words just above it that you already know are retired after one swipe.</p>
+    <p class="center">{rankParts[0]}<strong data-testid="cutoff">{fmt(cutoff)}</strong>{rankParts[1] ?? ''}
+      {#if level > 1}{t('Levels 1–{n} are skipped.', { n: level - 1 })}{/if}</p>
+    <p class="center small muted">{t('Words just above it that you already know are retired after one swipe.')}</p>
     {#if adjust}
-      <label class="stack small">Adjust
-        <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="level-marks" aria-label="Cutoff rank" />
+      <label class="stack small">{t('Adjust')}
+        <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="level-marks" aria-label={t('Cutoff rank')} />
         <datalist id="level-marks">{#each LEVELS as l (l.level)}<option value={l.from - 1}></option>{/each}</datalist>
       </label>
     {/if}
     <div class="spacer"></div>
-    <button class="btn primary block" onclick={use}>Use this</button>
+    <button class="btn primary block" onclick={use}>{t('Use this')}</button>
     <div class="row">
-      <button class="btn spacer" onclick={() => (adjust = !adjust)}>{adjust ? 'Hide' : 'Adjust'}</button>
-      <button class="btn spacer" onclick={repeat}>Repeat</button>
+      <button class="btn spacer" onclick={() => (adjust = !adjust)}>{adjust ? t('Hide') : t('Adjust')}</button>
+      <button class="btn spacer" onclick={repeat}>{t('Repeat')}</button>
     </div>
-    {#if books}<p class="small muted center">Your existing books can be re-filtered from the library.</p>{/if}
+    {#if books}<p class="small muted center">{t('Your existing books can be re-filtered from the library.')}</p>{/if}
   </main>
 {:else if view?.word}
   <main class="stage" use:gestures={{ onTap: flip, onDragX: (x) => (dx = swipeable ? x : 0), onSwipeX: swipe,
     onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
     <header class="top">
       <span class="counter" data-testid="check-counter">{view.position + 1} / {view.total}</span>
-      <button class="linkbtn" onclick={skip}>Skip</button>
+      <button class="linkbtn" onclick={skip}>{t('Skip')}</button>
     </header>
     <div class="cardpos" class:nudge>
     {#key `${view.position}:${view.word?.lemma}`}
-      <FlipCard {flipped} {dx} {fly} entering label="Vocabulary check word {view.position + 1} of {view.total}">
+      <FlipCard {flipped} {dx} {fly} entering label={t('Vocabulary check word {n} of {total}', { n: view.position + 1, total: view.total })}>
         {#snippet front()}
           <div class="word" data-testid="check-word" {...textAttrs(ui.pair.source)}>{view?.word ? headword(view.word.lemma, view.word.pos, ui.pair.source) : ''}</div>
-          <div class="hint muted">{flipped || showHints ? '' : 'Tap to see the translation'}</div>
+          <div class="hint muted">{flipped || showHints ? '' : t('Tap to see the translation')}</div>
         {/snippet}
         {#snippet back()}
           <div class="word small-word" {...textAttrs(ui.pair.source)}>{view?.word ? headword(view.word.lemma, view.word.pos, ui.pair.source) : ''}</div>
           <div class="tr" class:long={(view?.word?.tr.join(', ').length ?? 0) > 24} {...textAttrs(ui.pair.target)}>{view?.word?.tr.join(', ')}</div>
           {#if view?.word?.def}<p class="def small muted" {...textAttrs(ui.pair.source)}>{view.word.def}</p>{/if}
           <LookupLinks links={view?.word?.lookupLinks ?? []} />
-          <div class="hint muted">Swipe right if you knew it, left if not</div>
+          <div class="hint muted">{t('Swipe right if you knew it, left if not')}</div>
         {/snippet}
       </FlipCard>
     {/key}
     </div>
     {#if showHints}<GestureHints {flipped} {used} />{/if}
     <div class="sr-only">
-      <button onclick={() => (flipped = !flipped)}>Flip</button>
-      <button onclick={() => answer(true)} disabled={!flipped && !seen}>Knew it</button>
-      <button onclick={() => answer(false)} disabled={!flipped && !seen}>Didn't know</button>
+      <button onclick={() => (flipped = !flipped)}>{t('Flip')}</button>
+      <button onclick={() => answer(true)} disabled={!flipped && !seen}>{t('Knew it')}</button>
+      <button onclick={() => answer(false)} disabled={!flipped && !seen}>{t("Didn't know")}</button>
     </div>
     {#if flipped}
       <div class="explain replace">
-        <button class="linkbtn" onclick={replaceWord} disabled={busy} data-testid="check-replace">Don't count this word</button>
-        <span class="small muted">for a specialist term you wouldn't know in German either</span>
+        <button class="linkbtn" onclick={replaceWord} disabled={busy} data-testid="check-replace">{t("Don't count this word")}</button>
+        <span class="small muted">{t("for a specialist term you wouldn't know in {language} either", { language: languageName(ui.pair.target) })}</span>
       </div>
     {:else}
-      <p class="explain small muted" data-testid="check-why">Two minutes, 60 words, so your cards skip the words you already know.<br />
-        Tap, then swipe right = knew it, left = didn't.</p>
+      <p class="explain small muted" data-testid="check-why">{t('Two minutes, 60 words, so your cards skip the words you already know.')}<br />
+        {t("Tap, then swipe right = knew it, left = didn't.")}</p>
     {/if}
   </main>
   {#if askFront}<FrontSwipeConfirm dir={askFront} onanswer={frontSwipeAnswer} />{/if}
 {:else}
   <main class="screen stack">
-    {#if error}<p class="error" role="alert">{error}</p><button class="btn" onclick={skip}>Skip the check</button>
-    {:else}<p class="muted">Preparing the vocabulary check…</p>{/if}
+    {#if error}<p class="error" role="alert">{t(error)}</p><button class="btn" onclick={skip}>{t('Skip the check')}</button>
+    {:else}<p class="muted">{t('Preparing the vocabulary check…')}</p>{/if}
   </main>
 {/if}
 

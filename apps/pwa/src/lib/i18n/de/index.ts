@@ -3,5 +3,6 @@ import { screens } from './screens';
 import { study } from './study';
 import { setup } from './setup';
 import { common } from './common';
+import { settings } from './settings';
 
-export const de: Record<string, string> = { ...common, ...setup, ...screens, ...study };
+export const de: Record<string, string> = { ...common, ...setup, ...screens, ...study, ...settings };

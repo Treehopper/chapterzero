@@ -4,6 +4,8 @@
   import type { AchievementView } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
+  import { achievementName, tierName } from '../lib/ui.svelte';
+  import { i18n, t } from '../lib/i18n/index.svelte';
   let list = $state<AchievementView[]>([]);
   // books first (unlocked ones on top), then the others in their usual order
   const rank = (a: AchievementView) => (a.bookId ? (a.tiers.some((t) => t.unlockedAt) ? 0 : 1) : 2);
@@ -15,24 +17,24 @@
     const flags = await Promise.all(ids.map((id) => api.reader.available(id)));
     readable = new Set(ids.filter((_, i) => flags[i]));
   });
-  const date = (iso?: string) => (iso ? new Date(iso).toLocaleDateString() : '');
+  const date = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(i18n.locale === 'de' ? 'de-DE' : 'en-US') : '');
   const icon = { bronze: '🥉', silver: '🥈', gold: '🥇' } as const;
 </script>
 
 <main class="screen">
-  <header class="topbar"><button class="iconbtn" aria-label="Back" onclick={() => go('library')}>‹</button><h1>Achievements</h1></header>
+  <header class="topbar"><button class="iconbtn" aria-label={t('Back')} onclick={() => go('library')}>‹</button><h1>{t('Achievements')}</h1></header>
   <div class="grid">
     {#each list as a (a.id)}
       {@const top = [...a.tiers].reverse().find((t) => t.unlockedAt)}
       <article class="tile card-box" class:locked={!top} data-testid="achievement">
         {#if a.bookId && a.coverDataUrl}<img src={a.coverDataUrl} alt="" class="cover" />{/if}
         <div class="medal" aria-hidden="true">{top ? icon[top.tier] : '🔒'}</div>
-        <strong>{a.name}</strong>
-        <span class="small muted">{a.description}</span>
+        <strong>{achievementName({ achievementId: a.id, name: a.name })}</strong>
+        <span class="small muted">{t(a.description)}</span>
         <div class="tiers">
-          {#each a.tiers as t (t.tier)}
-            <span class="tier {t.tier}" class:on={!!t.unlockedAt} title={t.unlockedAt ? `${t.tier} · ${date(t.unlockedAt)}` : `${t.threshold}`}>
-              {a.tiers.length > 1 ? t.threshold : ''}{t.unlockedAt ? ' ✓' : ''}
+          {#each a.tiers as tr (tr.tier)}
+            <span class="tier {tr.tier}" class:on={!!tr.unlockedAt} title={tr.unlockedAt ? `${tierName(tr.tier)} · ${date(tr.unlockedAt)}` : `${tr.threshold}`}>
+              {a.tiers.length > 1 ? tr.threshold : ''}{tr.unlockedAt ? ' ✓' : ''}
             </span>
           {/each}
         </div>
@@ -40,7 +42,7 @@
           <div class="progressbar"><div style:width="{Math.min(100, (a.value / a.next.threshold) * 100)}%"></div></div>
           <span class="small muted">{Math.min(a.value, a.next.threshold)} / {a.next.threshold}</span>
         {:else if top}<span class="small muted">{date(top.unlockedAt)}</span>{/if}
-        {#if a.bookId && readable.has(a.bookId)}<button class="btn primary read" onclick={() => go('read', a.bookId!)} data-testid="achievement-read">Read</button>{/if}
+        {#if a.bookId && readable.has(a.bookId)}<button class="btn primary read" onclick={() => go('read', a.bookId!)} data-testid="achievement-read">{t('Read')}</button>{/if}
       </article>
     {/each}
   </div>
