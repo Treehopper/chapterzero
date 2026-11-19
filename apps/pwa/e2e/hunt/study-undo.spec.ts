@@ -194,19 +194,22 @@ test('Undo after "Mark as known" off: no Undo after a front swipe, from the pane
   await expect(page.getByTestId('toast').getByRole('button', { name: 'Undo' })).toHaveCount(0);
 });
 
-test('the page behind the stage has the stage colour, also after Undo (no white Safari toolbar); back to normal after the session', async ({ page }) => {
-  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  const before = await bg();
+test('during a session the toast is drawn inside the stage, not as a fixed strip over the page (Safari tinted its bottom bar white)', async ({ page }) => {
   await startStudy(page);
-  const stage = await page.getByTestId('study-stage').evaluate((e) => getComputedStyle(e).backgroundColor);
-  expect(await bg()).toBe(stage);
+  const w = await cardWord(page);
   await swipeUp(page);
   await tap(page.getByTestId('panel-known'));
-  await tap(page.getByTestId('toast').getByRole('button', { name: 'Undo' }));
-  await expect(page.getByTestId('card-word')).toBeVisible();
-  expect(await bg()).toBe(stage);
+  const toast = page.getByTestId('toast');
+  await expect(toast).toBeVisible();
+  expect(await toast.evaluate((el) => !!el.closest('[data-testid="study-stage"]') && getComputedStyle(el.parentElement!).position)).toBe('absolute');
+  await tap(toast.getByRole('button', { name: 'Undo' }));
+  await expectCard(page, w);
+  // after the session, toasts float over the page again
   await page.getByTestId('grab').tap();
   await page.getByTestId('finish').tap();
   await expect(page.getByTestId('statistics')).toBeVisible();
-  expect(await bg()).toBe(before);
+  await page.goto('/#/settings');
+  await page.getByTestId('export').tap();
+  await expect(toast).toBeVisible();
+  expect(await toast.evaluate((el) => getComputedStyle(el.parentElement!).position)).toBe('fixed');
 });

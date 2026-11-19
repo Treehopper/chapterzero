@@ -8,8 +8,8 @@ export interface Banner { id: number; kind: 'achievement' | 'chapter'; title: st
 
 let nextId = 1;
 /** achievements: Settings › Achievements and streaks (loaded at boot, kept in step by the Settings screen) */
-/** pair: the word lists' languages (loaded at boot) */
-export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean; changed: number; pair: LanguagePair }>(
+/** pair: the word lists' languages (loaded at boot); toastInStage: the study screen draws the toast itself */
+export const ui = $state<{ toast?: Toast; banners: Banner[]; banner?: Banner; online: boolean; achievements: boolean; changed: number; pair: LanguagePair; toastInStage?: boolean }>(
   { banners: [], online: navigator.onLine, achievements: true, changed: 0, pair: LEGACY_PAIR });
 /** a toast's Undo can land after its screen is gone: whatever is on screen reloads */
 export const dataChanged = () => { ui.changed++; };

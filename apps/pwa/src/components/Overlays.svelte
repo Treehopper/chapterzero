@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Toast (undo) host and the top pop-up for achievements / chapter banners (G4, I3). */
   import { BANNER_MS, dismissBanner, ui } from '../lib/ui.svelte';
+  import Toast from './Toast.svelte';
 </script>
 
 {#if ui.banner}
@@ -17,16 +18,7 @@
   {/key}
 {/if}
 
-{#if ui.toast}
-  <div class="toast-host">
-    <div class="toast" role="status" aria-live="polite" data-testid="toast">
-      <span>{ui.toast.text}</span>
-      {#if ui.toast.action}
-        <button onclick={() => { const act = ui.toast?.action; ui.toast = undefined; act?.run(); }}>{ui.toast.action.label}</button>
-      {/if}
-    </div>
-  </div>
-{/if}
+{#if !ui.toastInStage}<Toast />{/if}
 
 <style>
   .banner { position: fixed; top: calc(var(--safe-top) + 12px); left: 12px; right: 12px; margin: 0 auto; max-width: 440px; z-index: 70; cursor: pointer;

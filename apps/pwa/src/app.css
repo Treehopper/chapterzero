@@ -44,9 +44,6 @@
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font);
   -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 body { overscroll-behavior: none; }
-/* while studying, the page behind the stage has the stage's colour: Safari tints its toolbars from what
-   it finds at the screen edges, and must never find the lighter page background (a white bar at the bottom) */
-html.on-stage, html.on-stage body { background: var(--stage); }
 #app { min-height: 100%; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -94,6 +91,7 @@ input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent);
 .progressbar > div { height: 100%; background: var(--accent); transition: width 0.2s; }
 .error { color: var(--bad); }
 .toast-host { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 24px); display: flex; justify-content: center; z-index: 60; pointer-events: none; }
+.toast-host.in-stage { position: absolute; }
 .toast { pointer-events: auto; background: var(--text); color: var(--bg); border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: 15px;
   display: flex; gap: 12px; align-items: center; box-shadow: var(--card-shadow); animation: sheet-in 0.2s ease-out; }
 .toast button { background: none; border: none; color: var(--accent); font-weight: 700; padding: 4px; min-height: 32px; }

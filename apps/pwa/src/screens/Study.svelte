@@ -7,6 +7,7 @@
   import { gestures } from '../lib/gestures';
   import { announceUnlocks, banner, hideToast, pct, toast, ui } from '../lib/ui.svelte';
   import { vibrate } from '../lib/platform';
+  import Toast from '../components/Toast.svelte';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
   import GestureHints from '../components/GestureHints.svelte';
@@ -79,8 +80,9 @@
   const tick = setInterval(() => (now = Date.now()), 1000);
   const left = $derived(view?.endsAt ? Math.max(0, new Date(view.endsAt).getTime() - now) : undefined);
   const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
-  document.documentElement.classList.add('on-stage');
-  onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); document.documentElement.classList.remove('on-stage'); });
+  onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); ui.toastInStage = false; });
+  // while the stage is up it shows the toast itself (see Toast.svelte)
+  $effect(() => { ui.toastInStage = !error && !view?.nothingDue && !!view?.card; });
 
   async function afterView(v: SessionView) {
     if (v.card) live = `${headword(v.card.lemma, v.card.pos, v.pair.source)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;
@@ -419,6 +421,7 @@
       <button onclick={() => vertical(-1)}>{t('Card options')}</button>
       {#if view.canUndo}<button onclick={undo}>{t('Undo')}</button>{/if}
     </div>
+    <Toast inStage />
   </main>
 {:else if view && !view.done}
   <main class="screen"><p class="muted">{t('Loading…')}</p></main>
