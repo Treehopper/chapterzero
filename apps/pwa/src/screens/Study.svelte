@@ -28,6 +28,14 @@
   /** how far the panel is out, 0–1: follows the finger, then settles */
   const openness = $derived(Math.min(1, Math.max(0, panel ? 1 - dy / panelH : -dy / panelH)));
   const CARD_LIFT = 72;
+  /** the panel stays in the page while it slides out from wherever the finger left it */
+  let panelShown = $state(false);
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    clearTimeout(hideTimer);
+    if (openness > 0) panelShown = true;
+    else if (panelShown) hideTimer = setTimeout(() => (panelShown = false), 300);
+  });
   let undoPill = $state<{ label: string; until: number }>();
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
   let editing = $state(false);
@@ -209,8 +217,8 @@
     void run(() => api.study.undo(view!.sessionId), { newCard: true });
   }
 
-  /** the panel slides in and out when opened or closed without a drag (handle, keys, tap on the card) */
-  function slide(_: Element) {
+  /** opened without a drag (handle, keys): it slides in; closing is the transform's own transition */
+  function slideIn(_: Element) {
     return { duration: dy === 0 ? 200 : 0, css: (t: number) => `transform: translateY(${(1 - t) * 100}%)` };
   }
 
@@ -324,7 +332,7 @@
   {@const card = view.card}
   <main class="stage" aria-label="Study" data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
     use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
-      onDragY: (y) => { if (!fly) dy = y; },
+      onDragY: (y) => { if (!fly) dy = panel ? Math.max(0, y) : Math.min(0, y); },
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => { dx = 0; dy = 0; }, width: () => Math.min(innerWidth * 0.88, 440) }}>
 
     <div class="topbar">
@@ -388,8 +396,8 @@
       <button class="undo" onclick={undo} data-testid="undo">{undoPill.label}</button>
     {/if}
 
-    {#if panel || openness > 0}
-      <div class="panel" class:dragging={dy !== 0} transition:slide data-testid="panel" bind:offsetHeight={panelH} style:transform="translateY({(1 - openness) * 100}%)">
+    {#if panelShown}
+      <div class="panel" class:dragging={dy !== 0} in:slideIn inert={!panel} data-testid="panel" bind:offsetHeight={panelH} style:transform="translateY({(1 - openness) * 100}%)">
         <button class="pbtn" onclick={openEdit}>Edit card</button>
         <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">Mark as known</button>
         <button class="pbtn cancel" onclick={finish} data-testid="finish">Cancel session</button>
