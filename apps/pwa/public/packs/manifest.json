@@ -4,67 +4,67 @@
   "packs": [
     {
       "id": "words-en-de",
-      "version": "2026-11-17",
+      "version": "2026-11-19",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
         "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"
       ],
       "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
-      "entryCount": 75612,
-      "bytes": 3367887,
+      "entryCount": 75810,
+      "bytes": 3375003,
       "chunks": [
         {
           "file": "words-en-de.000.json.gz",
-          "bytes": 1710852,
-          "rows": 37806,
-          "sha256": "1c3c83703fd238cdcc70e4aec2c84e386f03d3c65cfdfca081e38a685ec5404d",
-          "sha256Json": "e817e90012062077d091cd3a86702b9d011f99e9408b6414c6cb00b903359034"
+          "bytes": 1714513,
+          "rows": 37905,
+          "sha256": "6b8afbf5434233f4403c57b802b9656f2a0e988d13fdc5ca952f5a33fd7f257b",
+          "sha256Json": "cd0c8cd0a2979343c2ac8215966dc74d4895e223dcd62ddf8d36bfce05521240"
         },
         {
           "file": "words-en-de.001.json.gz",
-          "bytes": 1657035,
-          "rows": 37806,
-          "sha256": "8fe36cc2886eec13a5a22c14ed2eb93b7c829c4d0afa6ea32b69fc61b313047c",
-          "sha256Json": "10399aa1f9a305d93f670d7d15ed0715d1c51b20cf79e9499ef6ddfa69774bae"
+          "bytes": 1660490,
+          "rows": 37905,
+          "sha256": "a8df9421eb552e4d2ed5774fa478845eef31d58f692606f3086e7bdf64410174",
+          "sha256Json": "7585fa2012a51dce37c8cca03d02105690bad3d53479bcb89576169c8a626cc8"
         }
       ]
     },
     {
       "id": "words-de-freedict",
-      "version": "2026-11-17",
+      "version": "2026-11-19",
       "sources": [
         "https://download.freedict.org/dictionaries/eng-deu/1.9-fd1/freedict-eng-deu-1.9-fd1.src.tar.xz"
       ],
       "licence": "GPL-2.0-or-later (FreeDict eng-deu 1.9-fd1, from TU Chemnitz \"Ding\")",
-      "entryCount": 16645,
-      "bytes": 323849,
+      "entryCount": 16674,
+      "bytes": 324343,
       "chunks": [
         {
           "file": "words-de-freedict.000.json.gz",
-          "bytes": 323849,
-          "rows": 16645,
-          "sha256": "a34dc2c31ccf379ad1545edcc1a9e20eef846b98a97fea8166ba1603f4f71a57",
-          "sha256Json": "b6ef023ce8f74b44ae524cfcd349c1852c79c56ac20ecca159d2acea44d2c807"
+          "bytes": 324343,
+          "rows": 16674,
+          "sha256": "58acfc5e6309e88006610aea4731ff43f6922aff437e8740c640dadf04127ca5",
+          "sha256Json": "8090b33a3966c7ae145002797e13c5243114a867b3a9c982958eba7505bc106a"
         }
       ]
     },
     {
       "id": "forms-en",
-      "version": "2026-11-17",
+      "version": "2026-11-19",
       "sources": [
         "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz",
         "https://github.com/rspeer/wordfreq/raw/master/wordfreq/data/large_en.msgpack.gz"
       ],
       "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
-      "entryCount": 135234,
-      "bytes": 740896,
+      "entryCount": 134787,
+      "bytes": 738674,
       "chunks": [
         {
           "file": "forms-en.000.json.gz",
-          "bytes": 740896,
-          "rows": 135234,
-          "sha256": "9b5087f97b17dea31c4f8ac1dbef2b0bab38ffbeac9e035b364d8a11f28af680",
-          "sha256Json": "d68dcba6abda3c0e757c7b047ba7820f51be22d341dde9b2212b2719a6cbfecc"
+          "bytes": 738674,
+          "rows": 134787,
+          "sha256": "b870e29b4b52ca9a569448c199651d33b80ca584179f3bae925a134cb43835d3",
+          "sha256Json": "be783c2e0339a40d023131b79f2da87b96aa1b8ad073255154203e32c9307423"
         }
       ]
     }

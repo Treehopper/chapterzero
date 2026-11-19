@@ -65,10 +65,16 @@ const addPair = (form: string, lemma: string, alt: boolean) => {
 interface Sense { glosses?: string[]; tags?: string[]; form_of?: { word: string }[]; alt_of?: { word: string }[];
   translations?: Tr[] }
 interface Tr { lang_code?: string; code?: string; word?: string }
-interface Entry { word: string; pos: string; lang_code?: string; forms?: { form?: string; tags?: string[] }[];
+interface Entry { word: string; pos: string; lang_code?: string; etymology_number?: number; forms?: { form?: string; tags?: string[] }[];
   senses?: Sense[]; translations?: Tr[] }
 
 const MARGINAL = new Set(['obsolete', 'archaic', 'misspelling', 'dialectal', 'rare', 'nonstandard', 'eye-dialect', 'pronunciation-spelling']);
+const CLIPPING = new Set(['clipping', 'abbreviation']);
+/** etymologies with real senses per word, and per (form, lemma) the etymologies of its current spelling pointers */
+const realEtym = new Map<string, Set<number>>();
+const spellingEtym = new Map<string, Set<number>>();
+const inflected = new Set<string>();
+const addTo = <K, V>(m: Map<K, Set<V>>, k: K, v: V) => { let x = m.get(k); if (!x) m.set(k, (x = new Set())); x.add(v); };
 const isDe = (t: Tr) => (t.lang_code ?? t.code) === 'de' && !!t.word;
 let lines = 0;
 let deSeen = 0;
@@ -91,12 +97,13 @@ for await (const line of rl) {
     const spelled = inflections.length + spellings.length === 0 ? spellingOfTarget(g) : undefined;
     if (spelled) spellings.push(normWord(spelled));
     const pointer = inflections.length + spellings.length > 0 || s.tags?.includes('form-of') || s.tags?.includes('alt-of');
-    const marginal = !!s.tags?.some((t) => MARGINAL.has(t));
-    for (const t of inflections) if (t !== word) { addPair(word, t, false); notePos(word, t, e.pos); }
-    for (const t of spellings) if (t !== word) addPair(word, t, marginal);
+    const marginal = !!s.tags?.some((t) => MARGINAL.has(t) || CLIPPING.has(t));
+    for (const t of inflections) if (t !== word) { addPair(word, t, false); notePos(word, t, e.pos); inflected.add(`${word}\t${t}`); }
+    for (const t of spellings) if (t !== word) { addPair(word, t, marginal); if (!marginal) addTo(spellingEtym, `${word}\t${t}`, e.etymology_number ?? 0); }
     if (!pointer && g) real.push(s);
   }
   if (real.length === 0) continue; // rule 2: only feeds the forms table
+  addTo(realEtym, word, e.etymology_number ?? 0);
   // archaic, obsolete, rare… senses only when the entry has nothing current ("loom": utensil)
   const current = real.filter((s) => !s.tags?.some((t) => MARGINAL.has(t)));
   const use = current.length ? current : real;
@@ -130,10 +137,17 @@ const cand = (form: string, lemma: string) => {
   if (!s) candidates.set(form, (s = new Set()));
   s.add(lemma);
 };
+// a spelling pointer from another etymology is a homograph, not a variant: "haft" (handle)
+// is also a Scottish spelling of "heft" (pastureland); treat it like a marginal one
+for (const [k, etyms] of spellingEtym) {
+  const [form, l] = k.split('\t');
+  const own = realEtym.get(form);
+  if (own && !inflected.has(k) && ![...etyms].some((n) => own.has(n))) addTo(altOnly, form, l);
+}
 for (const [form, ls] of formOf) {
   for (const l of [...ls]) {
-    // a marginal spelling pointer never overrides a form that is a lemma in its own right
-    // ("ere" is also an obsolete form of "ear"); inflections and standard spellings keep
+    // a marginal spelling pointer or clipping never overrides a form that is a lemma in its own
+    // right ("ere" is also an obsolete form of "ear", "amend" no clipping of "amendment"); inflections and standard spellings keep
     // §6.4 ("bore" → "bear", "centre" → "center")
     if (!lemmas.has(l) || (lemmas.has(form) && altOnly.get(form)?.has(l))) ls.delete(l);
   }

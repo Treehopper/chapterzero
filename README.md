@@ -820,6 +820,7 @@ Chunks are cut at about 2 MB compressed. Everything is lowercase NFC. The two tr
 1. Collect candidate pairs `(form, lemma)` for all lemmas of rank ≤ 100,000 (including the common ones):
    - every item of the entry's `forms` list (plural, third person, past, participles, comparative, superlative);
    - every entry that is a "form of" or "alternative form of" a lemma (this covers irregular forms and British/American spellings);
+     a spelling pointer does not count when the form is a lemma in its own right and the pointer is marginal (obsolete, dialectal, rare, …), a clipping ("amend" is no clipping of "amendment") or from another etymology than the form's own senses ("haft", handle, is also a Scottish spelling of "heft");
    - the identity pair `(lemma, lemma)`;
    - **fallback** for nouns, verbs and adjectives whose `forms` list is empty: regular forms by rule — noun: `-s`, `-es` after s/x/z/ch/sh, `y→ies` after a consonant; verb: `-s`/`-es`, `-ed` (`-d` after e, `y→ied`), `-ing` (drop a final silent e); adjective: `-er`, `-est`. No consonant doubling. A fallback form is kept only if it occurs in the frequency list, so no invented forms are shipped.
 2. For each distinct form, the **winner** is the candidate lemma with the smallest rank (the most common reading).
