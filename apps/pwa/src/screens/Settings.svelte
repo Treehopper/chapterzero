@@ -84,7 +84,7 @@
     <div class="section-title">{t('Language')}</div>
     <div class="list">
       <label class="list-row"><span class="spacer">{t('App language')}</span>
-        <select value={s.uiLanguage} onchange={(e) => save({ uiLanguage: e.currentTarget.value as Settings['uiLanguage'] })} data-testid="set-language" aria-label={t('App language')}>
+        <select value={s.uiLanguage} onchange={(e) => save({ uiLanguage: e.currentTarget.value as Settings['uiLanguage'] })} class="fit" data-testid="set-language" aria-label={t('App language')}>
           <option value="auto">{t('Like the device')}</option><option value="en">English</option><option value="de">Deutsch</option>
         </select></label>
     </div>
@@ -211,6 +211,8 @@
 
 <style>
   .num { width: 84px; text-align: right; }
+  /* as wide as its longest option, so the label beside it stays on one line */
+  .fit { width: auto; flex: none; }
   .stack-row { flex-direction: column; align-items: stretch; gap: 8px; }
   .block { display: block; }
   .src { word-break: break-all; }
