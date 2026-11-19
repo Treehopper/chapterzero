@@ -37,7 +37,9 @@ log(`wordfreq: ${freq.size} words`);
 // ---------------------------------------------------------------- 2. Wiktextract
 /** per part of speech: German translations and an English definition */
 interface PosSense { de: string[]; def?: string }
-interface Lemma { pos: Set<string>; mainPos?: string; senses: Map<string, PosSense>; forms: Set<string>; hasForms: Set<string> }
+/** number: the word's first entry is a number ("twenty") or an ordinal ("ninth": "The ordinal form of the number nine.");
+ *  not when that is a side meaning ("pith", "billiard") */
+interface Lemma { pos: Set<string>; mainPos?: string; senses: Map<string, PosSense>; forms: Set<string>; hasForms: Set<string>; number?: boolean }
 const lemmas = new Map<string, Lemma>();
 /** (form, lemma) → the parts of speech that form belongs to ("chafed" → verb, "chafes" → noun + verb) */
 const pairPos = new Map<string, Set<string>>();
@@ -112,6 +114,7 @@ for await (const line of rl) {
   const use = current.length ? current : real;
   let l = lemmas.get(word);
   if (!l) lemmas.set(word, (l = { pos: new Set(), senses: new Map(), forms: new Set(), hasForms: new Set() }));
+  if (l.pos.size === 0) l.number = e.pos === 'num' || use.some((s) => /^the ordinal (form|number) of\b/i.test(s.glosses?.[0] ?? ''));
   l.pos.add(e.pos);
   l.mainPos ??= e.pos;
   let ps = l.senses.get(e.pos);
@@ -227,7 +230,9 @@ for (const [lemma, r] of rank) {
     const s = l.senses.get(p);
     return s && (s.de.length || s.def) ? [[p, s.de, s.def ?? null] as OtherSense] : [];
   });
-  const row: WordRow = [lemma, r, mainFirst(l), m.de, m.def ?? null, cognate ? 1 : 0];
+  // flags: bit 0 cognate, bit 1 a number written as a word (cardinal or ordinal: never a card)
+  const number = !!l.number;
+  const row: WordRow = [lemma, r, mainFirst(l), m.de, m.def ?? null, (cognate ? 1 : 0) | (number ? 2 : 0)];
   if (others.length) row.push(others);
   wordRows.push(row);
   if (fd) freedictRows.push([lemma, fd]);

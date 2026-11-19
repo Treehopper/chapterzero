@@ -308,3 +308,18 @@ describe('book language (§6.5)', () => {
     expect((await make().books.analyse(buf)).otherLanguage).toBeUndefined();
   });
 });
+
+describe('numbers written as words', () => {
+  it('are never cards and never in any list, whole or in parts', async () => {
+    const e = (lemma: string, rank: number, pos: string[], number = false) => ({ lemma, rank, pos, tr: ['x'], trExtra: [], cognate: false, number });
+    const wl = new MemoryWordList([e('twenty-nine', 39409, ['num']), e('sixty', 1800, ['num', 'noun']), e('ninth', 4782, ['adj', 'noun'], true),
+      e('twenty', 1733, ['num', 'noun']), e('cudgel', 20000, ['noun'])], [['four', ''], ['the', ''], ['on', '']]);
+    const r = await analyseContent(buildContent({ sections: [[
+      `On the twenty-ninth day he walked sixty-four miles with a cudgel; twenty-nine men and the ninth one followed. ${filler(30)}`,
+    ]] }), wl);
+    const lemmas = r.lemmas.map((l) => l.lemma);
+    for (const n of ['twenty-nine', 'sixty', 'ninth', 'twenty', 'sixty-four', 'twenty-ninth']) expect(lemmas).not.toContain(n);
+    expect(lemmas).toContain('cudgel');
+    expect(r.common.map((c) => c.token)).toEqual(expect.arrayContaining(['twenty-nine', 'sixty-four', 'twenty-ninth', 'ninth']));
+  });
+});

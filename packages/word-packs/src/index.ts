@@ -161,7 +161,7 @@ export class IdbWordList implements WordList {
       lemmas.forEach((l, i) => {
         const w = ws[i];
         if (!w) return;
-        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, tr: w.tr, trExtra: ex[i]?.tr ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1,
+        out.set(l, { lemma: w.lemma, rank: w.rank, pos: w.pos, tr: w.tr, trExtra: ex[i]?.tr ?? [], def: w.def ?? undefined, cognate: (w.flags & 1) === 1, number: (w.flags & 2) === 2,
           ...(w.senses ? { senses: w.senses.map(([pos, tr, def]) => ({ pos, tr, def: def ?? undefined })) } : {}) });
       });
       return out;

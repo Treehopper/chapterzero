@@ -128,7 +128,15 @@ export async function analyseContent(
     for (const p of parts) partTokens.add(p);
   }
   const partResolved = await resolveAll(wordList, [...partTokens].filter((p) => !resolved.has(p)), lang);
-  const lookup = (t: string) => (resolved.has(t) ? resolved.get(t) : partResolved.get(t));
+  // numbers written as words ("twenty-nine", "ninth") are never cards: they count as common words
+  // (lists built before the number flag: their parts of speech say "num")
+  const listed = [...new Set([...resolved.values(), ...partResolved.values()].filter(Boolean))];
+  const numbers = new Set<string>();
+  for (let i = 0; i < listed.length; i += BATCH) {
+    for (const [l, e] of await wordList.entries(listed.slice(i, i + BATCH))) if (e.number || e.pos[0] === 'num') numbers.add(l);
+  }
+  const resolvedAt = (t: string) => (resolved.has(t) ? resolved.get(t) : partResolved.get(t));
+  const lookup = (t: string) => { const l = resolvedAt(t); return l && numbers.has(l) ? '' : l; };
   const formPos = await wordList.formPos(distinct.filter((t) => resolved.get(t)));
 
   // ---- aggregate per lemma (step 8)
@@ -147,7 +155,7 @@ export async function analyseContent(
     common.set(token, set);
   };
   for (const [t, st] of stats) {
-    const r = resolved.get(t);
+    const r = resolved.has(t) ? lookup(t) : undefined;
     if (r === '') { addCommon(t, st); continue; }
     if (r !== undefined) { add(r, true, t, st); continue; }
     const parts = hyphenParts.get(t);

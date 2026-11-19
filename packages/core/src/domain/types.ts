@@ -361,6 +361,8 @@ export interface WordEntry {
   def?: string;
   /** looks and means nearly the same in the target language */
   cognate: boolean;
+  /** a number written as a word ("twenty-nine", "ninth"): never a card */
+  number?: boolean;
   /** other parts of speech with their own translations / definition (pos[0]'s are tr and def) */
   senses?: { pos: string; tr: string[]; def?: string }[];
 }

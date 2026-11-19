@@ -793,7 +793,7 @@ Every listed word has a **rank** (1 = most common English lemma). Levels are ran
 
 | Pack (role) | Licence | Chunk content (JSON array of rows, sorted by first element) | IndexedDB store |
 |---|---|---|---|
-| `words-en-de` (`words`) | CC BY-SA | `[lemma, rank, pos[], tr[], def \| null, flags, others?]` — `tr` are the translations into the target language, `def` a definition in the source language; both belong to `pos[0]`; `others` = `[pos, tr[], def \| null][]` for the other parts of speech with their own translations or definition; archaic, obsolete and rare senses only when nothing else exists; `flags` bit 0 = cognate | `words`, key `lemma`, index `rank` |
+| `words-en-de` (`words`) | CC BY-SA | `[lemma, rank, pos[], tr[], def \| null, flags, others?]` — `tr` are the translations into the target language, `def` a definition in the source language; both belong to `pos[0]`; `others` = `[pos, tr[], def \| null][]` for the other parts of speech with their own translations or definition; archaic, obsolete and rare senses only when nothing else exists; `flags` bit 0 = cognate, bit 1 = a number written as a word (the first entry is a numeral or an ordinal: "twenty-nine", "ninth"), never a card or a word in any tab | `words`, key `lemma`, index `rank` |
 | `words-de-freedict` (`extra`) | GPL | `[lemma, tr[]]` — a second dictionary; only list lemmas whose Wiktionary `tr` is empty | `wordsExtra`, key `lemma` |
 | `forms-en` (`forms`) | CC BY-SA | `[form, lemma, pos?]` — `lemma` is `""` for forms of common words; `pos` when the form belongs to one part of speech only ("chafed" → verb, not "chafes") | `forms`, key `form` |
 

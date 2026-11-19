@@ -14,21 +14,21 @@
       ],
       "licence": "CC BY-SA 4.0 (Wiktionary contributors, via Wiktextract/kaikki.org)",
       "entryCount": 75810,
-      "bytes": 3375003,
+      "bytes": 3375120,
       "chunks": [
         {
           "file": "words-en-de.000.json.gz",
-          "bytes": 1714513,
+          "bytes": 1714547,
           "rows": 37905,
-          "sha256": "6b8afbf5434233f4403c57b802b9656f2a0e988d13fdc5ca952f5a33fd7f257b",
-          "sha256Json": "cd0c8cd0a2979343c2ac8215966dc74d4895e223dcd62ddf8d36bfce05521240"
+          "sha256": "6ae7915b671e1e1a1feb6e68e2e15c4a08490e1f27cb5fdb99c16b4445fd08b3",
+          "sha256Json": "2c8fe7c56271732572072e008973c1f1b50229784bc9442696e4056389650808"
         },
         {
           "file": "words-en-de.001.json.gz",
-          "bytes": 1660490,
+          "bytes": 1660573,
           "rows": 37905,
-          "sha256": "a8df9421eb552e4d2ed5774fa478845eef31d58f692606f3086e7bdf64410174",
-          "sha256Json": "7585fa2012a51dce37c8cca03d02105690bad3d53479bcb89576169c8a626cc8"
+          "sha256": "2283217f78b721b831d557156ed521d24423f3d706513cdc6b60b00f348cd000",
+          "sha256Json": "b895a8c37b635a42f713b6abda816a479aaef4809d3ef8c5be4d1bb0cb452ad4"
         }
       ]
     },
