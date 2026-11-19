@@ -8,8 +8,8 @@
 <div class="hints" aria-hidden="true" data-testid="hints">
   {#if !flipped && !used.has('tap')}<div class="h mid">◉ tap to flip</div>{/if}
   {#if flipped && grade}
-    {#if !used.has('left')}<div class="h left" data-testid="hint-left">✗<br />didn't<br />know</div>{/if}
-    {#if !used.has('right')}<div class="h right" data-testid="hint-right">✓<br />knew<br />it</div>{/if}
+    {#if !used.has('left')}<div class="h left" data-testid="hint-left"><span class="arrow">←</span><br />swipe<br /><span class="sub">didn't<br />know</span></div>{/if}
+    {#if !used.has('right')}<div class="h right" data-testid="hint-right"><span class="arrow">→</span><br />swipe<br /><span class="sub">knew<br />it</span></div>{/if}
   {/if}
   {#if extra && !used.has('up')}<div class="h bottom" data-testid="hint-up">↑ swipe up<br /><span class="sub">to edit the card or end the session</span></div>{/if}
 </div>
@@ -20,7 +20,12 @@
   .h.bottom { bottom: calc(var(--safe-bottom) + 40px); left: 0; right: 0; font-size: 16px; }
   .sub { font-size: 13px; font-weight: 600; }
   .h.mid { top: 70%; left: 0; right: 0; }
-  .h.left { left: 4px; top: 45%; font-size: 13px; }
-  .h.right { right: 4px; top: 45%; font-size: 13px; }
+  /* side hints drift the way the swipe goes, so they read as a motion, not as buttons */
+  .arrow { font-size: 26px; line-height: 1; }
+  .h.left { left: 6px; top: 45%; font-size: 14px; animation: drift-left 1.6s ease-in-out infinite; }
+  .h.right { right: 6px; top: 45%; font-size: 14px; animation: drift-right 1.6s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: 0.55; } }
+  @keyframes drift-left { 0%, 100% { transform: translateX(6px); opacity: 1; } 60% { transform: translateX(-4px); opacity: 0.5; } }
+  @keyframes drift-right { 0%, 100% { transform: translateX(-6px); opacity: 1; } 60% { transform: translateX(4px); opacity: 0.5; } }
+  @media (prefers-reduced-motion: reduce) { .h.left, .h.right { animation: pulse 1.6s ease-in-out infinite; } }
 </style>
