@@ -79,7 +79,8 @@
   const tick = setInterval(() => (now = Date.now()), 1000);
   const left = $derived(view?.endsAt ? Math.max(0, new Date(view.endsAt).getTime() - now) : undefined);
   const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
-  onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); });
+  document.documentElement.classList.add('on-stage');
+  onDestroy(() => { clearTimeout(undoTimer); clearInterval(tick); document.documentElement.classList.remove('on-stage'); });
 
   async function afterView(v: SessionView) {
     if (v.card) live = `${headword(v.card.lemma, v.card.pos, v.pair.source)}${v.phase === 'front' ? '' : ': ' + (v.card.translations.join(', ') || v.card.definition || '')}`;

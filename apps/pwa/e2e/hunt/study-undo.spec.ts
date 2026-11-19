@@ -193,3 +193,20 @@ test('Undo after "Mark as known" off: no Undo after a front swipe, from the pane
   await expect(page.getByTestId('toast')).toContainText(`“${w}” marked as known`);
   await expect(page.getByTestId('toast').getByRole('button', { name: 'Undo' })).toHaveCount(0);
 });
+
+test('the page behind the stage has the stage colour, also after Undo (no white Safari toolbar); back to normal after the session', async ({ page }) => {
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const before = await bg();
+  await startStudy(page);
+  const stage = await page.getByTestId('study-stage').evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await bg()).toBe(stage);
+  await swipeUp(page);
+  await tap(page.getByTestId('panel-known'));
+  await tap(page.getByTestId('toast').getByRole('button', { name: 'Undo' }));
+  await expect(page.getByTestId('card-word')).toBeVisible();
+  expect(await bg()).toBe(stage);
+  await page.getByTestId('grab').tap();
+  await page.getByTestId('finish').tap();
+  await expect(page.getByTestId('statistics')).toBeVisible();
+  expect(await bg()).toBe(before);
+});
