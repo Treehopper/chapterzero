@@ -95,7 +95,7 @@
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
         {#if active}{t('Continue · {done} / {total}', { done: active.progress.done, total: active.progress.total })}
         {:else if !p.ready}{t('Get ready for reading')}
-        {:else}{t('Review')}{p.due ? ` · ${t('{n} due', { n: p.due })}` : ''}{/if}</button>
+        {:else}{t('Review')}{/if}</button>
       {#if readable}<button class="btn" onclick={() => go('read', bookId)} data-testid="read">{t('Read')}</button>{/if}
       <button class="btn" onclick={() => go('words', bookId)}>{t('Words')}</button>
     </div>
