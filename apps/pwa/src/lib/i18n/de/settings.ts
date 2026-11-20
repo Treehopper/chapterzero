@@ -42,7 +42,6 @@ export const settings: Record<string, string> = {
   'Achievements and streaks': 'Erfolge und Serien',
   'Pop-ups, the trophy, streaks and medals': 'Einblendungen, Pokal, Serien und Medaillen',
   'Undo button after swiping': 'Rückgängig-Knopf nach dem Wischen',
-  'Without it, a swipe can only be undone with the Z key': 'Ohne ihn lässt sich ein Wischen nur mit der Taste Z rückgängig machen',
   'Undo button after “Mark as known”': 'Rückgängig-Knopf nach „Als bekannt markieren“',
   'Box level on the card back': 'Fach auf der Kartenrückseite',
   'Each card moves through 8 boxes. When you know it, it moves up a box and comes back after a longer break; when you don’t, it starts again at the first box. The dots show which box the card is in.':

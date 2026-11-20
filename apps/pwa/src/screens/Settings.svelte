@@ -125,8 +125,7 @@
       <label class="list-row"><span class="spacer">{t('Achievements and streaks')}
         <span class="small muted block">{t('Pop-ups, the trophy, streaks and medals')}</span></span>
         <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
-      <label class="list-row"><span class="spacer">{t('Undo button after swiping')}
-        <span class="small muted block">{t('Without it, a swipe can only be undone with the Z key')}</span></span>
+      <label class="list-row"><span class="spacer">{t('Undo button after swiping')}</span>
         <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
       <label class="list-row"><span class="spacer">{t('Undo button after “Mark as known”')}</span>
         <input type="checkbox" checked={s.undoAfterKnown} onchange={(e) => save({ undoAfterKnown: e.currentTarget.checked })} data-testid="set-undo-known" /></label>
