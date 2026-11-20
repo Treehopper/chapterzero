@@ -92,4 +92,12 @@ export const common: Record<string, string> = {
   'This file is not a valid EPUB (it could not be unzipped).': 'Diese Datei ist kein gültiges EPUB (sie ließ sich nicht entpacken).',
   'This file is not a valid EPUB (META-INF/container.xml is missing).': 'Diese Datei ist kein gültiges EPUB (META-INF/container.xml fehlt).',
   'Type a word': 'Gib ein Wort ein',
+  'Sentence from the book': 'Satz aus dem Buch',
+  'Front and back': 'Vorder- und Rückseite',
+  'Back only': 'Nur Rückseite',
+  'Off': 'Aus',
+  'Spoiler alert': 'Spoiler-Warnung',
+  'Cards show the sentence from the book in which the word occurs. It can give away the story, such as what happens to a character.':
+    'Die Karten zeigen den Satz aus dem Buch, in dem das Wort vorkommt. Er kann die Handlung verraten, etwa was mit einer Figur geschieht.',
+  'You can change this later in Settings.': 'Du kannst das später in den Einstellungen ändern.',
 };

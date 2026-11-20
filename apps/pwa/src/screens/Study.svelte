@@ -363,7 +363,7 @@
           {#snippet front()}
             <div class="lvl small muted">{card.listLevel ? t('Level {level}', { level: card.listLevel }) : t('Added by hand')}</div>
             <div class="word" data-testid="card-word" {...src}>{headword(card.lemma, card.pos, src.lang)}</div>
-            {#if card.example}
+            {#if card.example && (settings?.bookSentence ?? 'both') === 'both'}
               <p class="ex" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
             <div class="foot small muted">{flipped || hintsOn ? '' : t('tap to flip')}</div>
@@ -379,7 +379,7 @@
               {:else}<span class="en">{src.lang.toUpperCase()}</span> {card.definition}{/if}
             </div>
             {#if card.translations.length && card.definition}<p class="def" {...src}>{card.definition}</p>{/if}
-            {#if card.example}
+            {#if card.example && (settings?.bookSentence ?? 'both') !== 'off'}
               <p class="ex small" {...src}>{#each parts(card.example, [...card.forms, card.lemma]) as p, i (i)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
             {/if}
             {#if settings?.showLookupLinks ?? true}<div class="links" data-testid="card-links"><LookupLinks links={view!.lookupLinks} /></div>

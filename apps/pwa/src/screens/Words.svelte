@@ -24,6 +24,8 @@
   let counts = $state<Record<string, number>>({});
   let chapters = $state<ChapterProgress[]>([]);
   let limit = $state(100);
+  /** the book's sentences can spoil the story (setting) */
+  let sentences = $state(true);
 
   // add sheet
   let adding = $state<{ editable: boolean; row?: WordRow }>();
@@ -64,6 +66,7 @@
   }
   onMount(async () => {
     try {
+      void api.settings.get().then((s) => (sentences = s.bookSentence !== 'off'));
       chapters = (await api.books.chapters(bookId)).filter((c) => c.included);
       await load();
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
@@ -201,7 +204,7 @@
             {#if r.occurrences}<span class="muted small">×{r.occurrences}</span>{/if}
             {#if r.chapterTitle}<span class="muted small ch">{r.chapterTitle}</span>{/if}</span>
           {#if r.translations?.length || r.definition}<span class="small" {...textAttrs(r.translations?.length ? ui.pair.target : ui.pair.source)}>{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
-          {#if r.example}<span class="small muted ex">“{r.example}”</span>{/if}
+          {#if r.example && sentences}<span class="small muted ex">“{r.example}”</span>{/if}
         </span>
       </button>
     {:else}
@@ -220,7 +223,7 @@
         <input type="text" bind:value={typed} oninput={() => suggest(typed)} placeholder={t('Type a word')} aria-label={t('Word')} autocapitalize="off" autocomplete="off" />
       {:else}<div class="big">{typed}</div>{/if}
       {#if status}<div class="small muted" data-testid="suggest-status">{suggestion?.lemma && suggestion.lemma !== typed.trim().toLowerCase() ? `→ ${suggestion.lemma} · ` : ''}{status}</div>{/if}
-      {#if suggestion?.inBook?.example || adding.row?.example}<div class="small ex">“{suggestion?.inBook?.example ?? adding.row?.example}”</div>{/if}
+      {#if sentences && (suggestion?.inBook?.example || adding.row?.example)}<div class="small ex">“{suggestion?.inBook?.example ?? adding.row?.example}”</div>{/if}
       {#if suggestion?.listed?.definition}<div class="small muted">{suggestion.listed.definition}</div>{/if}
       <label class="stack small">{t('Translation')}
         <input type="text" bind:value={translation} placeholder={t('e.g. Lasergewehr')} aria-label={t('Translation')} />

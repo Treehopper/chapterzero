@@ -335,6 +335,9 @@ export interface Settings {
   showBoxLevel: boolean;
   /** the lookup links on the card back (C17) */
   showLookupLinks: boolean;
+  /** the book's sentence with the word: on both sides of the card, on the back only, or nowhere (it can spoil the story;
+   *  'off' also hides it on the Words screen) */
+  bookSentence: 'both' | 'back' | 'off';
   /** the app's own language; 'auto' follows the device (English unless it is German) */
   uiLanguage: 'auto' | 'en' | 'de';
   lookupProviders: LookupProvider[];
@@ -348,6 +351,8 @@ export interface AppState {
   levelHintDismissed?: boolean;
   /** the one-time question "grade without flipping?" was answered */
   frontSwipeAsked?: boolean;
+  /** the spoiler notice about the book's sentences was shown when a book was first got ready */
+  spoilerWarned?: boolean;
   lastExportAt?: string;
 }
 

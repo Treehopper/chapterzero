@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
   undoAfterKnown: true,
   showBoxLevel: false,
   showLookupLinks: true,
+  bookSentence: 'both',
   uiLanguage: 'auto',
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,

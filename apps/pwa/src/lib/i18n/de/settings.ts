@@ -97,4 +97,10 @@ export const settings: Record<string, string> = {
   'word frequencies from': 'Worthäufigkeiten aus',
   'by Robyn Speer (CC BY-SA 4.0), used to rank the lists.': 'von Robyn Speer (CC BY-SA 4.0), für die Reihenfolge der Listen.',
   'Spaced repetition inspired by jMemorize. See LICENSES.md for all attributions.': 'Wiederholung in Abständen nach dem Vorbild von jMemorize. Alle Quellenangaben stehen in LICENSES.md.',
+  'Sentence from the book': 'Satz aus dem Buch',
+  'Front and back': 'Vorder- und Rückseite',
+  'Back only': 'Nur Rückseite',
+  'Off': 'Aus',
+  'The sentence in which the word occurs in the book. It helps you remember the word, but it can give away the story, such as what happens to a character. Off also hides it on the Words screen.':
+    'Der Satz, in dem das Wort im Buch vorkommt. Er hilft dir, dir das Wort zu merken, kann aber die Handlung verraten, etwa was mit einer Figur geschieht. „Aus“ blendet ihn auch bei den Wörtern aus.',
 };

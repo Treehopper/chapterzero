@@ -117,6 +117,11 @@
         <select id="setting-4" value={s.frontSwipe} onchange={(e) => save({ frontSwipe: e.currentTarget.value as Settings['frontSwipe'] })} data-testid="set-frontswipe" aria-label={t('Swipe right before flipping')}>
           <option value="ask">{t('Ask')}</option><option value="known">{t('Mark as known')}</option><option value="grade">{t('Count as “knew it”')}</option><option value="off">{t('Not allowed')}</option>
         </select></label>
+      <label class="list-row stack-row" for="setting-sentence"><span class="spacer">{t('Sentence from the book')}
+        <Info text={t('The sentence in which the word occurs in the book. It helps you remember the word, but it can give away the story, such as what happens to a character. Off also hides it on the Words screen.')} /></span>
+        <select id="setting-sentence" value={s.bookSentence} onchange={(e) => save({ bookSentence: e.currentTarget.value as Settings['bookSentence'] })} data-testid="set-sentence" aria-label={t('Sentence from the book')}>
+          <option value="both">{t('Front and back')}</option><option value="back">{t('Back only')}</option><option value="off">{t('Off')}</option>
+        </select></label>
       <label class="list-row" for="setting-5"><span class="spacer">{t('Vocabulary check: flip before answering')}
         <Info text={t('Only for the vocabulary check. On: you see the translation before you answer, which keeps the result honest. Off: you can swipe a word straight away.')} /></span>
         <input id="setting-5" type="checkbox" checked={s.requireFlipBeforeGrade} onchange={(e) => save({ requireFlipBeforeGrade: e.currentTarget.checked })} /></label>
