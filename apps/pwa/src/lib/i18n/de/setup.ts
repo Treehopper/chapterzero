@@ -115,7 +115,6 @@ export const setup: Record<string, string> = {
     'Wähle ein EPUB aus der Dateien-App. VocabFirst findet die seltenen Wörter darin und macht Kapitel für Kapitel Karten daraus, damit du ohne Unterbrechung lesen kannst.',
   'Open {title}': '{title} öffnen',
   'Ready to read': 'Bereit zum Lesen',
-  '{n} due': '{n} fällig',
   'Level {level}': 'Stufe {level}',
   '{n} cards': '{n} Karten',
   Review: 'Wiederholen',

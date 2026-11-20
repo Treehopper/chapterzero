@@ -131,7 +131,6 @@
               <span class="small">{b.learningChapter.displayTitle} · {pct(b.learningChapter.coverage)}</span>
             {:else if b.ready}<span class="small good">{t('Ready to read')}</span>{/if}
             <span class="row small">
-              {#if b.due}<span class="pill accent" data-testid="due-badge">{t('{n} due', { n: fmt(b.due) })}</span>{/if}
               <span class="pill">{t('Level {level}', { level: b.level })}</span><span class="pill">{t('{n} cards', { n: fmt(b.cards) })}</span>
             </span>
           </div>
