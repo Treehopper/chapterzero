@@ -19,6 +19,7 @@ export const screens: Record<string, string> = {
   'Continue · {done} / {total}': 'Weiter · {done} / {total}',
   'Get ready for reading': 'Fürs Lesen vorbereiten',
   'Review': 'Wiederholen',
+  '{n} due': '{n} fällig',
   'Read': 'Lesen',
   'Words': 'Wörter',
   'Chapters': 'Kapitel',
