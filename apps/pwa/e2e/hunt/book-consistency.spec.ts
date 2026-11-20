@@ -52,7 +52,7 @@ test.describe('numbers agree across screens', () => {
 
   test('chapter sheet card totals equal the Words rows filtered by that chapter', async ({ page }) => {
     await importAndOpen(page);
-    const rows = page.getByTestId('chapter-row').filter({ hasText: 'to target' });
+    const rows = page.getByTestId('chapter-row').filter({ hasText: '% known' });
     const n = await rows.count();
     expect(n).toBe(4);
     const totals: { title: string; cards: number }[] = [];
@@ -77,7 +77,7 @@ test.describe('numbers agree across screens', () => {
     const bookWords = num(eta, /([\d,]+) words/);
     const rowMin = (await page.getByTestId('chapter-eta').allInnerTexts()).reduce((n, t) => n + minutes(t), 0);
     expect(rowMin).toBe(bookMin);
-    const rows = page.getByTestId('chapter-row').filter({ hasText: 'to target' });
+    const rows = page.getByTestId('chapter-row').filter({ hasText: '% known' });
     let sheetWords = 0, sheetMin = 0;
     for (let i = 0; i < await rows.count(); i++) {
       await tap(rows.nth(i));

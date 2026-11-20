@@ -23,8 +23,8 @@ test.describe('ready state outside a session', () => {
     await tap(page.getByRole('button', { name: 'Re-filter' }));
     await expect(page.getByTestId('toast')).toContainText(/^0 cards/);
     await expect(page.getByTestId('book-coverage')).toHaveText('no unknown words left');
-    await expect(page.getByTestId('chapter-row').filter({ hasText: 'to target' })).toHaveCount(4);
-    for (const r of await page.getByTestId('chapter-row').filter({ hasText: 'to target' }).all()) await expect(r).toContainText('Ready to read');
+    await expect(page.getByTestId('chapter-row').filter({ hasText: '% known' })).toHaveCount(4);
+    for (const r of await page.getByTestId('chapter-row').filter({ hasText: '% known' }).all()) await expect(r).toContainText('Ready to read');
     // the overview offers a review because nothing is left to learn …
     await expect(page.getByTestId('study-now')).toHaveText(/^Review/);
     // … so the book is ready (README §7.5: finishedAt the first time all included chapters are ready) and the tile says so too
@@ -43,9 +43,9 @@ test.describe('ready state outside a session', () => {
     await expect(page.getByText('Coverage target').locator('..')).toContainText('95.0 %');
     await tap(page.getByRole('button', { name: 'Back', exact: true }));
     await tap(page.getByTestId('book-tile').getByRole('button', { name: /Open/ }));
-    await expect(page.getByTestId('bars-note')).toContainText('95.0 % target');
+    await expect(page.getByTestId('bars-note')).toContainText('ready to read at 95.0 %');
     await expect(harbourOne(page)).toContainText('Ready to read · 95.0 % known');
-    await expect(harbourOne(page).getByTestId('chapter-to-target')).toHaveText('100 % to target');
+    await expect(harbourOne(page).getByTestId('chapter-to-target')).toHaveText('');
     await expect(harbourOne(page).getByTestId('chapter-eta')).toHaveCount(0);
     await tap(harbourOne(page));
     await expect(page.getByTestId('study-chapter')).toHaveText('Review this chapter');
@@ -82,7 +82,7 @@ test.describe('ready state outside a session', () => {
     await tap(page.getByRole('button', { name: 'Back to the book' }));
     await expect(page.getByTestId('book-coverage')).toBeVisible();
     await expect(harbourOne(page)).toContainText('Ready to read · 100.0 % known');
-    await expect(harbourOne(page).getByTestId('chapter-to-target')).toHaveText('100 % to target');
+    await expect(harbourOne(page).getByTestId('chapter-to-target')).toHaveText('');
     await expect(page.getByText(/rare words\./)).toHaveText("You know 9 of this book's 35 rare words.");
     const after = Number((await ringLabel(page).innerText()).replace(' %', ''));
     expect(after).toBeGreaterThan(before);

@@ -70,7 +70,7 @@ test.describe('import preview', () => {
     await tap(page.getByTestId('create-cards'));
     await expect(page.getByTestId('book-coverage')).toBeVisible();
     await expect(page.locator('.hero .ring strong')).toHaveText(`${cov} %`);
-    await expect(page.getByTestId('chapter-row').filter({ hasText: 'to target' })).toHaveCount(1);
+    await expect(page.getByTestId('chapter-row').filter({ hasText: '% known' })).toHaveCount(1);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Not included' })).toHaveCount(6);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Learning' })).toContainText('About the Author');
     await expect(page.getByTestId('book-eta')).toContainText('1 words');

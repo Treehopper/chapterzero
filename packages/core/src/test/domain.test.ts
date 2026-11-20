@@ -7,7 +7,7 @@ import { lookupLinks, isValidTemplate, DEFAULT_LOOKUP_PROVIDERS } from '../domai
 import { headword, resolveCardContent, senseOptions } from '../domain/cardContent.ts';
 import { nearestLevels } from '../services/calibrationService.ts';
 import { EMPTY_STATS } from '../domain/settings.ts';
-import { chapterToTarget } from '../domain/coverage.ts';
+import { chapterWords } from '../domain/coverage.ts';
 import { DEFAULT_PACE, estimateToReady, paceFrom } from '../domain/estimate.ts';
 import { SeededRandom } from '../testing/memory.ts';
 import type { Card } from '../domain/types.ts';
@@ -94,11 +94,12 @@ describe('time to ready (E7)', () => {
 describe('chapter bars (I2)', () => {
   const ch = { index: 0, wordTokens: 100 };
   const two = (l1: number, l2: number) => [card({ occurrencesByChapter: { 0: 5 }, level: l1 }), card({ id: 'b:y', occurrencesByChapter: { 0: 5 }, level: l2 })];
-  it('runs from "no card known" (0) to the coverage target (1)', () => {
-    expect(chapterToTarget(ch, two(0, 0), 0.98)).toBe(0);                // 90 % = floor
-    expect(chapterToTarget(ch, two(2, 0), 0.98)).toBeCloseTo(0.625);     // 95 % of the way 90 → 98
-    expect(chapterToTarget(ch, two(2, 2), 0.98)).toBe(1);
-    expect(chapterToTarget(ch, [card({ occurrencesByChapter: { 0: 1 } })], 0.98)).toBe(1); // floor 99 % ≥ target
+  it('counts the words still to learn and the known ones', () => {
+    expect(chapterWords(ch, two(0, 0), 0.98)).toEqual({ done: 0, toGo: 2, share: 0 });     // 90 %: both needed
+    expect(chapterWords(ch, two(2, 0), 0.98)).toEqual({ done: 1, toGo: 1, share: 0.5 });   // 95 %
+    expect(chapterWords(ch, two(2, 2), 0.98)).toEqual({ done: 2, toGo: 0, share: 1 });
+    expect(chapterWords(ch, two(0, 0), 0.95).toGo).toBe(1);                                // one is enough for 95 %
+    expect(chapterWords(ch, [card({ occurrencesByChapter: { 0: 1 } })], 0.98).share).toBe(1); // 99 % already
   });
 });
 

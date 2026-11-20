@@ -23,14 +23,15 @@ export const screens: Record<string, string> = {
   'Read': 'Lesen',
   'Words': 'Wörter',
   'Chapters': 'Kapitel',
-  '{pct} to target': '{pct} bis zum Ziel',
+  '{n} word to go': 'noch {n} Wort',
+  '{n} words to go': 'noch {n} Wörter',
   'Learning': 'Wird gelernt',
   'Upcoming': 'Demnächst',
   'Not included': 'Nicht enthalten',
   '{pct} known': '{pct} bekannt',
   '{n} new': '{n} neu',
-  "Bars show how far each chapter is on the way to your {target} target: full = ready to read. “Known” is the estimated share of the chapter's words you know; words not in the lists count as known.":
-    'Die Balken zeigen, wie weit jedes Kapitel auf dem Weg zu deinem Ziel von {target} ist: voll = bereit zum Lesen. „Bekannt“ ist der geschätzte Anteil der Wörter des Kapitels, die du kennst; Wörter, die nicht in den Listen stehen, gelten als bekannt.',
+  "“Known” is the estimated share of the chapter's words you know; words not in the lists count as known. A chapter is ready to read at {target}. The bar and “words to go” count the words of the chapter you have learned and the ones still needed for that.":
+    '„Bekannt“ ist der geschätzte Anteil der Wörter des Kapitels, die du kennst; Wörter, die nicht in den Listen stehen, gelten als bekannt. Ab {target} ist ein Kapitel bereit zum Lesen. Balken und „noch … Wörter“ zählen die Wörter des Kapitels, die du gelernt hast, und die, die dafür noch fehlen.',
   'Boxes': 'Fächer',
   'Today': 'Heute',
   '{n} day streak': 'Tagesserie: {n}',

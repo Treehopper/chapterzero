@@ -143,8 +143,10 @@ export interface ChapterProgress {
   index: number; workIndex: number; title: string; displayTitle: string;
   included: boolean; wordTokens: number;
   coverage: number;
-  /** 0–1 of the way from "no card of this chapter known" to the coverage target; 1 = ready */
+  /** the bar, 0–1: known cards of this chapter / (known + still to learn for the target); 1 = ready */
   toTarget: number;
+  /** cards of this chapter still to learn until it reaches the coverage target on its own; 0 = ready */
+  wordsToGo: number;
   unknownEvery: number | null;
   state: 'ready' | 'learning' | 'upcoming' | 'excluded';
   cards: { unseen: number; learning: number; learned: number };

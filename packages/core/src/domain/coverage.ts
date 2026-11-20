@@ -21,13 +21,26 @@ export function bookCoverage(chapters: Chapter[], cards: Card[]): number {
   return Math.max(0, 1 - unknown / tokens);
 }
 
-/** How far a chapter is from its floor (every active card unknown) to the target, 0–1. */
-export function chapterToTarget(ch: Pick<Chapter, 'index' | 'wordTokens'>, cards: Card[], target: number): number {
-  if (ch.wordTokens === 0) return 1;
-  const all = cards.filter((c) => c.status === 'active').reduce((n, c) => n + (c.occurrencesByChapter[ch.index] ?? 0), 0);
-  const floor = Math.max(0, 1 - all / ch.wordTokens);
-  if (floor >= target) return 1;
-  return Math.max(0, Math.min(1, (chapterCoverage(ch, cards) - floor) / (target - floor)));
+/**
+ * A chapter's bar (I2), in words: `toGo` unknown cards must still be learned to reach the target, taken in the order
+ * study brings them (cards in learning first, then new ones by first occurrence); `done` of its cards are known.
+ * `share` = done / (done + toGo), 1 when nothing is left.
+ */
+export function chapterWords(ch: Pick<Chapter, 'index' | 'wordTokens'>, cards: Card[], target: number): { done: number; toGo: number; share: number } {
+  const occ = (c: Card) => c.occurrencesByChapter[ch.index] ?? 0;
+  const done = cards.filter((c) => occ(c) > 0 && (c.status === 'known' || (c.status === 'active' && c.level >= 2))).length;
+  const isNew = (c: Card) => c.stats.correct + c.stats.wrong === 0;
+  const unknown = cards.filter((c) => isUnknown(c) && occ(c) > 0)
+    .sort((a, b) => Number(isNew(a)) - Number(isNew(b)) || a.firstPosition - b.firstPosition);
+  const allowed = (1 - target) * ch.wordTokens;
+  let left = unknown.reduce((n, c) => n + occ(c), 0);
+  let toGo = 0;
+  for (const c of unknown) {
+    if (left <= allowed + 1e-9) break;
+    toGo++;
+    left -= occ(c);
+  }
+  return { done, toGo, share: toGo === 0 ? 1 : done / (done + toGo) };
 }
 
 export const unknownEvery = (coverage: number): number | null => (coverage >= 1 ? null : Math.round(1 / (1 - coverage)));
@@ -51,9 +64,11 @@ export function chapterProgress(book: Book, cards: Card[], lemmas: BookLemma[], 
     else if (coverage >= target - 1e-12) state = 'ready';
     else if (!learningFound) { state = 'learning'; learningFound = true; }
     else state = 'upcoming';
+    const words = chapterWords(ch, cards, target);
     return {
       index: ch.index, workIndex: ch.workIndex, title: ch.title, displayTitle: displayTitle(book, ch),
-      included: ch.included, wordTokens: ch.wordTokens, coverage, toTarget: coverage >= target - 1e-12 ? 1 : chapterToTarget(ch, cards, target), unknownEvery: unknownEvery(coverage), state,
+      included: ch.included, wordTokens: ch.wordTokens, coverage, unknownEvery: unknownEvery(coverage), state,
+      toTarget: state === 'ready' ? 1 : words.share, wordsToGo: state === 'ready' ? 0 : words.toGo,
       cards: {
         unseen: mine.filter(isUnseen).length,
         learning: mine.filter((c) => !isUnseen(c) && c.level < 2).length,

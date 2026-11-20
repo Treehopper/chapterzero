@@ -57,9 +57,9 @@ test.describe('import (B1–B15, B7)', () => {
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Not included' })).toHaveCount(5);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Learning' })).toHaveCount(1);
     const learning = page.getByTestId('chapter-row').filter({ hasText: 'Learning' });
-    await expect(learning).toContainText(/\d+\.\d % known/);            // coverage in the line, bar + number = way to the target
-    await expect(learning.getByTestId('chapter-to-target')).toHaveText(/^\d+ % to target$/);
-    await expect(page.getByTestId('bars-note')).toContainText('full = ready to read');
+    await expect(learning).toContainText(/\d+\.\d % known/);            // coverage in the line, bar + number = words to the target
+    await expect(learning.getByTestId('chapter-to-target')).toHaveText(/^\d+ words? to go$/);
+    await expect(page.getByTestId('bars-note')).toContainText('ready to read at');
     // E7: time to ready, for the book and the learning chapter
     await expect(page.getByTestId('book-eta')).toContainText(/≈ \d+ (min|h).* of practice until ready to read/);
     await expect(learning.getByTestId('chapter-eta')).toHaveText(/^≈ \d+/);
