@@ -8,6 +8,7 @@
   import { download } from '../lib/platform';
   import { fmt, pct, toast, ui } from '../lib/ui.svelte';
   import { languageName, setUiLanguage, t } from '../lib/i18n/index.svelte';
+  import { applyTheme } from '../lib/theme';
   import Info from '../components/Info.svelte';
 
   let s = $state<Settings>();
@@ -25,7 +26,7 @@
   });
 
   async function save(patch: Partial<Settings>) {
-    try { s = await api.settings.update(patch); ui.achievements = s.achievementPopups; setUiLanguage(s.uiLanguage); } catch (e) { toast(t(e instanceof Error ? e.message : String(e))); }
+    try { s = await api.settings.update(patch); ui.achievements = s.achievementPopups; setUiLanguage(s.uiLanguage); applyTheme(s.theme); } catch (e) { toast(t(e instanceof Error ? e.message : String(e))); }
   }
   const providers = $derived([...(s?.lookupProviders ?? [])].sort((a, b) => a.order - b.order));
   function setProviders(list: LookupProvider[]) { void save({ lookupProviders: list.map((p, i) => ({ ...p, order: i + 1 })) }); }
@@ -59,6 +60,7 @@
       const restored = await api.settings.get();
       ui.achievements = restored.achievementPopups;
       setUiLanguage(restored.uiLanguage);
+      applyTheme(restored.theme);
       toast(t('Backup restored'));
       go('library');
     } catch (err) { toast(err instanceof Error ? t(err.message) : t('Not a valid backup file')); }
@@ -86,6 +88,16 @@
       <label class="list-row"><span class="spacer">{t('App language')}</span>
         <select value={s.uiLanguage} onchange={(e) => save({ uiLanguage: e.currentTarget.value as Settings['uiLanguage'] })} class="fit" data-testid="set-language" aria-label={t('App language')}>
           <option value="auto">{t('Like the device')}</option><option value="en">English</option><option value="de">Deutsch</option>
+        </select></label>
+    </div>
+
+    <div class="section-title">{t('Appearance')}</div>
+    <div class="list">
+      <label class="list-row"><span class="spacer">{t('Theme')}</span>
+        <select value={s.theme} onchange={(e) => save({ theme: e.currentTarget.value as Settings['theme'] })} class="fit" data-testid="set-theme" aria-label={t('Theme')}>
+          <option value="auto">{t('Like the device')}</option>
+          <optgroup label={t('Light')}><option value="light">{t('Light')}</option><option value="paper">{t('Paper')}</option><option value="mist">{t('Mist')}</option></optgroup>
+          <optgroup label={t('Dark')}><option value="dark">{t('Dark')}</option><option value="black">{t('Black')}</option></optgroup>
         </select></label>
     </div>
 

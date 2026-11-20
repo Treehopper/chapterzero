@@ -103,4 +103,11 @@ export const settings: Record<string, string> = {
   'Off': 'Aus',
   'The sentence in which the word occurs in the book. It helps you remember the word, but it can give away the story, such as what happens to a character. Off also hides it on the Words screen.':
     'Der Satz, in dem das Wort im Buch vorkommt. Er hilft dir, dir das Wort zu merken, kann aber die Handlung verraten, etwa was mit einer Figur geschieht. „Aus“ blendet ihn auch bei den Wörtern aus.',
+  'Appearance': 'Darstellung',
+  'Theme': 'Farbschema',
+  'Light': 'Hell',
+  'Paper': 'Papier',
+  'Mist': 'Nebel',
+  'Dark': 'Dunkel',
+  'Black': 'Schwarz',
 };

@@ -21,24 +21,79 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
   --serif: 'New York', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-  color-scheme: light dark;
+  --toast-accent: var(--accent);
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101014;
-    --surface: #1b1b21;
-    --surface-2: #24242c;
-    --text: #f1f0ee;
-    --muted: #a0a0aa;
-    --line: #2e2e37;
-    --accent: #8b85ff;
-    --accent-ink: #0f0f14;
-    --good: #3fbf78;
-    --bad: #ff6b6b;
-    --card: #22222a;
-    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    --stage: #0b0b0e;
-  }
+/* Themes (Settings): index.html and lib/theme.ts set data-theme; 'auto' resolves to light or dark */
+:root[data-theme="paper"] {
+  /* parchment: warm paper, ink-brown text, book type */
+  --bg: #f1e7d0;
+  --surface: #faf3e3;
+  --surface-2: #e8dbbd;
+  --text: #3a2e20;
+  --muted: #7a6a52;
+  --line: #dbcaa6;
+  --accent: #8c3f22;
+  --accent-ink: #fff8ea;
+  --good: #4d7a32;
+  --bad: #b03a2a;
+  --warn: #a26a14;
+  --card: #fbf4e2;
+  --card-shadow: 0 10px 30px rgba(80, 55, 20, 0.16), 0 2px 6px rgba(80, 55, 20, 0.1);
+  --stage: #e6d6b2;
+  --font: var(--serif);
+}
+:root[data-theme="mist"] {
+  /* cool light: blue-grey with teal */
+  --bg: #edf1f4;
+  --surface: #ffffff;
+  --surface-2: #e1e8ed;
+  --text: #16202a;
+  --muted: #5d6a76;
+  --line: #d3dce3;
+  --accent: #0f7285;
+  --accent-ink: #ffffff;
+  --good: #16803c;
+  --bad: #cf3f3f;
+  --card: #ffffff;
+  --card-shadow: 0 10px 30px rgba(20, 40, 60, 0.12), 0 2px 6px rgba(20, 40, 60, 0.08);
+  --stage: #dce4ea;
+}
+:root[data-theme="dark"] {
+  --bg: #101014;
+  --surface: #1b1b21;
+  --surface-2: #24242c;
+  --text: #f1f0ee;
+  --muted: #a0a0aa;
+  --line: #2e2e37;
+  --accent: #8b85ff;
+  --accent-ink: #0f0f14;
+  --good: #3fbf78;
+  --bad: #ff6b6b;
+  --card: #22222a;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --stage: #0b0b0e;
+  --toast-accent: #4f46e5;
+  color-scheme: dark;
+}
+:root[data-theme="black"] {
+  /* true black for OLED screens, amber accent */
+  --bg: #000000;
+  --surface: #121214;
+  --surface-2: #1d1d20;
+  --text: #f4f4f6;
+  --muted: #9c9ca4;
+  --line: #262629;
+  --accent: #ffb23f;
+  --accent-ink: #1a1000;
+  --good: #36c76a;
+  --bad: #ff5a4f;
+  --warn: #e0a030;
+  --card: #151517;
+  --card-shadow: 0 0 0 1px #262629;
+  --stage: #000000;
+  --toast-accent: #9a5a00;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font);
@@ -94,6 +149,5 @@ input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent);
 .toast-host.in-stage { position: absolute; }
 .toast { pointer-events: auto; background: var(--text); color: var(--bg); border-radius: 999px; padding: 10px 16px; font-weight: 600; font-size: 15px;
   display: flex; gap: 12px; align-items: center; box-shadow: var(--card-shadow); animation: sheet-in 0.2s ease-out; }
-.toast button { background: none; border: none; color: var(--accent); font-weight: 700; padding: 4px; min-height: 32px; }
-@media (prefers-color-scheme: dark) { .toast button { color: #4f46e5; } }
+.toast button { background: none; border: none; color: var(--toast-accent); font-weight: 700; padding: 4px; min-height: 32px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }

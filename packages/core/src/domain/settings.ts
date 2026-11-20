@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showLookupLinks: true,
   bookSentence: 'both',
   uiLanguage: 'auto',
+  theme: 'auto',
   lookupProviders: DEFAULT_LOOKUP_PROVIDERS,
   scheduler: DEFAULT_SCHEDULER,
 };

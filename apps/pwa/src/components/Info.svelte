@@ -17,6 +17,6 @@
     vertical-align: 1px; cursor: pointer; position: relative; }
   /* a finger-sized target around the small circle */
   .i::after { content: ''; position: absolute; inset: -12px; }
-  .i.open { background: var(--accent); border-color: var(--accent); color: white; }
+  .i.open { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .details { display: block; margin-top: 6px; color: var(--muted); font-weight: 400; line-height: 1.4; white-space: normal; }
 </style>

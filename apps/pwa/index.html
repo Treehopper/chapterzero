@@ -16,6 +16,15 @@
     <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (prefers-color-scheme: dark)" href="/splash/splash-393x852-dark.png" />
     <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (prefers-color-scheme: light)" href="/splash/splash-430x932-light.png" />
     <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (prefers-color-scheme: dark)" href="/splash/splash-430x932-dark.png" />
+    <script>
+      // the colour theme before the first paint (lib/theme.ts keeps it up to date)
+      (function () {
+        var t = 'auto';
+        try { t = localStorage.getItem('vf:theme') || 'auto'; } catch (e) {}
+        if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
     <title>VocabFirst</title>
   </head>
   <body>

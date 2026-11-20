@@ -5,6 +5,7 @@
   import { isStandalone } from './lib/platform';
   import { ui } from './lib/ui.svelte';
   import { setUiLanguage, t } from './lib/i18n/index.svelte';
+  import { applyTheme } from './lib/theme';
   import Overlays from './components/Overlays.svelte';
   import InstallGuide from './screens/InstallGuide.svelte';
   import Download from './screens/Download.svelte';
@@ -29,6 +30,7 @@
       const [status, profile, state, settings] = await Promise.all([api.wordLists.status({ remote: false }), api.calibration.profile(), api.appState.get(), api.settings.get()]);
       ui.achievements = settings.achievementPopups;
       setUiLanguage(settings.uiLanguage);
+      applyTheme(settings.theme);
       if (status.pair) ui.pair = status.pair;
       const r = router.route;
       if (!status.installed) {
