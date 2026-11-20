@@ -95,6 +95,83 @@
   --toast-accent: #9a5a00;
   color-scheme: dark;
 }
+/* book genres */
+:root[data-theme="scifi"] {
+  /* deep space, cyan light, geometric type */
+  --bg: #070b14;
+  --surface: #0e1522;
+  --surface-2: #152033;
+  --text: #dbe7ff;
+  --muted: #7f93b3;
+  --line: #1d2a40;
+  --accent: #22d3ee;
+  --accent-ink: #04121a;
+  --good: #34d399;
+  --bad: #fb7185;
+  --warn: #fbbf24;
+  --card: #0f1827;
+  --card-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25), 0 10px 30px rgba(0, 0, 0, 0.6);
+  --stage: #04070d;
+  --toast-accent: #0e7490;
+  --serif: 'Avenir Next', Futura, var(--font);
+  color-scheme: dark;
+}
+:root[data-theme="fantasy"] {
+  /* night forest, gold leaf, old-style type */
+  --bg: #13170f;
+  --surface: #1c2216;
+  --surface-2: #262d1e;
+  --text: #efe6cf;
+  --muted: #a89f84;
+  --line: #333b28;
+  --accent: #d9a93b;
+  --accent-ink: #1a1406;
+  --good: #7cbf5a;
+  --bad: #e06a4f;
+  --warn: #e0a030;
+  --card: #1f2618;
+  --card-shadow: 0 0 0 1px rgba(217, 169, 59, 0.2), 0 10px 30px rgba(0, 0, 0, 0.55);
+  --stage: #0d100a;
+  --toast-accent: #8a6514;
+  --serif: Palatino, 'Book Antiqua', 'Iowan Old Style', Georgia, serif;
+  --font: var(--serif);
+  color-scheme: dark;
+}
+:root[data-theme="crime"] {
+  /* film noir: greys and one red */
+  --bg: #141414;
+  --surface: #1e1e1e;
+  --surface-2: #2a2a2a;
+  --text: #ececec;
+  --muted: #9a9a9a;
+  --line: #333333;
+  --accent: #e23b3b;
+  --accent-ink: #ffffff;
+  --good: #8fbf7f;
+  --bad: #ff7a6b;
+  --card: #202020;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --stage: #0a0a0a;
+  --toast-accent: #b3261e;
+  --serif: Baskerville, 'Iowan Old Style', Georgia, serif;
+  color-scheme: dark;
+}
+:root[data-theme="romance"] {
+  /* blush paper, rose */
+  --bg: #fbf0f0;
+  --surface: #fffafa;
+  --surface-2: #f4e1e3;
+  --text: #3d2329;
+  --muted: #8a6b72;
+  --line: #ecd3d7;
+  --accent: #c2416b;
+  --accent-ink: #ffffff;
+  --good: #3f8f5a;
+  --bad: #c0392b;
+  --card: #fffafa;
+  --card-shadow: 0 10px 30px rgba(120, 40, 60, 0.14), 0 2px 6px rgba(120, 40, 60, 0.08);
+  --stage: #f1dde0;
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font);
   -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }

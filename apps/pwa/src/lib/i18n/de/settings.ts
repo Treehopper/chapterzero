@@ -110,4 +110,9 @@ export const settings: Record<string, string> = {
   'Mist': 'Nebel',
   'Dark': 'Dunkel',
   'Black': 'Schwarz',
+  'Book genres': 'Buchgenres',
+  'Science fiction': 'Science-Fiction',
+  'Fantasy': 'Fantasy',
+  'Crime': 'Krimi',
+  'Romance': 'Liebesroman',
 };

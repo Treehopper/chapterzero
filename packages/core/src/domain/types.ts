@@ -340,8 +340,8 @@ export interface Settings {
   bookSentence: 'both' | 'back' | 'off';
   /** the app's own language; 'auto' follows the device (English unless it is German) */
   uiLanguage: 'auto' | 'en' | 'de';
-  /** colour theme; 'auto' follows the device (light or dark) */
-  theme: 'auto' | 'light' | 'paper' | 'mist' | 'dark' | 'black';
+  /** colour theme; 'auto' follows the device (light or dark); the last four suit a book's genre */
+  theme: 'auto' | 'light' | 'paper' | 'mist' | 'dark' | 'black' | 'scifi' | 'fantasy' | 'crime' | 'romance';
   lookupProviders: LookupProvider[];
   scheduler: SchedulerConfig;
 }

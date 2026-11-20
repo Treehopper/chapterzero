@@ -98,6 +98,7 @@
           <option value="auto">{t('Like the device')}</option>
           <optgroup label={t('Light')}><option value="light">{t('Light')}</option><option value="paper">{t('Paper')}</option><option value="mist">{t('Mist')}</option></optgroup>
           <optgroup label={t('Dark')}><option value="dark">{t('Dark')}</option><option value="black">{t('Black')}</option></optgroup>
+          <optgroup label={t('Book genres')}><option value="scifi">{t('Science fiction')}</option><option value="fantasy">{t('Fantasy')}</option><option value="crime">{t('Crime')}</option><option value="romance">{t('Romance')}</option></optgroup>
         </select></label>
     </div>
 
