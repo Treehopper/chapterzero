@@ -388,7 +388,7 @@
             {#if review}
               <div class="foot small muted">{t('tap or swipe to continue')}</div>
             {:else if settings?.showBoxLevel && card.box > 0}
-              <div class="dots" aria-label={t('Box {box} of 8', { box: card.box })} data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}<span class="small muted">{t('box {box}/8', { box: card.box })}</span></div>
+              <div class="dots" aria-label={t('Box {box} of 8', { box: card.box })} data-testid="box-dots">{#each Array(8) as _, i (i)}<i class:on={i < card.box}></i>{/each}</div>
             {/if}
           {/snippet}
         </FlipCard>
@@ -487,7 +487,6 @@
   .dots { display: flex; gap: 6px; justify-content: center; align-items: center; flex: none; padding-top: 10px; }
   .dots i { width: 8px; height: 8px; border-radius: 4px; box-sizing: border-box; border: 1.5px solid var(--muted); opacity: 0.45; }
   .dots i.on { border: none; opacity: 1; }
-  .dots span { margin-left: 6px; }
   .dots i.on { background: var(--good); }
   .topbar { position: absolute; top: var(--safe-top); left: 16px; right: 16px; min-height: 44px; display: flex; align-items: center; gap: 8px; }
   .progress { flex: 1; display: flex; align-items: center; gap: 8px; pointer-events: none; }

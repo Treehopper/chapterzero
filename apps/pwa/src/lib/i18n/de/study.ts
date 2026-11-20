@@ -25,7 +25,6 @@ export const study: Record<string, string> = {
   'tap to flip': 'zum Umdrehen tippen',
   'tap or swipe to continue': 'zum Weitermachen tippen oder wischen',
   'Box {box} of 8': 'Fach {box} von 8',
-  'box {box}/8': 'Fach {box}/8',
   'Card options': 'Kartenoptionen',
   'Edit card': 'Karte bearbeiten',
   'Mark as known': 'Als bekannt markieren',
