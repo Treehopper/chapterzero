@@ -246,7 +246,12 @@ test.describe('study (C1–C18)', () => {
     await endSession(page);
     await expect(page.getByTestId('statistics')).toBeVisible();
     await expect(page.getByTestId('stat-reviewed')).toHaveText('1');
-    await expect(page.getByTestId('stat-known')).toContainText('1 word you already knew was removed');
+    await expect(page.getByTestId('stat-known')).toContainText('1 word you already knew will not be asked again');
+    // nothing demotivating: no 0 % first try, no wall of empty boxes; the gain is shown in points
+    await expect(page.getByTestId('stat-first-try')).toHaveCount(0);
+    await expect(page.getByText('Boxes')).toHaveCount(0);
+    await expect(page.getByTestId('stat-book-gain')).toHaveText(/^\+\d+\.\d %$/);
+    await expect(page.getByTestId('stat-goal')).toHaveText('1 of 20 reviews today');
     await page.reload();
     await expect(page.getByTestId('statistics')).toBeVisible();
     await tap(page.getByTestId('done'));

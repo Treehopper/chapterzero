@@ -6,8 +6,6 @@
   import { go } from '../lib/router.svelte';
   import { achievementName, fmt, pct, tierName, ui } from '../lib/ui.svelte';
   import { t, tn } from '../lib/i18n/index.svelte';
-  import Ring from '../components/Ring.svelte';
-  import Boxes from '../components/Boxes.svelte';
   import Confetti from '../components/Confetti.svelte';
   import StartStudy from '../components/StartStudy.svelte';
 
@@ -34,6 +32,10 @@
   });
 
   const dur = (sec: number) => (sec < 60 ? `${sec} s` : `${Math.floor(sec / 60)} min ${sec % 60} s`);
+  /** one flame per day of the streak; a long one is summed up after the first rows */
+  const MAX_FLAMES = 30;
+  /** coverage gained, in percentage points; nothing for no gain */
+  const gain = (before: number, after: number) => (after - before >= 0.0005 ? `+${pct(after - before)}` : '');
   const medal = (tier?: string) => (tier === 'gold' ? '🥇' : tier === 'silver' ? '🥈' : tier === 'bronze' ? '🥉' : '🏅');
 </script>
 
@@ -42,51 +44,56 @@
   {#if error}<p class="error">{t(error)}</p><button class="btn" onclick={() => go('library')} data-testid="stats-back">{t('To the library')}</button>{/if}
   {#if s}
     <h1 class="title">{t('Session complete')}</h1>
-    {#if ui.achievements}
-      <!-- what was earned comes first: no scrolling to find it -->
-      {#if s.overall.streakDays > 0}
-        <section class="card-box row streak" data-testid="stat-streak">
-          <span class="flame">🔥</span>
-          <span class="stack"><strong>{t('{n}-day streak', { n: s.overall.streakDays })}</strong>
-            <span class="small muted">{s.overall.streakDays >= s.overall.longestStreak ? t('your best yet') : t('best {n} days', { n: s.overall.longestStreak })}</span></span>
-        </section>
-      {/if}
-      {#if s.achievements.length}
-        <div class="medals" data-testid="stat-achievements">
-          {#each s.achievements.slice(0, revealed) as a (a.achievementId + (a.tier ?? ''))}
-            <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{achievementName(a)}</strong><span class="small muted">{a.tier ? tierName(a.tier) : ''}</span></div>
-          {/each}
+    {@const goalMet = s.overall.reviewsToday >= s.overall.dailyGoal}
+    <!-- what was earned comes first: no scrolling to find it -->
+    <section class="card-box stack today" class:met={goalMet}>
+      {#if ui.achievements && s.overall.streakDays > 0}
+        <div class="stack" data-testid="stat-streak">
+          <div class="flames" aria-hidden="true">
+            {#each Array(Math.min(s.overall.streakDays, MAX_FLAMES)) as _, i (i)}<span class="flame" class:now={i === Math.min(s.overall.streakDays, MAX_FLAMES) - 1} class:blue={goalMet && i === Math.min(s.overall.streakDays, MAX_FLAMES) - 1}>🔥</span>{/each}
+            {#if s.overall.streakDays > MAX_FLAMES}<span class="more small muted">+{s.overall.streakDays - MAX_FLAMES}</span>{/if}
+          </div>
+          <div><strong>{t('{n}-day streak', { n: s.overall.streakDays })}</strong>
+            <span class="small muted"> · {s.overall.streakDays >= s.overall.longestStreak ? t('your best yet') : t('best {n} days', { n: s.overall.longestStreak })}</span></div>
         </div>
       {/if}
-    {/if}
-    <section class="card-box hero">
-      <Ring value={s.session.firstTryAccuracy} size={120} stroke={12} label={pct(s.session.firstTryAccuracy, 0)} sublabel={t('first try')} color="var(--good)" />
-      <div class="stack figures">
-        <div><strong data-testid="stat-reviewed">{s.session.reviewed}</strong> {tn(s.session.reviewed, 'card reviewed', 'cards reviewed')}</div>
-        {#if s.session.promoted}<div class="up"><strong>{s.session.promoted}</strong> {tn(s.session.promoted, 'card moved up a box', 'cards moved up a box')}</div>{/if}
-        {#if s.session.removed}<div><strong>{s.session.removed}</strong> {t('removed')}</div>{/if}
-        <div class="muted small">{dur(s.session.durationSec)}</div>
+      {#if goalMet}
+        <div class="goal-met" data-testid="stat-goal">{t('Daily goal reached: {n} of {goal} reviews', { n: s.overall.reviewsToday, goal: s.overall.dailyGoal })}</div>
+      {:else}
+        <div class="stack goal" data-testid="stat-goal">
+          <span class="small">{t('{n} of {goal} reviews today', { n: s.overall.reviewsToday, goal: s.overall.dailyGoal })}</span>
+          <div class="progressbar"><div style:width="{(s.overall.reviewsToday / s.overall.dailyGoal) * 100}%"></div></div>
+        </div>
+      {/if}
+    </section>
+    {#if ui.achievements && s.achievements.length}
+      <div class="medals" data-testid="stat-achievements">
+        {#each s.achievements.slice(0, revealed) as a (a.achievementId + (a.tier ?? ''))}
+          <div class="medal {a.tier}"><span>{medal(a.tier)}</span><strong>{achievementName(a)}</strong><span class="small muted">{a.tier ? tierName(a.tier) : ''}</span></div>
+        {/each}
       </div>
+    {/if}
+
+    <section class="card-box stack figures">
+      <div><strong class="big" data-testid="stat-reviewed">{s.session.reviewed}</strong> {tn(s.session.reviewed, 'card reviewed', 'cards reviewed')}
+        <span class="small muted"> · {dur(s.session.durationSec)}</span></div>
+      {#if s.session.firstTryCorrect}<div class="up" data-testid="stat-first-try">💪 {t('{n} right on the first try', { n: s.session.firstTryCorrect })}</div>{/if}
+      {#if s.session.promoted}<div class="up">⬆ {tn(s.session.promoted, '{n} card moved up a box', '{n} cards moved up a box')}</div>{/if}
+      {#if s.session.removed}<div>{t('{n} removed', { n: s.session.removed })}</div>{/if}
     </section>
     {#if s.session.alreadyKnown}
-      <p class="known" data-testid="stat-known">{tn(s.session.alreadyKnown, '{n} word you already knew was removed.', '{n} words you already knew were removed.')}</p>
+      <p class="known" data-testid="stat-known">{tn(s.session.alreadyKnown, '{n} word you already knew will not be asked again.', '{n} words you already knew will not be asked again.')}</p>
     {/if}
 
     <div class="section-title">{t('Overall')}</div>
     <div class="card-box stack">
       {#if s.coverage.chapter}
         <div class="row"><span class="spacer">{s.coverage.chapter.displayTitle}</span>
-          <strong>{pct(s.coverage.chapter.before)} → {pct(s.coverage.chapter.after)}</strong></div>
+          <strong>{pct(s.coverage.chapter.after)}</strong>{#if gain(s.coverage.chapter.before, s.coverage.chapter.after)}<span class="gain" data-testid="stat-chapter-gain">{gain(s.coverage.chapter.before, s.coverage.chapter.after)}</span>{/if}</div>
       {/if}
-      <div class="row"><span class="spacer">{s.book.title}</span><strong>{pct(s.coverage.book.before)} → {pct(s.coverage.book.after)}</strong></div>
+      <div class="row"><span class="spacer">{s.book.title}</span>
+        <strong>{pct(s.coverage.book.after)}</strong>{#if gain(s.coverage.book.before, s.coverage.book.after)}<span class="gain" data-testid="stat-book-gain">{gain(s.coverage.book.before, s.coverage.book.after)}</span>{/if}</div>
       <div class="small muted">{t('estimated coverage')}{s.book.unknownEvery ? ` · ${t('one unknown word every {n}', { n: s.book.unknownEvery })}` : ''}</div>
-    </div>
-    <div class="section-title">{t('Boxes')}</div>
-    <Boxes boxes={s.book.boxes} moved={s.session.promoted} />
-    <div class="card-box row goal">
-      <span class="small muted">{t('Reviews today')}</span>
-      <span class="spacer"></span>
-      <Ring value={s.overall.reviewsToday / s.overall.dailyGoal} size={60} stroke={6} label={String(s.overall.reviewsToday)} sublabel="/ {s.overall.dailyGoal}" color="var(--good)" />
     </div>
     <p class="small muted">{t('{n} words learned across all books.', { n: fmt(s.overall.wordsLearnedAllBooks) })}</p>
 
@@ -101,16 +108,21 @@
 
 <style>
   .title { font-family: var(--serif); font-size: 28px; margin: 12px 0 16px; }
-  .hero { display: flex; gap: 20px; align-items: center; }
+  .today { gap: 10px; margin-bottom: 12px; }
+  .today.met { border-color: color-mix(in srgb, #3b82f6 55%, var(--line)); }
+  .flames { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; font-size: 22px; line-height: 1; }
+  .flame.now { font-size: 30px; }
+  /* the daily goal reached: today's flame burns blue, and bigger */
+  .flame.blue { font-size: 40px; filter: hue-rotate(185deg) saturate(1.6); }
+  .more { align-self: center; margin-left: 4px; }
+  .today strong { font-size: 20px; }
+  .goal-met { font-weight: 700; color: #3b82f6; }
+  .goal { gap: 6px; }
   .figures { gap: 6px; }
-  .figures strong { font-size: 20px; }
-  .up strong { color: var(--good); }
+  .figures .big { font-size: 28px; }
+  .up { color: var(--good); font-weight: 600; }
+  .gain { color: var(--good); font-weight: 700; margin-left: 8px; min-width: 0; }
   .known { background: color-mix(in srgb, var(--good) 12%, transparent); padding: 12px 14px; border-radius: 12px; }
-  .left { text-align: left; padding-left: 0; }
-  .streak { gap: 14px; margin-bottom: 12px; border-color: color-mix(in srgb, var(--bronze) 60%, var(--line)); }
-  .streak .flame { font-size: 34px; }
-  .streak strong { font-size: 20px; }
-  .goal { margin-top: 12px; }
   .medals { margin-bottom: 12px; }
   .medals { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
   .medal { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 14px; background: var(--surface);

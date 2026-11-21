@@ -18,11 +18,10 @@ export async function buildStatistics(tx: Repositories, session: StudySession, n
   const s = streaks(new Set(days.keys()), now);
   const c = session.counters;
   const end = session.finishedAt ? new Date(session.finishedAt) : now;
-  const accuracy = c.firstAttempts ? c.firstAttemptsCorrect / c.firstAttempts : 0;
   return {
     sessionId: session.id, bookId: book.id,
     session: {
-      reviewed: c.reviewed, firstTryAccuracy: accuracy, promoted: c.promoted, demoted: c.demoted,
+      reviewed: c.reviewed, firstTryCorrect: c.firstAttemptsCorrect, promoted: c.promoted, demoted: c.demoted,
       alreadyKnown: c.alreadyKnown, removed: c.removed,
       durationSec: Math.max(0, Math.round((end.getTime() - new Date(session.startedAt).getTime()) / 1000)),
     },
@@ -37,6 +36,6 @@ export async function buildStatistics(tx: Repositories, session: StudySession, n
       wordsLearnedAllBooks: allCards.filter((x) => (x.status === 'active' && x.level >= 2) || x.status === 'known').length,
     },
     achievements: session.unlocks,
-    perfect: c.firstAttempts > 0 && accuracy === 1,
+    perfect: c.firstAttempts > 0 && c.firstAttemptsCorrect === c.firstAttempts,
   };
 }

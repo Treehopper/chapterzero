@@ -226,7 +226,10 @@ export interface SessionStatistics {
   sessionId: SessionId;
   bookId: BookId;
   session: {
-    reviewed: number; firstTryAccuracy: number; promoted: number; demoted: number;
+    reviewed: number;
+    /** cards known on their first attempt in this session (cards retired at first sight are `alreadyKnown`) */
+    firstTryCorrect: number;
+    promoted: number; demoted: number;
     alreadyKnown: number; removed: number; durationSec: number;
   };
   coverage: {
