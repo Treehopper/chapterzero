@@ -11,8 +11,8 @@ export const study: Record<string, string> = {
   '“{word}” removed': '„{word}“ entfernt',
   'Back': 'Zurück',
   'All done for now': 'Fürs Erste fertig',
-  "Nothing is due and today's new cards are used up. You can get ahead if you have time before reading.":
-    'Nichts ist fällig und die neuen Karten für heute sind aufgebraucht. Wenn du vor dem Lesen noch Zeit hast, kannst du vorlernen.',
+  'Nothing is due right now and no new cards are needed. You can get ahead if you have time before reading.':
+    'Gerade ist nichts fällig und es werden keine neuen Karten gebraucht. Wenn du vor dem Lesen noch Zeit hast, kannst du vorlernen.',
   'Get ahead': 'Vorlernen',
   'Back to the book': 'Zurück zum Buch',
   'Study': 'Lernen',

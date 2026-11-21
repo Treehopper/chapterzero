@@ -73,7 +73,7 @@ test.describe('import preview', () => {
     await expect(page.getByTestId('chapter-row').filter({ hasText: '% known' })).toHaveCount(1);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Not included' })).toHaveCount(6);
     await expect(page.getByTestId('chapter-row').filter({ hasText: 'Learning' })).toContainText('About the Author');
-    await expect(page.getByTestId('book-eta')).toContainText('1 words');
+    await expect(page.getByTestId('book-eta')).toContainText('· 1 word');
     await tap(page.getByRole('button', { name: 'Words', exact: true }));
     await expect(page.getByLabel('Chapter').locator('option')).toHaveText(['All chapters', 'About the Author']);
     await expect(page.getByTestId('word-row')).toHaveCount(1);

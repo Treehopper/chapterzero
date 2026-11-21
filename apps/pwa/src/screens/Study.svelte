@@ -331,7 +331,7 @@
 {:else if view?.nothingDue}
   <main class="screen stack nothing" data-testid="nothing-due">
     <h1>{t('All done for now')}</h1>
-    <p class="muted">{t("Nothing is due and today's new cards are used up. You can get ahead if you have time before reading.")}</p>
+    <p class="muted">{t('Nothing is due right now and no new cards are needed. You can get ahead if you have time before reading.')}</p>
     <button class="btn primary block" onclick={studyAhead}>{t('Get ahead')}</button>
     <button class="btn block" onclick={() => go('book', bookId)}>{t('Back to the book')}</button>
   </main>

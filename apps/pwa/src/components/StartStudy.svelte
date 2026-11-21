@@ -49,8 +49,8 @@
     <button class="btn primary block quick" onclick={() => start()} data-testid="quick-start">
       <strong>{t('Quick start')}</strong>
       <span class="small">{due
-        ? (chapter ? t("{n} due reviews, then this chapter's new cards", { n: due }) : t("{n} due reviews, then today's new cards", { n: due }))
-        : (chapter ? t("Due reviews, then this chapter's new cards") : t("Due reviews, then today's new cards"))}</span>
+        ? (chapter ? t('{n} due reviews, then new cards until this chapter is ready', { n: due }) : t('{n} due reviews, then new cards until the book is ready', { n: due }))
+        : (chapter ? t('Due reviews, then new cards until this chapter is ready') : t('Due reviews, then new cards until the book is ready'))}</span>
     </button>
 
     <div class="section-title">{t('Number of cards')}</div>
@@ -66,7 +66,6 @@
         <button class="btn" onclick={() => start(`min-${m}`)} data-testid="start-min-{m}">{t('{n} min', { n: m })}</button>
       {/each}
     </div>
-    <p class="small muted">{t('A chosen number or time can go past the daily limit for new cards.')}</p>
   </div>
 </Sheet>
 

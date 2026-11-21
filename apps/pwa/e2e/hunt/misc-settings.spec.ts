@@ -19,8 +19,6 @@ test.describe('settings hunt', () => {
     await page.getByRole('checkbox', { name: /Achievements and streaks/ }).tap();
     await page.getByRole('checkbox', { name: /First-try correct/ }).tap();
     await page.getByRole('checkbox', { name: /Gesture hints/ }).tap();
-    await page.getByLabel('New cards per day').fill('7');
-    await page.getByLabel('New cards per day').dispatchEvent('change');
     await page.getByLabel('Daily goal (reviews)').fill('33');
     await page.getByLabel('Daily goal (reviews)').dispatchEvent('change');
     await page.waitForTimeout(500);
@@ -32,7 +30,6 @@ test.describe('settings hunt', () => {
     await expect(page.getByRole('checkbox', { name: /Achievements and streaks/ })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: /First-try correct/ })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: /Gesture hints/ })).not.toBeChecked();
-    await expect(page.getByLabel('New cards per day')).toHaveValue('7');
     await expect(page.getByLabel('Daily goal (reviews)')).toHaveValue('33');
     await expect(page.getByText('Schedule normally')).toBeVisible();
     // the trophy stays hidden after the reload (ui state comes from settings at boot)

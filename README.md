@@ -88,7 +88,6 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 | C5 | As a learner, I want to close the app at any moment and continue exactly where I was (same card, same side, same session counters) when I reopen it. | Must |
 | C6 | As a learner, I want to undo my last swipe in case I swiped by mistake (a short-lived "Undo" pill after each grade). | Should |
 | C7 | As a learner using VoiceOver or a keyboard, I want accessible actions for flip, knew it, didn't know and the card menu, because the card has no visible buttons. | Must |
-| C8 | As a learner, I want to choose a daily new-card limit so I'm not overwhelmed. | Should |
 | C9 | As a learner, I want to study "ahead" when nothing is due, if I have time before reading. | Should |
 | C10 | As a learner, I want studying to be full screen with nothing but the card, so I can focus. | Must |
 | C11 | As a learner, I want to always see a thin progress bar for the current session. | Must |
@@ -139,7 +138,6 @@ IDs are referenced in the design. "Must" = v1, "Should" = v1 if cheap, "Could" =
 - Swiping right at first sight sets the card's status to `known`, removes it from the session queue, never schedules it, and adds its lemma to the global known words, so future books skip it (B8).
 - The undo pill reads "Already known · Undo" for 3 s. Undo restores the card, the queue and the known-words entry; the card comes back showing its answer, unless it was never turned over (C20), then face down.
 - These grades are counted separately as `alreadyKnown`. They are excluded from session accuracy, from *On a Roll* and from *Word Hoard*, and they do not reset the *On a Roll* streak.
-- A retired card doesn't use up the daily new-card limit: the next unseen card is pulled into the session (§7.3).
 - For coverage (I2) a retired card counts as known immediately.
 - Settings → *First-try correct: Retire the card (default) / Schedule normally*.
 
@@ -717,7 +715,6 @@ interface ReviewLogEntry {
 }
 
 interface Settings {
-  dailyNewLimit: number;            // 20
   dailyGoal: number;                // 20 reviews
   coverageTarget: number;           // 0.98
   retireOnFirstTry: boolean;        // true
@@ -967,15 +964,15 @@ if (result === 'known' && firstSight && settings.retireOnFirstTry) {
 The cards of one book are loaded into memory for this (a few thousand objects), so no extra indexes are needed.
 
 1. **Reviews**: all `active` cards with `level > 0 && dueAt ≤ now`, oldest due first, from any chapter.
-2. **New cards**: up to `dailyNewLimit − newIntroducedToday`, where `newIntroducedToday` is the number of cards whose first grade was given today. Retired cards (C18) have no grade and so don't count.
+2. **New cards**: there is no daily limit. Every unseen card that still counts toward the coverage target, so the session runs until the chapter or book is ready (or the user leaves).
    - Target chapter `c` = `opts.chapterIndex` if given (I4), else the first included chapter whose state is not `ready` and that still has unseen cards (§7.5).
-   - Candidates = active, never-graded cards with `occurrencesByChapter[c] > 0 || chapterIndex === c`, ordered by `firstPosition` ascending (B10). This includes words first seen in earlier chapters that were left unlearned, and hand-added words.
-   - If chapter `c` has fewer candidates than the remaining limit, continue with the next included chapter, and so on.
-3. **Refill**: when a card is retired at first sight, or removed during the session, append the next candidate by the same rule, as long as the daily limit isn't reached.
+   - Per chapter: the unknown cards it needs to reach the target, in the order study brings them (`chapterToGo`, as for its bar, I2), keeping the never-graded ones, plus hand-added words with `chapterIndex === c` it does not contain; ordered by `firstPosition` ascending (B10). This includes words first seen in earlier chapters that were left unlearned.
+   - With *Get this chapter ready* only chapter `c`; otherwise `c` and every later included chapter.
+3. **Refill**: when a card is retired at first sight, or removed during the session, append the cards step 2 now gives that are not in the session yet.
 4. Failed cards are re-inserted `requeueGap` positions later (or at the end if the queue is shorter). The session ends when the queue is empty or the user leaves.
 5. After every grade the coverage of the target chapter is recomputed. If it reached the target for the first time (`index ∉ book.chaptersAnnounced`), the index is added there and `SessionView.chapterReady` is set. Cards already in the queue stay; the next session picks a new target chapter.
 6. "Get ahead" (C9) adds not-yet-due cards with the nearest `dueAt`, and does **not** promote their level beyond the next interval twice in one day.
-7. **Start options (C19)**: *Quick start* is steps 1–6; with *Get this chapter ready* every option also sets `chapterIndex`. *N cards*: at most N reviews, filled up to N with new cards **ignoring the daily limit**, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; refill ignores the daily limit; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
+7. **Start options (C19)**: *Quick start* is steps 1–6; with *Get this chapter ready* every option also sets `chapterIndex`. *N cards*: at most N reviews, filled up to N with new cards, no refill; the progress bar counts to N. *M minutes*: `endsAt = now + M`; each refill adds the next new card; the card in hand is always finished, and the first `advance` after `endsAt` ends the session. The top bar shows the time left instead of a card count. Cards deleted or retired outside the session (re-filter, Words screen) are dropped from its queue when it is loaded.
 
 ### 7.4 Resume anywhere (C5)
 
@@ -988,7 +985,7 @@ The cards of one book are loaded into memory for this (a few thousand objects), 
 
 ### 7.5 Progress metrics (Epics E and I)
 
-- **Time to ready** (E7, `domain/estimate.ts`): in reading order, each included chapter below the target takes unknown cards until it reaches it, in the order study brings them (cards in learning first, then new ones by first occurrence, as in §7.3); cards taken for an earlier chapter count as known for later ones. Each taken card needs `(2 − level) / (1 − wrongRate)` more reviews; minutes = reviews × seconds per review. The pace comes from the last 30 days of the review log (median gap < 90 s between reviews, share of wrong answers clamped to 5–60 %), or 8 s and 25 % with fewer than 20 reviews. Shown on the book overview ("≈ 1 h 20 min of practice until ready to read · 240 words, about 13 days at your daily limit"; days = new cards ÷ daily new-card limit, + 1 for the last ones' second review), per chapter row ("· ≈ 15 min") and in the chapter sheet (what the chapter adds once the chapters before it are ready).
+- **Time to ready** (E7, `domain/estimate.ts`): in reading order, each included chapter below the target takes unknown cards until it reaches it, in the order study brings them (cards in learning first, then new ones by first occurrence, as in §7.3); cards taken for an earlier chapter count as known for later ones. Each taken card needs `(2 − level) / (1 − wrongRate)` more reviews; minutes = reviews × seconds per review. The pace comes from the last 30 days of the review log (median gap < 90 s between reviews, share of wrong answers clamped to 5–60 %), or 8 s and 25 % with fewer than 20 reviews. Shown on the book overview ("≈ 1 h 20 min of practice until ready to read · 240 words"), per chapter row ("· ≈ 15 min") and in the chapter sheet (what the chapter adds once the chapters before it are ready).
 
 - **Coverage** (I2) is a pure function over the book's chapters and cards:
 
@@ -1125,7 +1122,7 @@ Library ──► Import preview ──► Book overview ──► Study (full s
    │                                └──► Words (active / known / removed / skipped / not in the lists)
    │                                          └──► Add word sheet
    ├──► Achievements
-   └──► Settings (word lists, vocabulary level, daily limits, coverage target, first-try
+   └──► Settings (word lists, vocabulary level, daily goal, coverage target, first-try
                   behaviour, English definitions, cognates, gesture hints, achievement
                   pop-ups, lookup links, backup, about)
 ```
@@ -1338,7 +1335,7 @@ Buttons at the bottom: *Keep going* and *Done* (back to Book overview). Mileston
 
 ### 8.3 Details on demand
 
-Settings that are hard to guess from their name (vocabulary level, new cards per day, coverage target, first-try correct, swipe right before flipping, flip before answering in the check, box level, definitions, nearly identical words, lookup links, your own dictionary) have a small (i) after the name. A tap shows two to four sentences right below the setting; another tap hides them. The (i) never toggles the setting.
+Settings that are hard to guess from their name (vocabulary level, coverage target, first-try correct, swipe right before flipping, flip before answering in the check, box level, definitions, nearly identical words, lookup links, your own dictionary) have a small (i) after the name. A tap shows two to four sentences right below the setting; another tap hides them. The (i) never toggles the setting.
 
 ### 8.4 App language
 

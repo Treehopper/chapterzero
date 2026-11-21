@@ -48,16 +48,14 @@ export const common: Record<string, string> = {
   'Get this chapter ready': 'Dieses Kapitel vorbereiten',
   'Get ready to read': 'Fürs Lesen vorbereiten',
   'Quick start': 'Schnellstart',
-  "{n} due reviews, then this chapter's new cards": '{n} fällige Wiederholungen, dann die neuen Karten dieses Kapitels',
-  "{n} due reviews, then today's new cards": '{n} fällige Wiederholungen, dann die neuen Karten von heute',
-  "Due reviews, then this chapter's new cards": 'Fällige Wiederholungen, dann die neuen Karten dieses Kapitels',
-  "Due reviews, then today's new cards": 'Fällige Wiederholungen, dann die neuen Karten von heute',
+  '{n} due reviews, then new cards until this chapter is ready': '{n} fällige Wiederholungen, dann neue Karten, bis dieses Kapitel bereit ist',
+  '{n} due reviews, then new cards until the book is ready': '{n} fällige Wiederholungen, dann neue Karten, bis das Buch bereit ist',
+  'Due reviews, then new cards until this chapter is ready': 'Fällige Wiederholungen, dann neue Karten, bis dieses Kapitel bereit ist',
+  'Due reviews, then new cards until the book is ready': 'Fällige Wiederholungen, dann neue Karten, bis das Buch bereit ist',
   'Number of cards': 'Anzahl Karten',
   '{n} cards': '{n} Karten',
   'Time': 'Zeit',
   '{n} min': '{n} Min.',
-  'A chosen number or time can go past the daily limit for new cards.':
-    'Eine gewählte Anzahl oder Zeit kann über das Tageslimit für neue Karten hinausgehen.',
 
   // achievements (lib/ui.svelte.ts)
   'Bronze': 'Bronze',

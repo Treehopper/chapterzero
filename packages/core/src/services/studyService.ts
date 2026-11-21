@@ -1,7 +1,7 @@
 /** StudyService (README §7.2–§7.4, Epic C). Every call is one UnitOfWork. */
 import { ACHIEVEMENTS, bookAchievement, newUnlocks, onGrade } from '../domain/achievements.ts';
 import type { LanguagePair } from '../domain/language.ts';
-import { bookCoverage, chapterCoverage, chapterProgress, displayTitle } from '../domain/coverage.ts';
+import { bookCoverage, chapterCoverage, chapterProgress, chapterToGo, displayTitle } from '../domain/coverage.ts';
 import { addDays, isSameDay, startOfDay } from '../domain/dates.ts';
 import { deepClone } from '../domain/clone.ts';
 import { grade as schedule, intervalDays } from '../domain/scheduler.ts';
@@ -76,11 +76,24 @@ function targetChapter(book: Book, cards: Card[], settings: Settings): number | 
   return undefined;
 }
 
-const introducedToday = (cards: Card[], now: Date) => cards.filter((c) => isSameDay(c.stats.firstReviewedAt, now)).length;
-
-function pendingNew(session: StudySession, byId: Map<string, Card>): number {
-  const ids = [...session.queue, ...(session.current ? [session.current.cardId] : [])];
-  return new Set(ids.filter((id) => { const c = byId.get(id); return c && unseen(c); })).size;
+/** the new cards that get the chapter `start` ready (`onlyStart`), or it and every later one: no daily limit */
+function neededNew(book: Book, cards: Card[], settings: Settings, start: number | undefined, onlyStart: boolean, exclude: Set<CardId>): Card[] {
+  if (start === undefined) return [];
+  const included = book.chapters.filter((c) => c.included);
+  const from = included.findIndex((c) => c.index === start);
+  const chs = onlyStart || from < 0 ? book.chapters.filter((c) => c.index === start) : included.slice(from);
+  const out: Card[] = [];
+  const taken = new Set(exclude);
+  for (const ch of chs) {
+    // words added by hand that the chapter does not contain count for nothing, but were asked for
+    const added = cards.filter((c) => c.chapterIndex === ch.index && !(c.occurrencesByChapter[ch.index] ?? 0));
+    for (const c of [...chapterToGo(ch, cards, settings.coverageTarget), ...added].sort((a, b) => a.firstPosition - b.firstPosition)) {
+      if (!unseen(c) || taken.has(c.id)) continue;
+      out.push(c);
+      taken.add(c.id);
+    }
+  }
+  return out;
 }
 
 export function studyService(ctx: Ctx) {
@@ -122,15 +135,15 @@ export function studyService(ctx: Ctx) {
     };
   }
 
-  /** §7.3 step 3: append the next unseen card while the daily limit allows. */
-  function refill(session: StudySession, book: Book, byId: Map<string, Card>, settings: Settings, now: Date) {
-    const cards = [...byId.values()];
-    const allowed = settings.dailyNewLimit - introducedToday(cards, now) - pendingNew(session, byId);
+  /** §7.3 step 3: after a card left the queue, add the new cards still needed (a timed or ahead session: the next one). */
+  function refill(session: StudySession, book: Book, byId: Map<string, Card>, settings: Settings) {
     if (session.cardLimit) return;
-    if (allowed <= 0 && !session.studyAhead && !session.endsAt) return;
+    const cards = [...byId.values()];
     const exclude = new Set([...session.queue, ...session.graded, ...(session.current ? [session.current.cardId] : [])]);
     const start = session.targetChapter ?? targetChapter(book, cards, settings);
-    const next = newCandidates(book, cards, start, exclude, 1);
+    const next = session.studyAhead || session.endsAt
+      ? newCandidates(book, cards, start, exclude, 1)
+      : neededNew(book, cards, settings, start, session.targetChapter !== undefined, exclude);
     session.queue.push(...next.map((c) => c.id));
   }
 
@@ -195,9 +208,10 @@ export function studyService(ctx: Ctx) {
       .sort((a, b) => a.dueAt!.localeCompare(b.dueAt!));
     const start = opts?.chapterIndex ?? targetChapter(book, cards, settings);
     if (opts?.cardLimit) reviews = reviews.slice(0, opts.cardLimit);
-    // an explicit number of cards is filled with new ones regardless of the daily limit
-    const limit = opts?.cardLimit ? opts.cardLimit - reviews.length : settings.dailyNewLimit - introducedToday(cards, now);
-    let fresh = newCandidates(book, cards, start, new Set(reviews.map((c) => c.id)), limit);
+    // the due reviews, then every new card that still counts toward the target; or a chosen number of cards
+    const taken = new Set(reviews.map((c) => c.id));
+    let fresh = opts?.cardLimit ? newCandidates(book, cards, start, taken, opts.cardLimit - reviews.length)
+      : neededNew(book, cards, settings, start, opts?.chapterIndex !== undefined, taken);
     if (opts?.studyAhead || (opts?.minutes && reviews.length + fresh.length === 0)) {
       const ahead = active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) > now)
         .sort((a, b) => a.dueAt!.localeCompare(b.dueAt!)).slice(0, 20);
@@ -291,7 +305,7 @@ export function studyService(ctx: Ctx) {
           session.counters = { ...session.counters, alreadyKnown: session.counters.alreadyKnown + 1 };
           session.undo = { ...undo, kind: 'retire', addedKnownWord: card.lemma };
           session.current = undefined;
-          refill(session, book, byId, settings, now);
+          refill(session, book, byId, settings);
           advance(session);
           const r = await afterChange(tx, session, book, byId, settings, stats, retired, now);
           await tx.sessions.save(session);
@@ -414,7 +428,7 @@ export function studyService(ctx: Ctx) {
           : { ...session.counters, removed: session.counters.removed + 1 };
         session.undo = { ...undo, addedKnownWord, lemmaBefore };
         session.current = undefined;
-        refill(session, book, byId, settings, now);
+        refill(session, book, byId, settings);
         advance(session);
         const r = await afterChange(tx, session, book, byId, settings, stats, changed, now);
         await tx.sessions.save(session);

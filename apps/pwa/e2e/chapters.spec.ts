@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectPhase, firstRun, importAndOpen, studyNow, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
+import { expectPhase, firstRun, importAndOpen, settled, studyNow, swipeLeft, swipeRight, swipeUp, tap, tapCard } from './helpers';
 
 test('study a chosen chapter (I4); a relaunch resumes that session', async ({ page }) => {
   await firstRun(page);
@@ -48,21 +48,19 @@ test('chapter study takes the same start options; its open session is continued 
 });
 
 test('nothing due → study ahead (C9)', async ({ page }) => {
+  test.setTimeout(120_000);
   await firstRun(page);
-  await tap(page.getByRole('button', { name: 'Settings' }));
-  await page.getByLabel('New cards per day').fill('1');
-  await page.getByLabel('New cards per day').press('Tab');
-  await tap(page.getByRole('button', { name: 'Back', exact: true }));
   await importAndOpen(page);
   await studyNow(page);
-  await expectPhase(page, 'front');
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeLeft(page);
-  await expectPhase(page, 'front');   // the only card comes back at once (queue is empty)
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeRight(page);
+  // Quick start goes on until the book is ready: every card retired at first sight
+  for (let i = 0; i < 60 && !(await page.getByTestId('statistics').count()); i++) {
+    await expectPhase(page, 'front');
+    await tapCard(page);
+    await expectPhase(page, 'back');
+    await swipeRight(page);
+    await settled(page).catch(() => {});
+    if (await page.getByTestId('banner').count()) await page.getByTestId('banner').tap().catch(() => {});
+  }
   await expect(page.getByTestId('statistics')).toBeVisible();
   await studyNow(page, 'study-more');
   await expect(page.getByTestId('nothing-due')).toBeVisible();

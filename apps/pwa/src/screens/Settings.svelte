@@ -87,9 +87,6 @@
   {#if s}
     <div class="section-title">{t('Practice')}</div>
     <div class="list">
-      <label class="list-row" for="setting-1"><span class="spacer">{t('New cards per day')}
-        <Info text={t('How many cards you see for the first time each day. Cards you have already seen come back when they are due, on top of these.')} /></span>
-        <input id="setting-1" class="num" type="number" min="1" max="200" value={s.dailyNewLimit} onchange={(e) => save({ dailyNewLimit: +e.currentTarget.value })} /></label>
       <label class="list-row"><span class="spacer">{t('Daily goal (reviews)')}</span>
         <input class="num" type="number" min="1" max="500" value={s.dailyGoal} onchange={(e) => save({ dailyGoal: +e.currentTarget.value })} /></label>
       <label class="list-row stack-row" for="setting-2"><span class="row"><span class="spacer">{t('Coverage target')}

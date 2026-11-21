@@ -29,18 +29,25 @@ export function bookCoverage(chapters: Chapter[], cards: Card[]): number {
 export function chapterWords(ch: Pick<Chapter, 'index' | 'wordTokens'>, cards: Card[], target: number): { done: number; toGo: number; share: number } {
   const occ = (c: Card) => c.occurrencesByChapter[ch.index] ?? 0;
   const done = cards.filter((c) => occ(c) > 0 && (c.status === 'known' || (c.status === 'active' && c.level >= 2))).length;
+  const toGo = chapterToGo(ch, cards, target).length;
+  return { done, toGo, share: toGo === 0 ? 1 : done / (done + toGo) };
+}
+
+/** the unknown cards still to learn for the chapter to reach `target`, in the order study brings them */
+export function chapterToGo(ch: Pick<Chapter, 'index' | 'wordTokens'>, cards: Card[], target: number): Card[] {
+  const occ = (c: Card) => c.occurrencesByChapter[ch.index] ?? 0;
   const isNew = (c: Card) => c.stats.correct + c.stats.wrong === 0;
   const unknown = cards.filter((c) => isUnknown(c) && occ(c) > 0)
     .sort((a, b) => Number(isNew(a)) - Number(isNew(b)) || a.firstPosition - b.firstPosition);
   const allowed = (1 - target) * ch.wordTokens;
   let left = unknown.reduce((n, c) => n + occ(c), 0);
-  let toGo = 0;
+  const out: Card[] = [];
   for (const c of unknown) {
     if (left <= allowed + 1e-9) break;
-    toGo++;
+    out.push(c);
     left -= occ(c);
   }
-  return { done, toGo, share: toGo === 0 ? 1 : done / (done + toGo) };
+  return out;
 }
 
 export const unknownEvery = (coverage: number): number | null => (coverage >= 1 ? null : Math.round(1 / (1 - coverage)));

@@ -14,7 +14,6 @@ export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma
   });
   const sum = (k: 'minutes' | 'cards' | 'newCards') => chapters.reduce((n, c) => n + (c.toReady?.[k] ?? 0), 0);
   const toReady = { minutes: sum('minutes'), cards: sum('cards'), newCards: sum('newCards') };
-  const days = toReady.cards ? Math.ceil(toReady.newCards / settings.dailyNewLimit) + 1 : 0;
   const coverage = bookCoverage(book.chapters, cards);
   const learning = chapters.find((c) => c.state === 'learning');
   const boxes = new Array<number>(settings.scheduler.maxLevel + 1).fill(0);
@@ -41,7 +40,7 @@ export function computeBookProgress(book: Book, cards: Card[], lemmas: BookLemma
     due: active.filter((c) => c.level > 0 && c.dueAt && new Date(c.dueAt) <= now).length,
     finishedAt: book.finishedAt,
     ready: chapters.some((c) => c.included) && chapters.every((c) => !c.included || c.state === 'ready'),
-    toReady: { ...toReady, days },
+    toReady,
   };
 }
 

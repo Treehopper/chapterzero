@@ -13,7 +13,7 @@ async function imported(book = twoChapterBook(), now?: Date) {
 }
 
 describe('session queue and grading', () => {
-  it('starts with new cards of the learning chapter in order of first occurrence', async () => {
+  it('starts with new cards of the learning chapter in order of first occurrence, and goes on until the book is ready', async () => {
     const { app, book } = await imported();
     const v = await app.study.resumeOrStart(book.id);
     expect(v.card?.lemma).toBe('relinquish');
@@ -26,9 +26,9 @@ describe('session queue and grading', () => {
       await app.study.flip(cur.sessionId);
       cur = await app.study.grade(cur.sessionId, 'known');
     }
-    // chapter One in order of first occurrence, then chapter Two
-    expect(order).toEqual(['relinquish', 'lantern', 'scythe', 'gaunt', 'quill', 'parchment', 'dagger', 'hearth',
-      'tempest', 'ravine', 'dusk', 'rampart', 'thicket', 'bough', 'ashen', 'gale']);
+    // chapter One in order of first occurrence, then chapter Two: only as many as the coverage target needs
+    expect(order).toEqual(['relinquish', 'lantern', 'scythe', 'tempest', 'ravine', 'dusk']);
+    expect((await app.progress.book(book.id)).ready).toBe(true);
   });
 
   it('requires a flip, then retires first-sight known cards (C18) and undo reverses it', async () => {
@@ -101,12 +101,11 @@ describe('session queue and grading', () => {
     expect(k.counters).toMatchObject({ alreadyKnown: 2, removed: 0 });
   });
 
-  it('a chosen number of cards: reviews first, filled with new ones past the daily limit, no refill', async () => {
+  it('a chosen number of cards: reviews first, filled with new ones, no refill', async () => {
     const { app, book } = await imported();
-    await app.settings.update({ dailyNewLimit: 2 });
     const quick = await app.study.resumeOrStart(book.id);
-    expect(quick.progress.total).toBe(2);
-    expect(await app.study.active(book.id)).toMatchObject({ sessionId: quick.sessionId, progress: { done: 0, total: 2 }, chapterIndex: undefined });
+    expect(quick.progress.total).toBe(6);
+    expect(await app.study.active(book.id)).toMatchObject({ sessionId: quick.sessionId, progress: { done: 0, total: 6 }, chapterIndex: undefined });
     const v = await app.study.resumeOrStart(book.id, { cardLimit: 5 });
     expect(v.sessionId).not.toBe(quick.sessionId);       // an explicit choice starts a new session
     expect(v.progress.total).toBe(5);
@@ -127,12 +126,11 @@ describe('session queue and grading', () => {
 
   it('a timed session ends after the card in hand once time is up', async () => {
     const { app, book, ports } = await imported();
-    await app.settings.update({ dailyNewLimit: 1 });
     const v = await app.study.resumeOrStart(book.id, { minutes: 5 });
     expect(new Date(v.endsAt!).getTime() - ports.clock.now().getTime()).toBe(5 * 60_000);
     await app.study.flip(v.sessionId);
     const w = await app.study.grade(v.sessionId, 'known');
-    expect(w.done).toBe(false);                          // keeps going past the daily limit
+    expect(w.done).toBe(false);
     ports.clock.advanceMs(5 * 60_000);
     expect((await app.study.get(v.sessionId)).card).toBeDefined();  // the card in hand stays
     await app.study.flip(v.sessionId);
@@ -221,40 +219,40 @@ describe('session queue and grading', () => {
     expect((await cards()).find((c) => c.lemma === 'relinquish')).toMatchObject({ status: 'active', edited: true });
   });
 
-  it('daily new-card limit; retired cards do not use it up', async () => {
-    const { app, book, ports } = await imported();
-    await app.settings.update({ dailyNewLimit: 2 });
+  it('no daily limit for new cards: a second session the same day brings the rest', async () => {
+    const { app, book } = await imported();
     const v0 = await app.study.resumeOrStart(book.id);
-    expect(v0.progress.total).toBe(2);
-    await app.study.flip(v0.sessionId);
-    const v1 = await app.study.grade(v0.sessionId, 'known'); // retire → refill
-    expect(v1.progress.total).toBe(3);
+    expect(v0.progress.total).toBe(6);
     await app.study.flip(v0.sessionId);
     await app.study.grade(v0.sessionId, 'unknown');
     await app.study.continueAfterReview(v0.sessionId);
+    await app.study.flip(v0.sessionId);
+    await app.study.grade(v0.sessionId, 'known');       // retired
     const stats = await app.study.finish(v0.sessionId);
     expect(stats.session).toMatchObject({ reviewed: 1, alreadyKnown: 1 });
-    // next session today: one card was introduced, so only one new card
-    const v2 = await app.study.resumeOrStart(book.id);
-    const s = await ports.uow.run((tx) => tx.sessions.get(v2.sessionId));
-    const all = await ports.uow.run((tx) => tx.cards.listByBook(book.id));
-    const fresh = [s!.current!.cardId, ...s!.queue].filter((id) => all.find((c) => c.id === id)!.stats.wrong === 0);
-    expect(fresh).toHaveLength(1);
+    const v1 = await app.study.resumeOrStart(book.id);
+    expect(v1.progress.total).toBeGreaterThanOrEqual(4);
+    expect(v1.card?.lemma).not.toBe('lantern');
+  });
+
+  it('a chapter: its new cards until it is ready, not the next chapter\'s', async () => {
+    const { app, book } = await imported();
+    const ch = (await app.progress.book(book.id)).chapters.find((c) => c.included)!;
+    let v = await app.study.resumeOrStart(book.id, { chapterIndex: ch.index });
+    const order: string[] = [];
+    while (!v.done) { order.push(v.card!.lemma); await app.study.flip(v.sessionId); v = await app.study.grade(v.sessionId, 'known'); }
+    expect(order).toEqual(['relinquish', 'lantern', 'scythe']);
+    expect((await app.progress.book(book.id)).chapters.find((c) => c.index === ch.index)?.state).toBe('ready');
   });
 
   it('nothing due → study ahead (C9)', async () => {
     const { app, book, ports } = await imported();
-    await app.settings.update({ dailyNewLimit: 1 });
-    const v0 = await app.study.resumeOrStart(book.id);
-    await app.study.flip(v0.sessionId);
-    await app.study.grade(v0.sessionId, 'unknown');
-    await app.study.continueAfterReview(v0.sessionId);
-    await app.study.flip(v0.sessionId);
-    const done = await app.study.grade(v0.sessionId, 'known');
-    expect(done.done).toBe(true);
-    await app.study.finish(v0.sessionId);
+    await app.settings.update({ retireOnFirstTry: false });
+    let v = await app.study.resumeOrStart(book.id);
+    while (!v.done) { await app.study.flip(v.sessionId); v = await app.study.grade(v.sessionId, 'known'); }
+    await app.study.finish(v.sessionId);
     const empty = await app.study.resumeOrStart(book.id);
-    expect(empty.nothingDue).toBe(true);
+    expect(empty.nothingDue).toBe(true);                 // the cards still in learning come back when due
     const ahead = await app.study.resumeOrStart(book.id, { studyAhead: true });
     expect(ahead.card?.lemma).toBe('relinquish');
     await app.study.flip(ahead.sessionId);

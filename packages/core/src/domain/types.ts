@@ -192,7 +192,7 @@ export interface StudySession {
   graded: CardId[];
   targetChapter?: number;
   studyAhead?: boolean;
-  /** chosen at start: a fixed number of cards (no refill) or an end time (refills past the daily limit) */
+  /** chosen at start: a fixed number of cards (no refill) or an end time (refills with the next new card) */
   cardLimit?: number;
   endsAt?: string;
   coverageAtStart: { book: number; chapter: number; chapterIndex: number };
@@ -220,8 +220,8 @@ export interface BookProgress {
   finishedAt?: string;
   /** every included chapter ready now, however it got there (finishedAt is set once, by study, G2) */
   ready: boolean;
-  /** practice until every included chapter is ready (E7); days: at the daily new-card limit, plus a day for the last ones' second review */
-  toReady: ToReady & { days: number };
+  /** practice until every included chapter is ready (E7) */
+  toReady: ToReady;
 }
 
 export interface SessionStatistics {
@@ -321,7 +321,6 @@ export interface SchedulerConfig {
 }
 
 export interface Settings {
-  dailyNewLimit: number;
   dailyGoal: number;
   coverageTarget: number;
   retireOnFirstTry: boolean;

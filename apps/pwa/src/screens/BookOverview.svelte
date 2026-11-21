@@ -96,7 +96,7 @@
         <span class="small muted">{t("You know {known} of this book's {total} rare words.", { known: fmt(p.rareWordsKnown), total: fmt(p.rareWordsTotal) })}</span>
         {#if p.toReady.cards}
           <span class="small eta" data-testid="book-eta"><strong>{duration(p.toReady.minutes)}</strong> {t('of practice until ready to read')}
-            <span class="muted">· {t('{n} words, about {days} at your daily limit', { n: fmt(p.toReady.cards), days: tn(p.toReady.days, '{n} day', '{n} days') })}</span></span>
+            <span class="muted">· {tn(p.toReady.cards, '{n} word', '{n} words')}</span></span>
         {/if}
         {#if p.ready}
           {#if readable}<button class="pill good readpill" onclick={() => go('read', bookId)} data-testid="ready-read">{t('Ready to read · open ›')}</button>

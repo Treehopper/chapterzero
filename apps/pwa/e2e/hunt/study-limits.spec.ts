@@ -11,70 +11,18 @@ test.afterEach(() => { expect(errors, 'console errors').toEqual([]); });
 
 const bookId = (page: Page) => page.evaluate(() => decodeURIComponent(location.hash.split('/')[2]));
 
-async function setDailyLimit(page: Page, n: number) {
-  await tap(page.getByRole('button', { name: 'Settings' }));
-  const input = page.getByLabel('New cards per day');
-  await input.fill(String(n));
-  await input.blur();
-  await tap(page.getByRole('button', { name: 'Back', exact: true }));
-}
 
-test('daily limit 1: one new card; after it is learnt nothing is due; "Get ahead" brings it back and resumes after a reload', async ({ page }) => {
-  await setDailyLimit(page, 1);
+test('no daily limit: Quick start brings every word still needed to get the book ready', async ({ page }) => {
   await importAndOpen(page);
+  const words = Number((await page.getByTestId('book-eta').innerText()).match(/(\d+) words?/)![1]);
+  expect(words).toBeGreaterThan(20);
   await startStudy(page);
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 1$/);
-  const w = await cardWord(page);
+  await expect(page.getByTestId('progress')).toHaveText(new RegExp(`^\\s*0 / ${words}$`));
   await tapCard(page);
   await expectPhase(page, 'back');
-  await swipeLeft(page);                                  // wrong → comes straight back
+  await swipeRight(page);                                 // retire: still everything else that is needed
   await settled(page);
-  await expectCard(page, w, 'front');
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*1 \/ 2$/);
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeRight(page);                                 // known now (not first sight) → level 1, due tomorrow
-  await expect(page.getByTestId('statistics')).toBeVisible();
-  await expect(page.getByTestId('stat-reviewed')).toHaveText('2');
-  await tap(page.getByTestId('done'));
-  await studyNow(page);
-  await expect(page.getByTestId('nothing-due')).toBeVisible();
-  await page.reload();                                    // nothing-due is not a session: reloading shows it again
-  await expect(page.getByTestId('nothing-due').or(page.getByTestId('study-now'))).toBeVisible();
-  if (await page.getByTestId('study-now').isVisible()) await studyNow(page);
-  await expect(page.getByTestId('nothing-due')).toBeVisible();
-  await tap(page.getByRole('button', { name: 'Get ahead' }));
-  await expectCard(page, w, 'front');
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 1$/);
-  await page.reload();                                    // the get-ahead session resumes (C5)
-  await expectCard(page, w, 'front');
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeRight(page);
-  await expect(page.getByTestId('statistics')).toBeVisible();
-  await expect(page.getByTestId('stat-reviewed')).toHaveText('1');
-});
-
-test('daily limit 2: retiring at first sight pulls in the next new card (limit not used up); a plain grade does not', async ({ page }) => {
-  await setDailyLimit(page, 2);
-  await importAndOpen(page);
-  await startStudy(page);
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*0 \/ 2$/);
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeRight(page);                                 // retire
-  await settled(page);
-  await expect(page.getByTestId('undo')).toHaveText('Already known · Undo');
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*1 \/ 3$/);
-  await swipeUp(page);
-  await tap(page.getByTestId('panel-known'));             // mark as known: refills too
-  await settled(page);
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*2 \/ 4$/);
-  await tapCard(page);
-  await expectPhase(page, 'back');
-  await swipeLeft(page);                                  // wrong: used the limit, re-queued
-  await settled(page);
-  await expect(page.getByTestId('progress')).toHaveText(/^\s*3 \/ 5$/);
+  await expect(page.getByTestId('progress')).toHaveText(new RegExp(`^\\s*1 / ${words}$`));
 });
 
 test('a 1-card session ended with "Remove card" has 0 graded cards: statistics show it, no celebration, Keep going works', async ({ page }) => {

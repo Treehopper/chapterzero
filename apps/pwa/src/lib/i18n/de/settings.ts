@@ -15,9 +15,6 @@ export const settings: Record<string, string> = {
   'default': 'Standard',
   'Repeat the vocabulary check': 'Wortschatztest wiederholen',
   'Practice': 'Üben',
-  'New cards per day': 'Neue Karten pro Tag',
-  'How many cards you see for the first time each day. Cards you have already seen come back when they are due, on top of these.':
-    'Wie viele Karten du jeden Tag zum ersten Mal siehst. Karten, die du schon kennst, kommen zusätzlich wieder, wenn sie fällig sind.',
   'Daily goal (reviews)': 'Tagesziel (Wiederholungen)',
   'Coverage target': 'Ziel: bekannte Wörter',
   'The share of a chapter’s words you should know before you read it. At 98 % you meet about one unknown word in 50, which most readers find comfortable. A chapter that reaches the target is ready to read; a higher target means more cards.':

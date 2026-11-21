@@ -3,7 +3,6 @@ import { DEFAULT_SCHEDULER } from './scheduler.ts';
 import type { LearnerStats, Settings } from './types.ts';
 
 export const DEFAULT_SETTINGS: Settings = {
-  dailyNewLimit: 20,
   dailyGoal: 20,
   coverageTarget: 0.98,
   retireOnFirstTry: true,
@@ -29,14 +28,13 @@ export const EMPTY_STATS: LearnerStats = { correctStreak: 0, bestCorrectStreak: 
 export function clampSettings(s: Settings): Settings {
   return {
     ...s,
-    dailyNewLimit: Math.max(1, Math.min(200, Math.round(s.dailyNewLimit))),
     dailyGoal: Math.max(1, Math.min(500, Math.round(s.dailyGoal))),
     coverageTarget: Math.max(0.95, Math.min(1, s.coverageTarget)),
   };
 }
 
-/** stored settings of older versions: renamed fields */
-export function migrateSettings(s: Partial<Settings> & { useEnglishDefinitions?: boolean }): Partial<Settings> {
-  const { useEnglishDefinitions, ...rest } = s;
+/** stored settings of older versions: renamed and dropped fields */
+export function migrateSettings(s: Partial<Settings> & { useEnglishDefinitions?: boolean; dailyNewLimit?: number }): Partial<Settings> {
+  const { useEnglishDefinitions, dailyNewLimit: _dropped, ...rest } = s;
   return useEnglishDefinitions === undefined || rest.useDefinitions !== undefined ? rest : { ...rest, useDefinitions: useEnglishDefinitions };
 }
