@@ -11,6 +11,8 @@
   import { applyTheme } from '../lib/theme';
   import Info from '../components/Info.svelte';
 
+  /** the route to return to (Settings opened from a study session), else the library */
+  let { back = [] }: { back?: string[] } = $props();
   let s = $state<Settings>();
   let packs = $state<PackStatus>();
   let profile = $state<VocabularyProfile>();
@@ -81,35 +83,8 @@
 </script>
 
 <main class="screen">
-  <header class="topbar"><button class="iconbtn" aria-label={t('Back')} onclick={() => go('library')}>‹</button><h1>{t('Settings')}</h1></header>
+  <header class="topbar"><button class="iconbtn" aria-label={t('Back')} onclick={() => (back.length ? go(back[0], ...back.slice(1)) : go('library'))}>‹</button><h1>{t('Settings')}</h1></header>
   {#if s}
-    <div class="section-title">{t('Language')}</div>
-    <div class="list">
-      <label class="list-row"><span class="spacer">{t('App language')}</span>
-        <select value={s.uiLanguage} onchange={(e) => save({ uiLanguage: e.currentTarget.value as Settings['uiLanguage'] })} class="fit" data-testid="set-language" aria-label={t('App language')}>
-          <option value="auto">{t('Like the device')}</option><option value="en">English</option><option value="de">Deutsch</option>
-        </select></label>
-    </div>
-
-    <div class="section-title">{t('Appearance')}</div>
-    <div class="list">
-      <label class="list-row"><span class="spacer">{t('Theme')}</span>
-        <select value={s.theme} onchange={(e) => save({ theme: e.currentTarget.value as Settings['theme'] })} class="fit" data-testid="set-theme" aria-label={t('Theme')}>
-          <option value="auto">{t('Like the device')}</option>
-          <optgroup label={t('Light')}><option value="light">{t('Light')}</option><option value="paper">{t('Paper')}</option><option value="mist">{t('Mist')}</option></optgroup>
-          <optgroup label={t('Dark')}><option value="dark">{t('Dark')}</option><option value="black">{t('Black')}</option></optgroup>
-          <optgroup label={t('Book genres')}><option value="scifi">{t('Science fiction')}</option><option value="fantasy">{t('Fantasy')}</option><option value="crime">{t('Crime')}</option><option value="romance">{t('Romance')}</option></optgroup>
-        </select></label>
-    </div>
-
-    <div class="section-title">{t('Vocabulary level')}</div>
-    <div class="list">
-      <div class="list-row"><span class="spacer">{t('Level {level} · cutoff rank {rank}', { level: startLevel(profile?.cutoffRank ?? 8000), rank: fmt(profile?.cutoffRank ?? 8000) })}
-        <Info text={t('Every word in the lists has a rank: how common it is. Words more common than your cutoff rank count as known and never become cards. The vocabulary check sets the cutoff; repeat it if your cards feel too easy or too hard.')} /></span>
-        <span class="small muted">{t(source[profile?.source ?? 'default'])}</span></div>
-      <button class="list-row" onclick={() => go('check', 'restart')}>{t('Repeat the vocabulary check')}</button>
-    </div>
-
     <div class="section-title">{t('Practice')}</div>
     <div class="list">
       <label class="list-row" for="setting-1"><span class="spacer">{t('New cards per day')}
@@ -130,41 +105,28 @@
         <select id="setting-4" value={s.frontSwipe} onchange={(e) => save({ frontSwipe: e.currentTarget.value as Settings['frontSwipe'] })} data-testid="set-frontswipe" aria-label={t('Swipe right before flipping')}>
           <option value="ask">{t('Ask')}</option><option value="known">{t('Mark as known')}</option><option value="grade">{t('Count as “knew it”')}</option><option value="off">{t('Not allowed')}</option>
         </select></label>
+      <label class="list-row"><span class="spacer">{t('Gesture hints every session')}</span>
+        <input type="checkbox" checked={s.gestureHints === 'everySession'} onchange={(e) => save({ gestureHints: e.currentTarget.checked ? 'everySession' : 'off' })} /></label>
+      <label class="list-row"><span class="spacer">{t('Undo button after swiping')}</span>
+        <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
+      <label class="list-row"><span class="spacer">{t('Undo button after “Mark as known”')}</span>
+        <input type="checkbox" checked={s.undoAfterKnown} onchange={(e) => save({ undoAfterKnown: e.currentTarget.checked })} data-testid="set-undo-known" /></label>
+      <label class="list-row"><span class="spacer">{t('Achievements and streaks')}
+        <span class="small muted block">{t('Pop-ups, the trophy, streaks and medals')}</span></span>
+        <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
+    </div>
+
+    <div class="section-title">{t('Cards')}</div>
+    <div class="list">
       <label class="list-row stack-row" for="setting-sentence"><span class="spacer">{t('Sentence from the book')}
         <Info text={t('The sentence in which the word occurs in the book. It helps you remember the word, but it can give away the story, such as what happens to a character. Off also hides it on the Words screen.')} /></span>
         <select id="setting-sentence" value={s.bookSentence} onchange={(e) => save({ bookSentence: e.currentTarget.value as Settings['bookSentence'] })} data-testid="set-sentence" aria-label={t('Sentence from the book')}>
           <option value="both">{t('Front and back')}</option><option value="back">{t('Back only')}</option><option value="off">{t('Off')}</option>
         </select></label>
-      <label class="list-row" for="setting-5"><span class="spacer">{t('Vocabulary check: flip before answering')}
-        <Info text={t('Only for the vocabulary check. On: you see the translation before you answer, which keeps the result honest. Off: you can swipe a word straight away.')} /></span>
-        <input id="setting-5" type="checkbox" checked={s.requireFlipBeforeGrade} onchange={(e) => save({ requireFlipBeforeGrade: e.currentTarget.checked })} /></label>
-      <label class="list-row"><span class="spacer">{t('Gesture hints every session')}</span>
-        <input type="checkbox" checked={s.gestureHints === 'everySession'} onchange={(e) => save({ gestureHints: e.currentTarget.checked ? 'everySession' : 'off' })} /></label>
-      <label class="list-row"><span class="spacer">{t('Achievements and streaks')}
-        <span class="small muted block">{t('Pop-ups, the trophy, streaks and medals')}</span></span>
-        <input type="checkbox" checked={s.achievementPopups} onchange={(e) => save({ achievementPopups: e.currentTarget.checked })} /></label>
-      <label class="list-row"><span class="spacer">{t('Undo button after swiping')}</span>
-        <input type="checkbox" checked={s.undoAfterGrade} onchange={(e) => save({ undoAfterGrade: e.currentTarget.checked })} data-testid="set-undo" /></label>
-      <label class="list-row"><span class="spacer">{t('Undo button after “Mark as known”')}</span>
-        <input type="checkbox" checked={s.undoAfterKnown} onchange={(e) => save({ undoAfterKnown: e.currentTarget.checked })} data-testid="set-undo-known" /></label>
       <label class="list-row" for="setting-6"><span class="spacer">{t('Box level on the card back')}
         <Info text={t('Each card moves through 8 boxes. When you know it, it moves up a box and comes back after a longer break; when you don’t, it starts again at the first box. The dots show which box the card is in.')} />
         <span class="small muted block">{t('Dots: how many times in a row you knew the card')}</span></span>
         <input id="setting-6" type="checkbox" checked={s.showBoxLevel} onchange={(e) => save({ showBoxLevel: e.currentTarget.checked })} data-testid="set-boxlevel" /></label>
-    </div>
-
-    <div class="section-title">{t('Word selection (new imports and re-filtering)')}</div>
-    <div class="list">
-      <label class="list-row" for="setting-7"><span class="spacer">{t('Use {source} definitions when no {target} translation exists', langs)}
-        <Info text={t('For some rare words the lists have no {target} translation, only a definition in {source}. On: such words become cards that show the definition. Off: they count as not in the lists. Applies to books you import or re-filter from now on.', langs)} /></span>
-        <input id="setting-7" type="checkbox" checked={s.useDefinitions} onchange={(e) => save({ useDefinitions: e.currentTarget.checked })} /></label>
-      <label class="list-row" for="setting-8"><span class="spacer">{t('Skip words nearly identical in {target}', langs)}
-        <Info text={t('Words that look and mean almost the same in {target} are easy to understand while reading. On: they don’t become cards. Applies to books you import or re-filter from now on.', langs)} /></span>
-        <input id="setting-8" type="checkbox" checked={s.skipCognates} onchange={(e) => save({ skipCognates: e.currentTarget.checked })} /></label>
-    </div>
-
-    <div class="section-title">{t('Lookup links')}</div>
-    <div class="list">
       <label class="list-row" for="setting-9"><span class="spacer">{t('Links on the card back')}
         <Info text={t('Buttons on the back of a card that open the word in an online dictionary. Only the dictionaries for your word lists’ languages appear.')} /></span>
         <input id="setting-9" type="checkbox" checked={s.showLookupLinks} onchange={(e) => save({ showLookupLinks: e.currentTarget.checked })} data-testid="set-links" /></label>
@@ -189,6 +151,46 @@
         <button class="btn" onclick={addCustom}>{t('Add link')}</button>
       </div>
       {/if}
+    </div>
+
+    <div class="section-title">{t('Vocabulary level')}</div>
+    <div class="list">
+      <div class="list-row"><span class="spacer">{t('Level {level} · cutoff rank {rank}', { level: startLevel(profile?.cutoffRank ?? 8000), rank: fmt(profile?.cutoffRank ?? 8000) })}
+        <Info text={t('Every word in the lists has a rank: how common it is. Words more common than your cutoff rank count as known and never become cards. The vocabulary check sets the cutoff; repeat it if your cards feel too easy or too hard.')} /></span>
+        <span class="small muted">{t(source[profile?.source ?? 'default'])}</span></div>
+      <button class="list-row" onclick={() => go('check', 'restart')}>{t('Repeat the vocabulary check')}</button>
+      <label class="list-row" for="setting-5"><span class="spacer">{t('Vocabulary check: flip before answering')}
+        <Info text={t('Only for the vocabulary check. On: you see the translation before you answer, which keeps the result honest. Off: you can swipe a word straight away.')} /></span>
+        <input id="setting-5" type="checkbox" checked={s.requireFlipBeforeGrade} onchange={(e) => save({ requireFlipBeforeGrade: e.currentTarget.checked })} /></label>
+    </div>
+
+    <div class="section-title">{t('Word selection (new imports and re-filtering)')}</div>
+    <div class="list">
+      <label class="list-row" for="setting-7"><span class="spacer">{t('Use {source} definitions when no {target} translation exists', langs)}
+        <Info text={t('For some rare words the lists have no {target} translation, only a definition in {source}. On: such words become cards that show the definition. Off: they count as not in the lists. Applies to books you import or re-filter from now on.', langs)} /></span>
+        <input id="setting-7" type="checkbox" checked={s.useDefinitions} onchange={(e) => save({ useDefinitions: e.currentTarget.checked })} /></label>
+      <label class="list-row" for="setting-8"><span class="spacer">{t('Skip words nearly identical in {target}', langs)}
+        <Info text={t('Words that look and mean almost the same in {target} are easy to understand while reading. On: they don’t become cards. Applies to books you import or re-filter from now on.', langs)} /></span>
+        <input id="setting-8" type="checkbox" checked={s.skipCognates} onchange={(e) => save({ skipCognates: e.currentTarget.checked })} /></label>
+    </div>
+
+    <div class="section-title">{t('Language')}</div>
+    <div class="list">
+      <label class="list-row"><span class="spacer">{t('App language')}</span>
+        <select value={s.uiLanguage} onchange={(e) => save({ uiLanguage: e.currentTarget.value as Settings['uiLanguage'] })} class="fit" data-testid="set-language" aria-label={t('App language')}>
+          <option value="auto">{t('Like the device')}</option><option value="en">English</option><option value="de">Deutsch</option>
+        </select></label>
+    </div>
+
+    <div class="section-title">{t('Appearance')}</div>
+    <div class="list">
+      <label class="list-row"><span class="spacer">{t('Theme')}</span>
+        <select value={s.theme} onchange={(e) => save({ theme: e.currentTarget.value as Settings['theme'] })} class="fit" data-testid="set-theme" aria-label={t('Theme')}>
+          <option value="auto">{t('Like the device')}</option>
+          <optgroup label={t('Light')}><option value="light">{t('Light')}</option><option value="paper">{t('Paper')}</option><option value="mist">{t('Mist')}</option></optgroup>
+          <optgroup label={t('Dark')}><option value="dark">{t('Dark')}</option><option value="black">{t('Black')}</option></optgroup>
+          <optgroup label={t('Book genres')}><option value="scifi">{t('Science fiction')}</option><option value="fantasy">{t('Fantasy')}</option><option value="crime">{t('Crime')}</option><option value="romance">{t('Romance')}</option></optgroup>
+        </select></label>
     </div>
 
     <div class="section-title">{t('Backup')}</div>

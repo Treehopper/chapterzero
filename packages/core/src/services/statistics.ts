@@ -17,18 +17,24 @@ export async function buildStatistics(tx: Repositories, session: StudySession, n
   const days = dailyStats(log);
   const s = streaks(new Set(days.keys()), now);
   const c = session.counters;
+  // first review of each card in this session: was it still unknown then?
+  const startedAt = new Date(session.startedAt).getTime();
+  const before = new Map<string, number>();
+  for (const e of log) if (e.bookId === book.id && new Date(e.at).getTime() >= startedAt && !before.has(e.cardId)) before.set(e.cardId, e.levelBefore);
+  const brought = cards.filter((x) => x.status === 'active' && x.level >= 2 && (before.get(x.id) ?? 2) < 2).length;
   const end = session.finishedAt ? new Date(session.finishedAt) : now;
   return {
     sessionId: session.id, bookId: book.id,
     session: {
       reviewed: c.reviewed, firstTryCorrect: c.firstAttemptsCorrect, promoted: c.promoted, demoted: c.demoted,
-      alreadyKnown: c.alreadyKnown, removed: c.removed,
+      alreadyKnown: c.alreadyKnown, removed: c.removed, learned: c.alreadyKnown + brought,
       durationSec: Math.max(0, Math.round((end.getTime() - new Date(session.startedAt).getTime()) / 1000)),
     },
     coverage: {
       chapter: ch && { index: ch.index, displayTitle: displayTitle(book, ch), before: session.coverageAtStart.chapter, after: chapterCoverage(ch, cards) },
       book: { before: session.coverageAtStart.book, after: progress.coverage },
     },
+    left: { chapter: ch && progress.chapters.find((x) => x.index === ch.index)?.wordsToGo, book: progress.toReady.cards },
     book: progress,
     overall: {
       streakDays: s.current, longestStreak: s.longest, reviewsToday: days.get(dayKey(now))?.reviews ?? 0,

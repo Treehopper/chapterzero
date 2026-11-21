@@ -36,6 +36,7 @@
   const MAX_FLAMES = 30;
   /** coverage gained, in percentage points; nothing for no gain */
   const gain = (before: number, after: number) => (after - before >= 0.0005 ? `+${pct(after - before)}` : '');
+  const left = (n: number) => (n ? tn(n, '{n} card left until ready to read', '{n} cards left until ready to read') : t('Ready to read'));
   const medal = (tier?: string) => (tier === 'gold' ? '🥇' : tier === 'silver' ? '🥈' : tier === 'bronze' ? '🥉' : '🏅');
 </script>
 
@@ -46,7 +47,7 @@
     <h1 class="title">{t('Session complete')}</h1>
     {@const goalMet = s.overall.reviewsToday >= s.overall.dailyGoal}
     <!-- what was earned comes first: no scrolling to find it -->
-    <section class="card-box stack today" class:met={goalMet}>
+    <section class="card-box stack today">
       {#if ui.achievements && s.overall.streakDays > 0}
         <div class="stack" data-testid="stat-streak">
           <div class="flames" aria-hidden="true">
@@ -77,8 +78,8 @@
     <section class="card-box stack figures">
       <div><strong class="big" data-testid="stat-reviewed">{s.session.reviewed}</strong> {tn(s.session.reviewed, 'card reviewed', 'cards reviewed')}
         <span class="small muted"> · {dur(s.session.durationSec)}</span></div>
-      {#if s.session.firstTryCorrect}<div class="up" data-testid="stat-first-try">💪 {t('{n} right on the first try', { n: s.session.firstTryCorrect })}</div>{/if}
-      {#if s.session.promoted}<div class="up">⬆ {tn(s.session.promoted, '{n} card moved up a box', '{n} cards moved up a box')}</div>{/if}
+      {#if s.session.firstTryCorrect}<div class="up" data-testid="stat-first-try">{t('{n} right on the first try', { n: s.session.firstTryCorrect })}</div>{/if}
+      {#if s.session.promoted}<div class="up">{tn(s.session.promoted, '{n} card moved up a box', '{n} cards moved up a box')}</div>{/if}
       {#if s.session.removed}<div>{t('{n} removed', { n: s.session.removed })}</div>{/if}
     </section>
     {#if s.session.alreadyKnown}
@@ -87,12 +88,15 @@
 
     <div class="section-title">{t('Overall')}</div>
     <div class="card-box stack">
+      <div class="row"><span class="spacer">{t('Learned in this session')}</span><strong data-testid="stat-learned">{tn(s.session.learned, '{n} card', '{n} cards')}</strong></div>
       {#if s.coverage.chapter}
         <div class="row"><span class="spacer">{s.coverage.chapter.displayTitle}</span>
           <strong>{pct(s.coverage.chapter.after)}</strong>{#if gain(s.coverage.chapter.before, s.coverage.chapter.after)}<span class="gain" data-testid="stat-chapter-gain">{gain(s.coverage.chapter.before, s.coverage.chapter.after)}</span>{/if}</div>
+        {#if s.left.chapter !== undefined}<div class="small muted left" data-testid="stat-chapter-left">{left(s.left.chapter)}</div>{/if}
       {/if}
       <div class="row"><span class="spacer">{s.book.title}</span>
         <strong>{pct(s.coverage.book.after)}</strong>{#if gain(s.coverage.book.before, s.coverage.book.after)}<span class="gain" data-testid="stat-book-gain">{gain(s.coverage.book.before, s.coverage.book.after)}</span>{/if}</div>
+      <div class="small muted left" data-testid="stat-book-left">{left(s.left.book)}</div>
       <div class="small muted">{t('estimated coverage')}{s.book.unknownEvery ? ` · ${t('one unknown word every {n}', { n: s.book.unknownEvery })}` : ''}</div>
     </div>
     <p class="small muted">{t('{n} words learned across all books.', { n: fmt(s.overall.wordsLearnedAllBooks) })}</p>
@@ -109,19 +113,19 @@
 <style>
   .title { font-family: var(--serif); font-size: 28px; margin: 12px 0 16px; }
   .today { gap: 10px; margin-bottom: 12px; }
-  .today.met { border-color: color-mix(in srgb, #3b82f6 55%, var(--line)); }
   .flames { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; font-size: 22px; line-height: 1; }
   .flame.now { font-size: 30px; }
   /* the daily goal reached: today's flame burns blue, and bigger */
   .flame.blue { font-size: 40px; filter: hue-rotate(185deg) saturate(1.6); }
   .more { align-self: center; margin-left: 4px; }
   .today strong { font-size: 20px; }
-  .goal-met { font-weight: 700; color: #3b82f6; }
+  .goal-met { font-weight: 600; }
   .goal { gap: 6px; }
   .figures { gap: 6px; }
   .figures .big { font-size: 28px; }
   .up { color: var(--good); font-weight: 600; }
   .gain { color: var(--good); font-weight: 700; margin-left: 8px; min-width: 0; }
+  .left { margin-top: -6px; }
   .known { background: color-mix(in srgb, var(--good) 12%, transparent); padding: 12px 14px; border-radius: 12px; }
   .medals { margin-bottom: 12px; }
   .medals { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }

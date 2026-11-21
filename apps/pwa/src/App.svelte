@@ -71,7 +71,7 @@
     {:else if router.route.name === 'words'}<Words bookId={router.route.params[0]} tab={router.route.params[1]} chapter={router.route.params[2]} />
     {:else if router.route.name === 'read'}<Reader bookId={router.route.params[0]} chapter={router.route.params[1]} />
     {:else if router.route.name === 'achievements'}<Achievements />
-    {:else if router.route.name === 'settings'}<Settings />
+    {:else if router.route.name === 'settings'}<Settings back={router.route.params} />
     {:else}<Library />
     {/if}
   {/key}

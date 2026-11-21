@@ -231,7 +231,11 @@ export interface SessionStatistics {
     firstTryCorrect: number;
     promoted: number; demoted: number;
     alreadyKnown: number; removed: number; durationSec: number;
+    /** cards that count as known since this session: retired or marked as known, or brought to level 2 */
+    learned: number;
   };
+  /** cards still to learn until ready to read (the chapter on its own; the book in reading order) */
+  left: { chapter?: number; book: number };
   coverage: {
     chapter?: { index: number; displayTitle: string; before: number; after: number };
     book: { before: number; after: number };

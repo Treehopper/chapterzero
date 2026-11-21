@@ -71,7 +71,7 @@ test('undo pill off: no pill, and the panel never offers Undo', async ({ page })
   await expect(page.getByTestId('undo')).toHaveCount(0);
   await swipeUp(page);
   await expect(page.getByTestId('panel')).toBeVisible();
-  await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Cancel session']);
+  await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Settings', 'Cancel session']);
 });
 
 test('keyboard: Enter on the focused Undo pill undoes instead of flipping the card', async ({ page }) => {

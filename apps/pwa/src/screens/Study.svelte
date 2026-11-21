@@ -409,6 +409,7 @@
       <div class="panel" class:dragging={dy !== 0} in:slideIn inert={!panel} data-testid="panel" bind:offsetHeight={panelH} style:transform="translateY({(1 - openness) * 100}%)">
         <button class="pbtn" onclick={openEdit}>{t('Edit card')}</button>
         <button class="pbtn" onclick={() => removeAs('known')} data-testid="panel-known">{t('Mark as known')}</button>
+        <button class="pbtn" onclick={() => go('settings', 'study', bookId)} data-testid="panel-settings">{t('Settings')}</button>
         <button class="pbtn cancel" onclick={finish} data-testid="finish">{t('Cancel session')}</button>
       </div>
     {/if}

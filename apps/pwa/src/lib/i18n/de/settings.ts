@@ -115,4 +115,5 @@ export const settings: Record<string, string> = {
   'Fantasy': 'Fantasy',
   'Crime': 'Krimi',
   'Romance': 'Liebesroman',
+  'Cards': 'Karten',
 };

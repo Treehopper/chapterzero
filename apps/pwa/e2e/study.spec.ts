@@ -204,7 +204,7 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByTestId('grab')).toBeVisible();
     await swipeUp(page);
     await expect(page.getByTestId('panel')).toBeVisible();
-    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Cancel session']);
+    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Edit card', 'Mark as known', 'Settings', 'Cancel session']);
     await expect(page.getByTestId('grab')).toHaveCount(0);
   });
 
@@ -252,6 +252,9 @@ test.describe('study (C1–C18)', () => {
     await expect(page.getByText('Boxes')).toHaveCount(0);
     await expect(page.getByTestId('stat-book-gain')).toHaveText(/^\+\d+\.\d %$/);
     await expect(page.getByTestId('stat-goal')).toHaveText('1 of 20 reviews today');
+    // in absolute numbers: what this session did and what is left
+    await expect(page.getByTestId('stat-learned')).toHaveText('1 card');
+    await expect(page.getByTestId('stat-book-left')).toHaveText(/^\d+ cards? left until ready to read$/);
     await page.reload();
     await expect(page.getByTestId('statistics')).toBeVisible();
     await tap(page.getByTestId('done'));

@@ -36,7 +36,7 @@ test.describe('on a German device', () => {
     await expectPhase(page, 'back');
     await expect(page.getByTestId('hint-right')).toContainText('gewusst');
     await page.getByTestId('grab').tap();
-    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Karte bearbeiten', 'Als bekannt markieren', 'Sitzung abbrechen']);
+    await expect(page.getByTestId('panel').getByRole('button')).toHaveText(['Karte bearbeiten', 'Als bekannt markieren', 'Einstellungen', 'Sitzung abbrechen']);
   });
 });
 
