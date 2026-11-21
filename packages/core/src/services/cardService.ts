@@ -8,7 +8,7 @@ import type { Book, BookLemma, Card, LemmaKind } from '../domain/types.ts';
 import type { Repositories, WordList } from '../ports/index.ts';
 import { bookPair, cardView, cleanTranslations, links, type CardView, type Ctx } from './context.ts';
 
-export type WordsTab = 'unlisted' | 'active' | 'known' | 'removed' | 'skipped';
+export type WordsTab = 'unlisted' | 'names' | 'active' | 'known' | 'removed' | 'skipped';
 
 export interface WordRow {
   lemma: string;
@@ -22,7 +22,6 @@ export interface WordRow {
   definition?: string;
   pos?: string[];
   listLevel?: number;
-  name?: boolean;
 }
 
 export interface WordSuggestion {
@@ -94,7 +93,7 @@ export function cardService(ctx: Ctx) {
   }
 
   return {
-    words: (bookId: string, opts: { tab: WordsTab; search?: string; chapterIndex?: number; includeNames?: boolean }) =>
+    words: (bookId: string, opts: { tab: WordsTab; search?: string; chapterIndex?: number }) =>
       ctx.uow.run(async (tx): Promise<WordRow[]> => {
         const book = await getBook(tx, bookId);
         const [rows, cards] = await Promise.all([tx.bookLemmas.listByBook(bookId), tx.cards.listByBook(bookId)]);
@@ -103,13 +102,15 @@ export function cardService(ctx: Ctx) {
           opts.chapterIndex === undefined || (byChapter[opts.chapterIndex] ?? 0) > 0 || chIndex === opts.chapterIndex;
         const matches = (lemma: string, forms: string[] = []) => !q || lemma.includes(q) || forms.some((f) => f.includes(q));
         let out: WordRow[] = [];
-        if (opts.tab === 'unlisted') {
-          out = rows.filter((r) => (r.kind === 'unlisted' || (opts.includeNames && r.kind === 'name')) && !r.ignored && inIncluded(book, r.occurrencesByChapter))
+        if (opts.tab === 'unlisted' || opts.tab === 'names') {
+          const kind = opts.tab === 'names' ? 'name' : 'unlisted';
+          out = rows.filter((r) => r.kind === kind && !r.ignored && inIncluded(book, r.occurrencesByChapter))
             .filter((r) => inChapter(r.occurrencesByChapter) && matches(r.lemma, r.forms))
-            .sort((a, b) => b.occurrences - a.occurrences || a.firstPosition - b.firstPosition)
+            // names in the order they enter the story; other words by frequency
+            .sort((a, b) => (kind === 'name' ? a.firstPosition - b.firstPosition : b.occurrences - a.occurrences || a.firstPosition - b.firstPosition))
             .map((r) => { const ch = firstChapter(r.occurrencesByChapter);
               return { lemma: r.lemma, kind: r.kind, occurrences: r.occurrences, example: r.example, chapterIndex: ch,
-                chapterTitle: chapterTitle(book, ch), name: r.kind === 'name' }; });
+                chapterTitle: chapterTitle(book, ch) }; });
         } else if (opts.tab === 'skipped') {
           const listed = rows.filter((r) => (r.kind === 'belowLevel' || r.kind === 'cognate') && inChapter(r.occurrencesByChapter) && matches(r.lemma, r.forms));
           const entries = await ctx.wordList.entries(listed.map((r) => r.lemma));

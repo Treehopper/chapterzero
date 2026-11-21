@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buf, setup, twoChapterBook } from './helpers.ts';
+import { buf, filler, setup, twoChapterBook } from './helpers.ts';
 
 async function imported() {
   const s = setup(twoChapterBook());
@@ -37,5 +37,20 @@ describe('reader (Epic R)', () => {
     await app.books.delete(book.id);
     expect(await ports.uow.run((tx) => tx.bookTexts.get(book.id))).toBeUndefined();
     expect(await ports.uow.run((tx) => tx.bookTexts.getPosition(book.id))).toBeUndefined();
+  });
+
+  it('marks names; their pop-up has the first sentences of the book they appear in', async () => {
+    const s = setup({ sections: [
+      [`Gandor saw the lantern. ${filler(200)} The hope of Gandor was small. The man spoke.`],
+      [`Gandor rode on. Then Gandor slept. ${filler(200)} There was hope.`],
+    ] });
+    const p = await s.app.books.analyse(buf);
+    const b = await s.app.books.confirm(p.draftId, { includedChapters: p.includedChapters, cutoffRank: 2000 });
+    const r = await s.app.reader.open(b.id);
+    const ch = await s.app.reader.chapter(b.id, r.chapters[0].index);
+    const names = ch.blocks.flatMap((x) => x.segs).filter((x): x is { t: string; n: string } => typeof x !== 'string' && 'n' in x);
+    expect(names.map((x) => x.t)).toEqual(['Gandor', 'Gandor', 'Gandor', 'Gandor']);
+    expect(Object.keys(ch.names)).toEqual(['gandor']);
+    expect(ch.names.gandor).toMatchObject({ name: 'Gandor', first: ['Gandor saw the lantern.', 'The hope of Gandor was small.', 'Gandor rode on.'] });
   });
 });

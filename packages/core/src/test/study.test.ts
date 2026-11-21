@@ -377,7 +377,7 @@ describe('adding by hand and re-filtering (D2, D8, B3)', () => {
     const unl = await s.app.cards.words(b.id, { tab: 'unlisted' });
     expect(unl[0]).toMatchObject({ lemma: 'lasgun', occurrences: 2 });
     expect(unl.some((r) => r.lemma === 'gandor')).toBe(false);
-    expect((await s.app.cards.words(b.id, { tab: 'unlisted', includeNames: true })).some((r) => r.lemma === 'gandor')).toBe(true);
+    expect((await s.app.cards.words(b.id, { tab: 'names' })).some((r) => r.lemma === 'gandor')).toBe(true);
     await s.app.cards.ignoreUnlisted(b.id, 'lasgun');
     expect((await s.app.cards.words(b.id, { tab: 'unlisted' })).some((r) => r.lemma === 'lasgun')).toBe(false);
     expect((await s.app.cards.words(b.id, { tab: 'active', search: 'scy' })).map((r) => r.lemma)).toEqual(['scythe']);

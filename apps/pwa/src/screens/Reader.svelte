@@ -1,7 +1,8 @@
 <script lang="ts">
-  /** Reader (Epic R): one chapter at a time in the app's serif; card words underlined, tap one for its card. */
+  /** Reader (Epic R): one chapter at a time in the app's serif; card words underlined, tap one for its card.
+      Names are marked too: a tap shows the first sentences of the book in which they appear. */
   import { onDestroy, onMount, tick, untrack } from 'svelte';
-  import { headword, type ReaderBook, type ReaderCard, type ReaderChapter } from '@vocabfirst/core';
+  import { headword, type ReaderBook, type ReaderCard, type ReaderChapter, type ReaderName } from '@vocabfirst/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import Sheet from '../components/Sheet.svelte';
@@ -15,6 +16,7 @@
   let error = $state('');
   let contents = $state(false);
   let card = $state<ReaderCard>();
+  let name = $state<ReaderName>();
   let text = $state<HTMLElement>();
 
   const at = $derived(book && ch ? book.chapters.findIndex((c) => c.index === ch!.index) : -1);
@@ -67,8 +69,24 @@
   onDestroy(() => { window.removeEventListener('scroll', onScroll); clearTimeout(timer); });
 
   function tapWord(e: MouseEvent) {
-    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-c]')?.dataset.c;
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-c], [data-n]');
+    const id = el?.dataset.c, n = el?.dataset.n;
     if (id && ch?.cards[id]) card = ch.cards[id];
+    else if (n && ch?.names[n]) name = ch.names[n];
+  }
+
+  /** a sentence with the name in bold */
+  function marked(sentence: string, spelled: string): { t: string; b: boolean }[] {
+    const out: { t: string; b: boolean }[] = [];
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${spelled.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}])`, 'gu');
+    let last = 0;
+    for (const m of sentence.matchAll(re)) {
+      if (m.index! > last) out.push({ t: sentence.slice(last, m.index), b: false });
+      out.push({ t: m[0], b: true });
+      last = m.index! + m[0].length;
+    }
+    if (last < sentence.length) out.push({ t: sentence.slice(last), b: false });
+    return out;
   }
 </script>
 
@@ -83,7 +101,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <article class="text" bind:this={text} onclick={tapWord} data-testid="reader-text" {...textAttrs(book?.language ?? ui.pair.source)}>
       {#each ch.blocks as b, i (i)}
-        <p data-b={i} class:note={b.note}>{#each b.segs as s, j (j)}{#if typeof s === 'string'}{s}{:else}<span class="w" class:active={ch.cards[s.c]?.status === 'active'} data-c={s.c} role="button" tabindex="-1">{s.t}</span>{/if}{/each}</p>
+        <p data-b={i} class:note={b.note}>{#each b.segs as s, j (j)}{#if typeof s === 'string'}{s}{:else if 'n' in s}<span class="nm" data-n={s.n} role="button" tabindex="-1">{s.t}</span>{:else}<span class="w" class:active={ch.cards[s.c]?.status === 'active'} data-c={s.c} role="button" tabindex="-1">{s.t}</span>{/if}{/each}</p>
       {:else}
         <p class="muted">{t('This chapter has no text.')}</p>
       {/each}
@@ -120,6 +138,19 @@
   </Sheet>
 {/if}
 
+{#if name}
+  {@const n = name}
+  <Sheet label={n.name} onclose={() => (name = undefined)}>
+    <div class="stack" data-testid="reader-name">
+      <div class="row"><h2 class="spacer" {...textAttrs(book?.language ?? ui.pair.source)}>{n.name}</h2><span class="pill">{t('name')}</span></div>
+      <div class="section-title">{t('First appearances')}</div>
+      {#each n.first as sentence, i (i)}
+        <p class="first" {...textAttrs(book?.language ?? ui.pair.source)}>{#each marked(sentence, n.name) as p, j (j)}{#if p.b}<b>{p.t}</b>{:else}{p.t}{/if}{/each}</p>
+      {/each}
+    </div>
+  </Sheet>
+{/if}
+
 <style>
   .bar { position: sticky; top: 0; z-index: 2; background: var(--bg); margin: calc(-1 * var(--safe-top) - 12px) -16px 8px;
     padding: calc(var(--safe-top) + 4px) 8px 4px; border-bottom: 1px solid var(--line); }
@@ -130,6 +161,9 @@
   .w { cursor: pointer; }
   .w.active { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
     text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  .nm { cursor: pointer; text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent);
+    text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+  .first { font-family: var(--serif); font-size: 17px; line-height: 1.5; margin: 0; padding-left: 10px; border-left: 2px solid var(--line); }
   .pager { gap: 8px; margin-top: 24px; }
   .pager .btn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .toc { text-align: left; width: 100%; }

@@ -12,13 +12,12 @@
   let { bookId, tab: tabParam, chapter: chapterParam }: { bookId: string; tab?: string; chapter?: string } = $props();
   const TABS: { id: WordsTab; label: string }[] = [
     { id: 'active', label: 'Active' }, { id: 'known', label: 'Known' }, { id: 'removed', label: 'Removed' },
-    { id: 'skipped', label: 'Skipped' }, { id: 'unlisted', label: 'Not in lists' },
+    { id: 'skipped', label: 'Skipped' }, { id: 'unlisted', label: 'Not in lists' }, { id: 'names', label: 'Names' },
   ];
   // the screen is re-created per route, so the initial props are all it needs
   let tab = $state<WordsTab>(untrack(() => TABS.find((x) => x.id === tabParam)?.id ?? 'active'));
   let chapterIndex = $state<number | undefined>(untrack(() => (chapterParam ? Number(chapterParam) : undefined)));
   let search = $state('');
-  let names = $state(false);
   let rows = $state<WordRow[]>([]);
   let loading = $state(true);
   let counts = $state<Record<string, number>>({});
@@ -45,7 +44,7 @@
   /** bumped by every change: a list fetched before it must not land in the cleared cache */
   let generation = 0;
   async function show() {
-    const query = { tab, search, chapterIndex, includeNames: names };
+    const query = { tab, search, chapterIndex };
     const key = JSON.stringify(query);
     const hit = cache.get(key);
     if (hit) { rows = hit; loading = false; return; }
@@ -136,7 +135,7 @@
   }
 
   function tapRow(r: WordRow) {
-    if (tab === 'unlisted' || tab === 'skipped' || (tab === 'known' && !r.card)) openAdd(r);
+    if (tab === 'unlisted' || tab === 'names' || tab === 'skipped' || (tab === 'known' && !r.card)) openAdd(r);
     else { editingRow = r; editText = r.translations?.join(', ') ?? ''; }
   }
 
@@ -191,16 +190,13 @@
       {#each chapters as c (c.index)}<option value={c.index}>{c.displayTitle}</option>{/each}
     </select>
   </div>
-  {#if tab === 'unlisted'}
-    <label class="row small names"><input type="checkbox" bind:checked={names} onchange={() => show()} /> {t('Show names ({n})', { n: fmt(counts.names ?? 0) })}</label>
-  {/if}
 
   <div class="list" data-testid="word-list">
     {#each rows.slice(0, limit) as r (r.lemma)}
       <button class="list-row word" onclick={() => tapRow(r)} onpointerdown={(e) => rowDown(e, r)} onpointermove={rowMove} onpointerup={() => rowUp(r)}
         onpointercancel={() => (swipe = undefined)} style:transform={swipe?.lemma === r.lemma ? `translateX(${swipe.x}px)` : ''} data-testid="word-row" data-word={r.lemma}>
         <span class="stack grow">
-          <span class="row"><strong class="spacer" {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}{#if r.name} <span class="pill">{t('name')}</span>{/if}</strong>
+          <span class="row"><strong class="spacer" {...textAttrs(ui.pair.source)}>{headword(r.lemma, r.pos, ui.pair.source)}</strong>
             {#if r.occurrences}<span class="muted small">×{r.occurrences}</span>{/if}
             {#if r.chapterTitle}<span class="muted small ch">{r.chapterTitle}</span>{/if}</span>
           {#if r.translations?.length || r.definition}<span class="small" {...textAttrs(r.translations?.length ? ui.pair.target : ui.pair.source)}>{r.translations?.length ? r.translations.join(', ') : r.definition}</span>{/if}
@@ -262,7 +258,6 @@
   .c { opacity: 0.6; font-weight: 500; }
   .filters { margin-bottom: 8px; }
   .filters select { max-width: 44%; }
-  .names { margin: 0 4px 8px; }
   .word { align-items: flex-start; touch-action: pan-y; transition: transform .15s; }
   .grow { flex: 1; gap: 2px; min-width: 0; }
   .ch { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

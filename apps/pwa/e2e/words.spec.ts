@@ -12,7 +12,7 @@ test.describe('words (Epic D)', () => {
   test('opens on Active; tabs switch without rebuilding the screen (D1)', async ({ page }) => {
     const tabs = page.getByRole('tab');
     await expect(tabs.first()).toHaveText(/^Active/);
-    await expect(tabs.last()).toHaveText(/^Not in lists/);
+    await expect(tabs.last()).toHaveText(/^Names/);
     await expect(page.getByRole('tab', { name: /Active/ })).toHaveAttribute('aria-selected', 'true');
     await page.getByLabel('Search words').fill('e');
     await tap(page.getByRole('tab', { name: /Known/ }));

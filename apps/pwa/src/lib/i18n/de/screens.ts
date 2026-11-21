@@ -85,8 +85,7 @@ export const screens: Record<string, string> = {
   'Search words': 'Wörter suchen',
   'Chapter': 'Kapitel',
   'All chapters': 'Alle Kapitel',
-  'Show names ({n})': 'Namen anzeigen ({n})',
-  'name': 'Name',
+  'Names': 'Namen',
   'Nothing here.': 'Hier ist nichts.',
   'Show more ({n})': 'Mehr anzeigen ({n})',
   'Swipe a row left to hide it.': 'Wische eine Zeile nach links, um sie auszublenden.',
@@ -109,6 +108,9 @@ export const screens: Record<string, string> = {
   'This chapter has no text.': 'Dieses Kapitel hat keinen Text.',
   'known': 'bekannt',
   'removed': 'entfernt',
+
+  'name': 'Name',
+  'First appearances': 'Erste Auftritte',
 
   // Statistics
   'To the library': 'Zur Bibliothek',

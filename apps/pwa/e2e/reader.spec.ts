@@ -7,6 +7,22 @@ test.describe('reader (Epic R)', () => {
     await importAndOpen(page);
   });
 
+  test('names: their own tab under Words; in the reader a tap shows where they first appear', async ({ page }) => {
+    await tap(page.getByRole('button', { name: 'Words', exact: true }));
+    await tap(page.getByRole('tab', { name: /Names/ }));
+    const first = page.getByTestId('word-row').first();
+    await expect(first).toBeVisible();
+    await tap(page.getByRole('button', { name: 'Back to the book' }));
+    await tap(page.getByTestId('read'));
+    const name = page.getByTestId('reader-text').locator('.nm').first();
+    await expect(name).toBeVisible();
+    const spelled = await name.innerText();
+    await name.tap();
+    const sheet = page.getByTestId('reader-name');
+    await expect(sheet.getByRole('heading')).toHaveText(spelled);
+    await expect(sheet.locator('.first').first().locator('b')).toHaveText(spelled);
+  });
+
   test('read from the book page: card words underlined, tap one for its card, contents, position kept', async ({ page }) => {
     await tap(page.getByTestId('read'));
     await expect(page.getByTestId('reader')).toBeVisible();

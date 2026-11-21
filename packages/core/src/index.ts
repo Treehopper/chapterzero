@@ -12,7 +12,7 @@ export type { WordRow, WordSuggestion, WordsTab } from './services/cardService.t
 export type { CalibrationView } from './services/calibrationService.ts';
 export type { ConfirmOptions } from './services/importService.ts';
 export type { DailyStats } from './services/progressService.ts';
-export type { ReaderBook, ReaderCard, ReaderChapter, ReaderSegment } from './services/readerService.ts';
+export type { ReaderBook, ReaderCard, ReaderChapter, ReaderName, ReaderSegment } from './services/readerService.ts';
 export { analyseContent } from './domain/analysis.ts';
 export { headword } from './domain/cardContent.ts';
 export type { SenseOption } from './domain/cardContent.ts';
