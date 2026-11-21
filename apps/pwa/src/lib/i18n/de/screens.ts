@@ -32,6 +32,14 @@ export const screens: Record<string, string> = {
   '{n} new': '{n} neu',
   "“Known” is the estimated share of the chapter's words you know; words not in the lists count as known. A chapter is ready to read at {target}. The bar and “words to go” count the words of the chapter you have learned and the ones still needed for that.":
     '„Bekannt“ ist der geschätzte Anteil der Wörter des Kapitels, die du kennst; Wörter, die nicht in den Listen stehen, gelten als bekannt. Ab {target} ist ein Kapitel bereit zum Lesen. Balken und „noch … Wörter“ zählen die Wörter des Kapitels, die du gelernt hast, und die, die dafür noch fehlen.',
+  'The word lists were updated': 'Die Wortlisten wurden aktualisiert',
+  'Update this book to use them. Cards you have practised keep their progress; cards for words the new lists see differently are made anew.':
+    'Aktualisiere dieses Buch, um sie zu nutzen. Geübte Karten behalten ihren Fortschritt; Karten für Wörter, die die neuen Listen anders sehen, werden neu erstellt.',
+  'Update book': 'Buch aktualisieren',
+  'Updating…': 'Wird aktualisiert …',
+  'Update with the current word lists': 'Mit den aktuellen Wortlisten aktualisieren',
+  'Book updated: {added} new, {removed} removed, {updated} with new translations': 'Buch aktualisiert: {added} neu, {removed} entfernt, {updated} mit neuer Übersetzung',
+  'This book was imported before its text was kept; import it again to update it': 'Dieses Buch wurde importiert, bevor sein Text gespeichert wurde; importiere es erneut, um es zu aktualisieren',
   'Boxes': 'Fächer',
   'Today': 'Heute',
   '{n} day streak': 'Tagesserie: {n}',

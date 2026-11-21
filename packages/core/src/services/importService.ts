@@ -1,5 +1,5 @@
-/** ImportService (README §7.1): analyse → preview → confirm, and reapplyFilter (B3, H4). */
-import { analyseContent } from '../domain/analysis.ts';
+/** ImportService (README §7.1): analyse → preview → confirm, reapplyFilter (B3, H4), and update after new word lists. */
+import { analyseContent, reanalyseText } from '../domain/analysis.ts';
 import { primary } from '../domain/language.ts';
 import { cardFromLemma, classify, firstIncludedChapter, isProtectedCard, occursIn } from '../domain/classify.ts';
 import { chapterCoverage } from '../domain/coverage.ts';
@@ -8,7 +8,7 @@ import type {
   Book, BookLemma, Card, ImportDraft, ImportPreview, LemmaKind, PreviewCounts, Settings, WordEntry,
 } from '../domain/types.ts';
 import type { Repositories } from '../ports/index.ts';
-import { bookOverview, cutoffOf, type BookOverview, type Ctx } from './context.ts';
+import { bookOverview, cutoffOf, listsSignature, type BookOverview, type Ctx } from './context.ts';
 import { computeBookProgress } from './progressService.ts';
 
 export interface ConfirmOptions { includedChapters: number[]; cutoffRank?: number }
@@ -104,7 +104,7 @@ export function importService(ctx: Ctx) {
         const now = ctx.clock.now();
         const bookId = ctx.ids.next();
         const book: Book = {
-          ...draft.book, id: bookId, importedAt: now.toISOString(), cutoffRank: cutoff, chaptersAnnounced: [],
+          ...draft.book, id: bookId, importedAt: now.toISOString(), cutoffRank: cutoff, chaptersAnnounced: [], wordLists: listsSignature(await ctx.wordList.info()),
           chapters: draft.book.chapters.map((c) => ({ ...c, included: included.has(c.index) })),
         };
         const classified = await classifyAll(tx, ctx, draft.lemmas, cutoff, settings);
@@ -160,6 +160,66 @@ export function importService(ctx: Ctx) {
         await tx.cards.saveMany(save);
         await tx.books.save(updated);
         return bookOverview(updated, computeBookProgress(updated, finalCards, newRows, settings, ctx.clock.now()));
+      }),
+
+    /**
+     * After a word-list update: the book's stored text read again with the current lists, the cards made anew where the
+     * lists now say something else. Practised, known and removed cards keep their progress (with the lists' new
+     * translations); edited and hand-made cards stay as they are; cards for words that are no longer cards go.
+     */
+    updateFromLists: (bookId: string): Promise<{ book: BookOverview; added: number; removed: number; updated: number }> =>
+      ctx.uow.run(async (tx) => {
+        const [book, text] = await Promise.all([tx.books.get(bookId), tx.bookTexts.get(bookId)]);
+        if (!book) throw new Error('Book not found');
+        if (!text) throw new Error('This book was imported before its text was kept; import it again to update it');
+        const [a, settings, oldRows, oldCards, packs] = await Promise.all([reanalyseText(text.chapters, ctx.wordList), tx.settings.get(),
+          tx.bookLemmas.listByBook(bookId), tx.cards.listByBook(bookId), ctx.wordList.info()]);
+        const ignored = new Set(oldRows.filter((r) => r.ignored).map((r) => r.lemma));
+        const included = new Set(book.chapters.filter((c) => c.included).map((c) => c.index));
+        const left = new Map(oldCards.map((c) => [c.lemma, c]));
+        const rows: BookLemma[] = [];
+        const save: Card[] = [];
+        let added = 0, updated = 0;
+        for (const c of await classifyAll(tx, ctx, a.lemmas, book.cutoffRank, settings)) {
+          const row: BookLemma = { ...c.row, bookId, kind: c.kind, ...(ignored.has(c.row.lemma) ? { ignored: true } : {}) };
+          const card = left.get(row.lemma);
+          left.delete(row.lemma);
+          const ch = firstIncludedChapter(row.occurrencesByChapter, included);
+          const where = { forms: row.forms, occurrences: row.occurrences, occurrencesByChapter: row.occurrencesByChapter, firstPosition: row.firstPosition, example: row.example };
+          if (card && (card.origin === 'manual' || card.edited)) {
+            save.push({ ...card, ...where, chapterIndex: ch ?? card.chapterIndex });
+            rows.push({ ...row, kind: 'card' });
+            continue;
+          }
+          rows.push(row);
+          // a word marked as known stays a (known) card, as re-filtering keeps it
+          const isCard = c.kind === 'card' || (c.kind === 'known' && !!card && isProtectedCard(card));
+          if (!isCard || !c.entry || ch === undefined) { if (card) left.set(row.lemma, card); continue; }
+          if (c.kind === 'known') rows[rows.length - 1] = { ...row, kind: 'card' };
+          const fresh = cardFromLemma(bookId, row, c.entry, settings, ch);
+          if (!card) { save.push(fresh); added++; continue; }
+          if (!isProtectedCard(card)) { save.push(fresh); continue; }
+          const content = { translations: fresh.translations, definition: fresh.definition, pos: fresh.pos, listLevel: fresh.listLevel };
+          if (JSON.stringify(content) !== JSON.stringify({ translations: card.translations, definition: card.definition, pos: card.pos, listLevel: card.listLevel })) updated++;
+          save.push({ ...card, ...where, chapterIndex: ch, ...content });
+        }
+        // hand-made cards for words not in the book stay; everything else left over is no card any more
+        const keep = [...left.values()].filter((c) => c.origin === 'manual' || c.edited);
+        const del = [...left.values()].filter((c) => !keep.includes(c)).map((c) => c.id);
+        const lemmas = new Set(rows.map((r) => r.lemma));
+        const chapters = book.chapters.map((c) => ({ ...c, wordTokens: a.chapterTokens[c.index] ?? c.wordTokens }));
+        const fresh: Book = { ...book, chapters, stats: { wordTokens: a.wordTokens, distinctWords: a.lemmas.length + a.common.length }, wordLists: listsSignature(packs) };
+        const finalCards = [...save, ...keep];
+        silentlyAnnounceReady(fresh, finalCards, settings.coverageTarget);
+        // an open session may hold cards that are gone
+        const active = await tx.sessions.getActive(bookId);
+        if (active) await tx.sessions.save({ ...active, state: 'finished', finishedAt: ctx.clock.now().toISOString() });
+        await tx.bookLemmas.deleteMany(bookId, oldRows.filter((r) => !lemmas.has(r.lemma)).map((r) => r.lemma));
+        await tx.bookLemmas.saveMany(rows);
+        await tx.cards.deleteMany(del);
+        await tx.cards.saveMany(save);
+        await tx.books.save(fresh);
+        return { book: bookOverview(fresh, computeBookProgress(fresh, finalCards, rows, settings, ctx.clock.now())), added, removed: del.length, updated };
       }),
   };
 }

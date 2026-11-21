@@ -4,7 +4,7 @@ import { LEGACY_PAIR, type LanguagePair } from '../domain/language.ts';
 import { DEFAULT_SETTINGS, EMPTY_STATS } from '../domain/settings.ts';
 import type {
   AchievementUnlock, AppState, BackupV1, Book, BookLemma, BookText, CalibrationSession, Card, EpubContent, ImportDraft,
-  LearnerStats, PackStatus, ReadingPosition, ReviewLogEntry, Settings, StudySession, VocabularyProfile, WordEntry,
+  LearnerStats, PackInfo, PackStatus, ReadingPosition, ReviewLogEntry, Settings, StudySession, VocabularyProfile, WordEntry,
 } from '../domain/types.ts';
 import type { Clock, EpubReader, IdGenerator, PackInstaller, Ports, Random, Repositories, UnitOfWork, WordList } from '../ports/index.ts';
 
@@ -66,6 +66,7 @@ function repos(d: Data): Repositories {
       saveMany: async (rows) => { for (const r of rows) d.lemmas.set(`${r.bookId}|${r.lemma}`, clone(r)); },
       get: async (b, l) => clone(d.lemmas.get(`${b}|${l}`)),
       listByBook: async (b, kind) => [...d.lemmas.values()].filter((r) => r.bookId === b && (!kind || r.kind === kind)).map(clone),
+      deleteMany: async (b, lemmas) => { for (const l of lemmas) d.lemmas.delete(`${b}|${l}`); },
     },
     drafts: {
       get: async (id) => clone(d.drafts.get(id)),
@@ -181,11 +182,13 @@ export class MemoryWordList implements WordList {
   readonly words = new Map<string, WordEntry>();
   readonly forms = new Map<string, string>();
   readonly posOf = new Map<string, string>();
+  /** what info() reports; tests set a version to simulate a word-list update */
+  packs: PackInfo[] = [];
   constructor(words: WordEntry[], forms: ([string, string] | [string, string, string?])[], private readonly languages: LanguagePair = LEGACY_PAIR) {
     for (const w of words) this.words.set(w.lemma, w);
     for (const [f, l, p] of forms) { this.forms.set(f, l); if (p) this.posOf.set(f, p); }
   }
-  async info() { return []; }
+  async info() { return this.packs; }
   async pair() { return this.languages; }
   async resolve(tokens: string[]) {
     const out = new Map<string, string>();

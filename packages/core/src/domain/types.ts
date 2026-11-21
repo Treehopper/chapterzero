@@ -35,6 +35,8 @@ export interface Book {
   chapters: Chapter[];
   chaptersAnnounced: number[];
   finishedAt?: string;
+  /** the word lists' versions the book was last read with (see `listsSignature`); absent: before this was kept */
+  wordLists?: string;
 }
 
 /** The book's text for the reader (Epic R), stored at import: paragraphs per chapter, in reading order. */

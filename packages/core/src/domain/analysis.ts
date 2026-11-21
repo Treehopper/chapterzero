@@ -67,14 +67,53 @@ export async function analyseContent(
     sec.map((sents) => sents.reduce((n, s) => n + s.words.filter((w) => normalizeToken(w.raw, lang).kind !== 'digit').length, 0)));
   const structure = buildStructure(content, blockTokens);
 
-  const chapterTokens = new Array<number>(structure.chapters.length).fill(0);
+  const a = await lemmasOf(structure.order.map((pb) => ({ chapter: pb.chapter, sents: tokenized[pb.section][pb.block] })),
+    structure.chapters.length, wordList, lang, onProgress);
+  const chapters: Chapter[] = structure.chapters.map((c) => ({ ...c, wordTokens: a.chapterTokens[c.index] }));
+  return {
+    book: {
+      title: content.meta.title, author: content.meta.author, language: pair.source, translationLanguage: pair.target, coverDataUrl: content.meta.coverDataUrl,
+      stats: { wordTokens: a.wordTokens, distinctWords: a.lemmas.length + a.common.length },
+      works: structure.works, chapters,
+    },
+    lemmas: a.lemmas,
+    listedLemmas: a.lemmas.filter((l) => l.listed).map((l) => l.lemma),
+    nameLemmas: a.lemmas.filter((l) => l.name).map((l) => l.lemma),
+    common: a.common,
+    text: bookText(content, structure.order, structure.chapters.length),
+    ...(content.meta.language ? { declaredLanguage: content.meta.language } : {}),
+  };
+}
+
+export interface LemmaAnalysis {
+  lemmas: AnalysisResult['lemmas'];
+  common: AnalysisResult['common'];
+  /** word tokens per chapter index, and in all */
+  chapterTokens: number[];
+  wordTokens: number;
+}
+
+/**
+ * The book's stored text (Epic R) read again with the current word lists, chapters as they are (B3: update a book
+ * after a word-list update without importing it again).
+ */
+export async function reanalyseText(text: BookTextChapter[], wordList: WordList, onProgress?: (done: number, total: number, phase: string) => void): Promise<LemmaAnalysis> {
+  const lang = languageRules((await wordList.pair()).source);
+  const placed = text.flatMap((ch, chapter) => ch.blocks.map((b) => ({ chapter, sents: tokenizeBlock(b.text, lang) })));
+  return lemmasOf(placed, text.length, wordList, lang, onProgress);
+}
+
+/** Steps 5–8 on sentences placed in their chapters: counts, matching, names, one row per lemma. */
+async function lemmasOf(placed: { chapter: number; sents: Sentence[] }[], chapters: number, wordList: WordList, lang: LanguageRules,
+  onProgress?: (done: number, total: number, phase: string) => void): Promise<LemmaAnalysis> {
+  const chapterTokens = new Array<number>(chapters).fill(0);
   const stats = new Map<string, TokenStat>();
   const common = new Map<string, Set<number>>();
   let pos = 0;
-  const total = structure.order.length;
-  structure.order.forEach((pb, i) => {
+  const total = placed.length;
+  placed.forEach((pb, i) => {
     if (i % 500 === 0) onProgress?.(i, total, 'tokenising');
-    for (const sent of tokenized[pb.section][pb.block]) {
+    for (const sent of pb.sents) {
       let wcache: number | undefined;
       let first = true;
       let prev = '';
@@ -198,21 +237,7 @@ export async function analyseContent(
   }
   lemmas.sort((x, y) => x.firstPosition - y.firstPosition);
 
-  const chapters: Chapter[] = structure.chapters.map((c) => ({ ...c, wordTokens: chapterTokens[c.index] }));
-  const commonList = [...common.entries()].map(([token, set]) => ({ token, chapters: [...set].sort((a, b) => a - b) }));
-  return {
-    book: {
-      title: content.meta.title, author: content.meta.author, language: pair.source, translationLanguage: pair.target, coverDataUrl: content.meta.coverDataUrl,
-      stats: { wordTokens: pos, distinctWords: lemmas.length + commonList.length },
-      works: structure.works, chapters,
-    },
-    lemmas,
-    listedLemmas: lemmas.filter((l) => l.listed).map((l) => l.lemma),
-    nameLemmas: lemmas.filter((l) => l.name).map((l) => l.lemma),
-    common: commonList,
-    text: bookText(content, structure.order, structure.chapters.length),
-    ...(content.meta.language ? { declaredLanguage: content.meta.language } : {}),
-  };
+  return { lemmas, common: [...common.entries()].map(([token, set]) => ({ token, chapters: [...set].sort((x, y) => x - y) })), chapterTokens, wordTokens: pos };
 }
 
 /** the reader's text (Epic R): each chapter's paragraphs in reading order, footnotes after their paragraph */

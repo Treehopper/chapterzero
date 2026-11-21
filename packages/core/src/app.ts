@@ -7,7 +7,7 @@ import type { AchievementUnlock, AppState, BackupV1, Settings, Tier } from './do
 import type { Ports } from './ports/index.ts';
 import { calibrationService } from './services/calibrationService.ts';
 import { cardService } from './services/cardService.ts';
-import { bookOverview } from './services/context.ts';
+import { bookOverview, listsSignature } from './services/context.ts';
 import { importService } from './services/importService.ts';
 import { computeBookProgress, dailyStats, loadBookProgress, streaks } from './services/progressService.ts';
 import { readerService } from './services/readerService.ts';
@@ -39,6 +39,7 @@ export function createApp(ports: Ports) {
       confirm: imports.confirm,
       discard: imports.discard,
       reapplyFilter: imports.reapplyFilter,
+      updateFromLists: imports.updateFromLists,
       list: () =>
         uow.run(async (tx) => {
           const [books, settings] = await Promise.all([tx.books.list(), tx.settings.get()]);
@@ -59,8 +60,10 @@ export function createApp(ports: Ports) {
         uow.run(async (tx) => {
           const b = await tx.books.get(id);
           if (!b) throw new Error('Book not found');
-          const progress = await loadBookProgress(tx, id, clock.now());
-          return { book: bookOverview(b, progress), progress };
+          const [progress, packs, hasText] = await Promise.all([loadBookProgress(tx, id, clock.now()), ports.wordList.info(), tx.bookTexts.has(id)]);
+          // the word lists changed since the book was read: it can be updated (from its stored text)
+          const listsChanged = hasText && packs.length > 0 && b.wordLists !== listsSignature(packs);
+          return { book: bookOverview(b, progress), progress, listsChanged };
         }),
       chapters: (id: string) => uow.run(async (tx) => (await loadBookProgress(tx, id, clock.now())).chapters),
       delete: (id: string) =>

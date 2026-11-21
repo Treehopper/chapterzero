@@ -1,7 +1,7 @@
 import { DEFAULT_CUTOFF, startLevel } from '../domain/levels.ts';
 import { lookupLinks } from '../domain/lookup.ts';
 import { LEGACY_PAIR, type LanguagePair } from '../domain/language.ts';
-import type { Book, BookProgress, Card, Settings } from '../domain/types.ts';
+import type { Book, BookProgress, Card, PackInfo, Settings } from '../domain/types.ts';
 import type { Ports, Repositories } from '../ports/index.ts';
 
 export type Ctx = Ports;
@@ -33,6 +33,9 @@ export interface BookOverview {
   level: number; coverage: number; learningChapter?: BookProgress['learningChapter']; due: number;
   cards: number; finishedAt?: string; ready: boolean; coverageTarget: number; worksCount: number; chaptersCount: number;
 }
+
+/** which word lists (and versions) are installed, to tell whether a book was read with the current ones */
+export const listsSignature = (packs: PackInfo[]) => packs.map((p) => `${p.id}@${p.version}`).sort().join(' ');
 
 export function bookOverview(book: Book, p: BookProgress): BookOverview {
   return {

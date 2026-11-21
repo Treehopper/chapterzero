@@ -25,12 +25,15 @@
   let starting = $state<{ chapter?: { index: number; title: string } }>();
   /** books imported before the reader have no stored text (Epic R) */
   let readable = $state(false);
+  /** the word lists were updated since the book was read */
+  let listsChanged = $state(false);
+  let updating = $state(false);
 
   async function load() {
     try {
       let page;
       [page, daily, active, readable] = await Promise.all([api.books.page(bookId), api.progress.daily(1), api.study.active(bookId), api.reader.available(bookId)]);
-      ({ book, progress: p } = page);
+      ({ book, progress: p, listsChanged } = page);
       cutoff = book.cutoffRank;
     } catch (e) { error = e instanceof Error ? e.message : String(e); }
   }
@@ -57,6 +60,17 @@
     await api.books.delete(bookId);
     toast(t('Book deleted'));
     go('library');
+  }
+  async function updateBook() {
+    menu = false;
+    updating = true;
+    try {
+      const r = await api.books.updateFromLists(bookId);
+      toast(t('Book updated: {added} new, {removed} removed, {updated} with new translations', { added: r.added, removed: r.removed, updated: r.updated }));
+      active = null;
+      await load();
+    } catch (e) { toast(t(e instanceof Error ? e.message : String(e))); }
+    finally { updating = false; }
   }
   async function applyRefilter() {
     const r = await api.books.reapplyFilter(bookId, { cutoffRank: cutoff });
@@ -90,6 +104,14 @@
         {/if}
       </div>
     </section>
+
+    {#if listsChanged}
+      <section class="card-box stack updated" data-testid="lists-changed">
+        <strong>{t('The word lists were updated')}</strong>
+        <span class="small">{t('Update this book to use them. Cards you have practised keep their progress; cards for words the new lists see differently are made anew.')}</span>
+        <button class="btn" onclick={updateBook} disabled={updating} data-testid="update-book">{updating ? t('Updating…') : t('Update book')}</button>
+      </section>
+    {/if}
 
     <div class="row actions">
       <button class="btn primary spacer" onclick={() => (active ? go('study', bookId) : (starting = {}))} data-testid="study-now">
@@ -167,6 +189,7 @@
   <Sheet label={t('Book options')} onclose={() => (menu = false)}>
     <div class="stack">
       <button class="btn" onclick={() => { menu = false; refilter = true; }}>{t('Change level for this book…')}</button>
+      {#if readable}<button class="btn" onclick={updateBook} disabled={updating} data-testid="menu-update-book">{t('Update with the current word lists')}</button>{/if}
       <button class="btn danger" onclick={del}>{t('Delete book')}</button>
       <button class="btn" onclick={() => (menu = false)}>{t('Cancel')}</button>
     </div>
@@ -188,6 +211,7 @@
 {#if starting && p}<StartStudy {bookId} due={p.due} chapter={starting.chapter} onclose={() => (starting = undefined)} />{/if}
 
 <style>
+  .updated { gap: 8px; margin-top: 12px; border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
   .t { font-family: var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hero { display: flex; gap: 16px; align-items: center; }
   .hero-text { gap: 6px; }

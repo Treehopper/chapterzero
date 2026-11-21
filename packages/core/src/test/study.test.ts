@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chapterCoverage } from '../domain/coverage.ts';
 import type { Card } from '../domain/types.ts';
+import type { MemoryWordList } from '../testing/memory.ts';
 import { buf, filler, setup, twoChapterBook } from './helpers.ts';
 
 async function imported(book = twoChapterBook(), now?: Date) {
@@ -438,5 +439,38 @@ describe('backup (F1)', () => {
     expect({ ...again, exportedAt: '' }).toEqual({ ...data, exportedAt: '' });
     expect((await fresh.app.books.list()).map((b) => b.title)).toEqual(['Two Chapters']);
     await expect(fresh.app.backup.import({ nope: 1 } as never)).rejects.toThrow(/backup/);
+  });
+});
+
+describe('update a book after new word lists', () => {
+  it('re-reads the text: practised cards keep their progress with the new translation, words that are no cards any more go', async () => {
+    const s = setup(twoChapterBook());
+    const wl = s.ports.wordList as MemoryWordList;
+    const p = await s.app.books.analyse(buf);
+    const b = await s.app.books.confirm(p.draftId, { includedChapters: p.includedChapters, cutoffRank: 2000 });
+    const v = await s.app.study.resumeOrStart(b.id);
+    expect(v.card?.lemma).toBe('relinquish');
+    await s.app.study.flip(v.sessionId);
+    await s.app.study.grade(v.sessionId, 'unknown');
+    expect((await s.app.books.page(b.id)).listsChanged).toBe(false);   // no version known: nothing to offer
+
+    // the new lists: another translation, "scythe" is now a number word, "gaunt" a different gloss
+    wl.packs = [{ id: 'en-de', version: '2', sources: [], licence: '', entryCount: 0, bytes: 0 }];
+    wl.words.set('relinquish', { ...wl.words.get('relinquish')!, tr: ['preisgeben'] });
+    wl.words.set('scythe', { ...wl.words.get('scythe')!, number: true });
+    wl.words.set('gaunt', { ...wl.words.get('gaunt')!, tr: ['ausgemergelt'] });
+    expect((await s.app.books.page(b.id)).listsChanged).toBe(true);
+
+    const r = await s.app.books.updateFromLists(b.id);
+    expect(r).toMatchObject({ removed: 1, updated: 1 });
+    const cards = await s.ports.uow.run((tx) => tx.cards.listByBook(b.id));
+    const rel = cards.find((c) => c.lemma === 'relinquish')!;
+    expect(rel.translations).toEqual(['preisgeben']);
+    expect(rel.stats.wrong).toBe(1);                                       // progress kept
+    expect(cards.find((c) => c.lemma === 'gaunt')!.translations).toEqual(['ausgemergelt']);
+    expect(cards.some((c) => c.lemma === 'scythe')).toBe(false);
+    expect((await s.app.cards.words(b.id, { tab: 'unlisted' })).some((w) => w.lemma === 'scythe')).toBe(false);
+    expect((await s.app.books.page(b.id)).listsChanged).toBe(false);
+    expect(await s.ports.uow.run((tx) => tx.sessions.getActive(b.id))).toBeUndefined();   // its queue held "scythe"
   });
 });

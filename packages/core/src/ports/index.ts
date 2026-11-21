@@ -37,6 +37,7 @@ export interface BookLemmaRepository {
   saveMany(rows: BookLemma[]): Promise<void>;
   get(bookId: BookId, lemma: string): Promise<BookLemma | undefined>;
   listByBook(bookId: BookId, kind?: LemmaKind): Promise<BookLemma[]>;
+  deleteMany(bookId: BookId, lemmas: string[]): Promise<void>;
 }
 
 export interface ImportDraftRepository {

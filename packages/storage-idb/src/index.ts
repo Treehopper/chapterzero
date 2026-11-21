@@ -205,6 +205,7 @@ function repositories(db: VocabDb, o: Overlays): Repositories {
       listByBook: (b, kind) => kind
         ? o.bookLemmas.query(() => db.bookLemmas.where('[bookId+kind]').equals([b, kind]).toArray(), (r) => r.bookId === b && r.kind === kind)
         : o.bookLemmas.query(() => db.bookLemmas.where('bookId').equals(b).toArray(), (r) => r.bookId === b),
+      deleteMany: async (b, lemmas) => o.bookLemmas.del(lemmas.map((l) => [b, l] as [string, string])),
     },
     drafts: {
       get: (id) => o.drafts.get(id),
