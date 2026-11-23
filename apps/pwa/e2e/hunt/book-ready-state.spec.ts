@@ -16,6 +16,25 @@ test.describe('ready state outside a session', () => {
   });
   test.afterEach(() => { expect(errors).toEqual([]); });
 
+  test('re-filtering shows a spinner on the button until it is done', async ({ page }) => {
+    await tap(page.getByRole('button', { name: 'Book options' }));
+    await tap(page.getByRole('button', { name: 'Change level for this book…' }));
+    await page.getByLabel('Cutoff rank').fill('30000');
+    // the fixture is small, so the working state is short: record what the button showed
+    await page.evaluate(() => {
+      const w = window as unknown as { seen: string[] };
+      w.seen = [];
+      new MutationObserver(() => {
+        const b = document.querySelector('[data-testid="refilter-apply"]');
+        if (b?.getAttribute('aria-busy') === 'true') w.seen.push(`${b.textContent?.trim()}|${!!b.querySelector('.spinner')}`);
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+    });
+    await tap(page.getByTestId('refilter-apply'));
+    await expect(page.getByTestId('refilter-apply')).toHaveCount(0, { timeout: 20_000 });   // the sheet closes when done
+    expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).toContain('Re-filtering…|true');
+    await expect(page.getByTestId('toast')).toContainText(/cards at level/);
+  });
+
   test('a book with nothing left to learn after a re-filter: overview, ready pill and library tile agree', async ({ page }) => {
     await tap(page.getByRole('button', { name: 'Book options' }));
     await tap(page.getByRole('button', { name: 'Change level for this book…' }));

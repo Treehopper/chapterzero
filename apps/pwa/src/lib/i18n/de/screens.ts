@@ -63,6 +63,7 @@ export const screens: Record<string, string> = {
     'Wörter aus den Listen, die häufiger als Rang {rank} sind, werden keine Karten. Karten, die du gelernt, bearbeitet oder hinzugefügt hast, bleiben.',
   'Cutoff rank': 'Grenzrang',
   'Re-filter': 'Neu filtern',
+  'Re-filtering…': 'Wird neu gefiltert …',
 
   // Words
   'Active': 'Aktiv',

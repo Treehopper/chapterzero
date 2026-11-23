@@ -28,6 +28,7 @@
   /** the word lists were updated since the book was read */
   let listsChanged = $state(false);
   let updating = $state(false);
+  let refiltering = $state(false);
 
   async function load() {
     try {
@@ -73,10 +74,14 @@
     finally { updating = false; }
   }
   async function applyRefilter() {
-    const r = await api.books.reapplyFilter(bookId, { cutoffRank: cutoff });
-    refilter = false;
-    toast(t('{n} cards at level {level}', { n: fmt(r.cards), level: r.level }));
-    await load();
+    refiltering = true;
+    try {
+      const r = await api.books.reapplyFilter(bookId, { cutoffRank: cutoff });
+      await load();
+      refilter = false;
+      toast(t('{n} cards at level {level}', { n: fmt(r.cards), level: r.level }));
+    } catch (e) { toast(t(e instanceof Error ? e.message : String(e))); }
+    finally { refiltering = false; }
   }
 </script>
 
@@ -109,7 +114,7 @@
       <section class="card-box stack updated" data-testid="lists-changed">
         <strong>{t('The word lists were updated')}</strong>
         <span class="small">{t('Update this book to use them. Cards you have practised keep their progress; cards for words the new lists see differently are made anew.')}</span>
-        <button class="btn" onclick={updateBook} disabled={updating} data-testid="update-book">{updating ? t('Updating…') : t('Update book')}</button>
+        <button class="btn" onclick={updateBook} disabled={updating} aria-busy={updating} data-testid="update-book">{#if updating}<span class="spinner" aria-hidden="true"></span>{t('Updating…')}{:else}{t('Update book')}{/if}</button>
       </section>
     {/if}
 
@@ -201,9 +206,10 @@
     <div class="stack">
       <h2>{t('Level {level} for this book', { level: startLevel(cutoff) })}</h2>
       <p class="small muted">{t("Listed words more common than rank {rank} won't be cards. Cards you studied, edited or added stay.", { rank: fmt(cutoff) })}</p>
-      <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="lv" aria-label={t('Cutoff rank')} />
+      <input type="range" min="2000" max="60000" step="500" bind:value={cutoff} list="lv" aria-label={t('Cutoff rank')} disabled={refiltering} />
       <datalist id="lv">{#each LEVELS as l (l.level)}<option value={l.from - 1}></option>{/each}</datalist>
-      <button class="btn primary" onclick={applyRefilter}>{t('Re-filter')}</button>
+      <button class="btn primary" onclick={applyRefilter} disabled={refiltering} aria-busy={refiltering} data-testid="refilter-apply">
+        {#if refiltering}<span class="spinner" aria-hidden="true"></span>{t('Re-filtering…')}{:else}{t('Re-filter')}{/if}</button>
     </div>
   </Sheet>
 {/if}

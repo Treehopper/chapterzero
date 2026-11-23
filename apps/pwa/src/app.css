@@ -193,6 +193,11 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 .btn.danger { color: var(--bad); }
 .btn.block { width: 100%; }
 .btn:disabled { opacity: 0.5; }
+/* working: a spinning ring in front of the label; the button stays fully visible */
+.btn[aria-busy='true'] { opacity: 1; }
+.spinner { width: 16px; height: 16px; flex: none; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .linkbtn { background: none; border: none; color: var(--accent); font-weight: 600; padding: 10px 6px; min-height: 44px; }
 .card-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }

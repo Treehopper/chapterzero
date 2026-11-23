@@ -144,8 +144,10 @@ export function importService(ctx: Ctx) {
         for (const c of classified) {
           const card = existing.get(c.row.lemma);
           const row = c.row as BookLemma;
-          if (card && isProtectedCard(card)) { newRows.push({ ...row, kind: 'card' }); continue; }
-          newRows.push({ ...row, kind: c.kind });
+          // only rows whose kind changes are written: a book has thousands
+          const kind = card && isProtectedCard(card) ? 'card' : c.kind;
+          if (row.kind !== kind) newRows.push({ ...row, kind });
+          if (card && isProtectedCard(card)) continue;
           const ch = firstIncludedChapter(row.occurrencesByChapter, included);
           if (c.kind === 'card' && c.entry && ch !== undefined) {
             if (!card) save.push(cardFromLemma(bookId, row, c.entry, settings, ch));
@@ -153,13 +155,16 @@ export function importService(ctx: Ctx) {
           } else if (card) del.push(card.id);
         }
         const updated: Book = { ...book, cutoffRank: cutoff, chapters: book.chapters.map((c) => ({ ...c, included: included.has(c.index) })) };
-        const finalCards = [...[...existing.values()].filter((c) => !del.includes(c.id) && !save.some((s) => s.id === c.id)), ...save];
+        const gone = new Set([...del, ...save.map((c) => c.id)]);
+        const finalCards = [...[...existing.values()].filter((c) => !gone.has(c.id)), ...save];
         silentlyAnnounceReady(updated, finalCards, settings.coverageTarget);
         await tx.bookLemmas.saveMany(newRows);
         await tx.cards.deleteMany(del);
         await tx.cards.saveMany(save);
         await tx.books.save(updated);
-        return bookOverview(updated, computeBookProgress(updated, finalCards, newRows, settings, ctx.clock.now()));
+        const changed = new Map(newRows.map((x) => [x.lemma, x]));
+        const allRows = rows.map((x) => changed.get(x.lemma) ?? x) as BookLemma[];
+        return bookOverview(updated, computeBookProgress(updated, finalCards, allRows, settings, ctx.clock.now()));
       }),
 
     /**
