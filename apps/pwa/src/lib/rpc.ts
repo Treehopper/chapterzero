@@ -13,7 +13,7 @@ export type RpcResponse =
 
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; callback?: (v: unknown) => void };
 
-export function connect(worker: Worker, packsUrl: string, dbName = 'vocabfirst'): { api: VocabApp; ready: Promise<void> } {
+export function connect(worker: Worker, packsUrl: string, dbName = 'chapterzero'): { api: VocabApp; ready: Promise<void> } {
   let next = 1;
   const pending = new Map<number, Pending>();
   let markReady!: () => void;

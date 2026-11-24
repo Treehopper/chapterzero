@@ -35,8 +35,7 @@ export class VocabDb extends Dexie {
   bookTexts!: Table<BookText, string>;
   readingPositions!: Table<ReadingPosition, string>;
 
-  /** the database keeps the app's first name (VocabFirst): renaming it would lose everyone's data */
-  constructor(name = 'vocabfirst') {
+  constructor(name = 'chapterzero') {
     super(name);
     this.version(1).stores({
       books: 'id',

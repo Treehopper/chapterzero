@@ -34,6 +34,7 @@ function uuid(): string {
 }
 
 function init(packsUrl: string, dbName: string) {
+  indexedDB.deleteDatabase('vocabfirst');   // the database of the app's first name: frees its word lists and books
   const db = new VocabDb(dbName);
   const ports: Ports = {
     uow: new IdbUnitOfWork(db),
