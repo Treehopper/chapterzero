@@ -14,7 +14,7 @@ export function applyTheme(theme: Theme | undefined) {
   // Safari tints its bars from theme-color
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
   if (bg) for (const m of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) m.content = bg;
-  try { localStorage.setItem('vf:theme', current); } catch { /* private mode: the first paint follows the device */ }
+  try { localStorage.setItem('c0:theme', current); } catch { /* private mode: the first paint follows the device */ }
   if (!listening) {
     listening = true;
     dark().addEventListener('change', () => { if (current === 'auto') applyTheme('auto'); });

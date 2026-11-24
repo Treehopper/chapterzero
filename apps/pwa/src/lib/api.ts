@@ -5,8 +5,9 @@ const params = new URLSearchParams(location.search);
 function packsUrl(): string {
   const p = params.get('packs');
   try {
-    if (p === 'test' || p === 'real') localStorage.setItem('vf:packs', p);
-    const saved = localStorage.getItem('vf:packs');
+    for (const k of ['vf:packs', 'vf:theme']) localStorage.removeItem(k);   // the keys of the app's first name
+    if (p === 'test' || p === 'real') localStorage.setItem('c0:packs', p);
+    const saved = localStorage.getItem('c0:packs');
     if (saved === 'test') return new URL(`${import.meta.env.BASE_URL}test-packs/`, location.origin).toString();
   } catch { /* storage blocked */ }
   return new URL(`${import.meta.env.BASE_URL}packs/`, location.origin).toString();
