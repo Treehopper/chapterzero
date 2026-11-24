@@ -6,5 +6,3 @@ playwright-report/
 *.log
 .DS_Store
 fixtures/epub/downloaded/
-# reference project, not part of this repository
-wortl/
