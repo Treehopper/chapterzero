@@ -4,7 +4,7 @@
  * missing translation shows the English text; messages from the core arrive in English
  * and go through `t` the same way.
  */
-import { isRtl } from '@vocabfirst/core';
+import { isRtl } from '@chapterzero/core';
 import { de } from './de';
 
 export type Locale = 'en' | 'de';

@@ -76,7 +76,7 @@ export const settings: Record<string, string> = {
   'Replace all data on this device with the backup?': 'Alle Daten auf diesem Gerät durch die Sicherung ersetzen?',
   'Backup restored': 'Sicherung wiederhergestellt',
   'Not a valid backup file': 'Keine gültige Sicherungsdatei',
-  'Not a VocabFirst backup file': 'Keine VocabFirst-Sicherung',
+  'Not a Chapter 0 backup file': 'Keine Chapter-0-Sicherung',
   'Lookup links must be https and contain {word}': 'Nachschlage-Links müssen mit https beginnen und {word} enthalten',
   'Could not reach the word-list server. Check your connection and try again.': 'Der Server für die Wortlisten ist nicht erreichbar. Prüf deine Verbindung und versuch es noch einmal.',
   'Word lists': 'Wortlisten',

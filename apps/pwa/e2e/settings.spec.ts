@@ -28,7 +28,7 @@ test('backup: export, delete the book, import restores it (F1, F2)', async ({ pa
   const [dl] = await Promise.all([page.waitForEvent('download'), tap(page.getByTestId('export'))]);
   const path = await dl.path();
   const data = JSON.parse(readFileSync(path, 'utf8'));
-  expect(data.format).toBe('vocabfirst-backup');
+  expect(data.format).toBe('chapterzero-backup');
   expect(data.books).toHaveLength(1);
   await tap(page.getByRole('button', { name: 'Back', exact: true }));
   await tap(page.getByRole('button', { name: /Open The Lantern Omnibus/ }));

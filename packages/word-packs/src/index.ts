@@ -1,6 +1,6 @@
 /** Word-pack download (A2, A3) and the IndexedDB-backed WordList (README §6). */
-import { LEGACY_PAIR, type LanguagePair, type PackInfo, type PackInstaller, type PackStatus, type Progress, type WordEntry, type WordList } from '@vocabfirst/core';
-import type { VocabDb } from '@vocabfirst/storage-idb';
+import { LEGACY_PAIR, type LanguagePair, type PackInfo, type PackInstaller, type PackStatus, type Progress, type WordEntry, type WordList } from '@chapterzero/core';
+import type { VocabDb } from '@chapterzero/storage-idb';
 import { sha256Hex } from './sha256';
 
 export interface ManifestChunk { file: string; bytes: number; rows?: number; sha256: string; sha256Json?: string }

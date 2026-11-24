@@ -2,7 +2,7 @@
   /** How to study (C19): Quick start, a number of cards, or a time. An open session is continued instead.
       The first time, a spoiler notice: cards show the book's sentence with the word, which can give away the story. */
   import { onMount } from 'svelte';
-  import type { Settings } from '@vocabfirst/core';
+  import type { Settings } from '@chapterzero/core';
   import Sheet from './Sheet.svelte';
   import { api } from '../lib/api';
   import { t } from '../lib/i18n/index.svelte';

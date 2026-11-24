@@ -1,6 +1,6 @@
 /** Colour themes: `data-theme` on <html> picks the tokens in app.css. 'auto' follows the device (light or dark).
     The choice is mirrored to localStorage so index.html can set it before the first paint. */
-import type { Settings } from '@vocabfirst/core';
+import type { Settings } from '@chapterzero/core';
 
 export type Theme = Settings['theme'];
 const dark = () => matchMedia('(prefers-color-scheme: dark)');

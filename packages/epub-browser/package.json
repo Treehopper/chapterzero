@@ -1,5 +1,5 @@
 {
-  "name": "@vocabfirst/epub-browser",
+  "name": "@chapterzero/epub-browser",
   "private": true,
   "type": "module",
   "exports": {

@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Library (§8.1): books, import, level hint, re-filter offer (H4), backup reminder (§9). */
   import { onMount } from 'svelte';
-  import type { BookOverview, VocabularyProfile } from '@vocabfirst/core';
+  import type { BookOverview, VocabularyProfile } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { fmt, pct, toast, ui } from '../lib/ui.svelte';
@@ -115,7 +115,7 @@
     <div class="empty stack">
       <div class="art" aria-hidden="true">📚</div>
       <h2>{t('Import your first book')}</h2>
-      <p class="muted">{t('Pick an EPUB from the Files app. VocabFirst finds its rare words and turns them into cards, chapter by chapter, so you can read without stopping.')}</p>
+      <p class="muted">{t('Pick an EPUB from the Files app. Chapter 0 finds its rare words and turns them into cards, chapter by chapter, so you can read without stopping.')}</p>
     </div>
   {/if}
 

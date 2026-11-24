@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Achievements (G5): unlocked tiers with date, locked ones with progress. */
   import { onMount } from 'svelte';
-  import type { AchievementView } from '@vocabfirst/core';
+  import type { AchievementView } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { achievementName, tierName } from '../lib/ui.svelte';

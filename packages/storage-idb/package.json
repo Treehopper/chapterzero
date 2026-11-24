@@ -1,5 +1,5 @@
 {
-  "name": "@vocabfirst/storage-idb",
+  "name": "@chapterzero/storage-idb",
   "private": true,
   "type": "module",
   "exports": {

@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Full-screen session statistics (C14, E3, G6); milestone celebrations play here (E5). */
   import { onMount } from 'svelte';
-  import type { SessionStatistics } from '@vocabfirst/core';
+  import type { SessionStatistics } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { achievementName, fmt, pct, tierName, ui } from '../lib/ui.svelte';

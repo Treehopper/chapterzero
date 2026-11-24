@@ -1,4 +1,4 @@
-# VocabFirst – learn a book's rare words before you read it
+# Chapter 0 – learn a book's rare words before you read it
 
 A Progressive Web App (iOS first, Android second) that turns an EPUB into a deck of flash cards. The app ships with **graded lists of rare English words** (levels 1–10, each word with its German translation). On import, the book is matched against these lists: listed words above your personal level become cards, everything else is ignored but stays available for adding by hand. A Leitner-style spaced-repetition scheduler (inspired by jMemorize) then drills you chapter by chapter until you can read without stopping.
 

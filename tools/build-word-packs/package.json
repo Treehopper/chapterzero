@@ -1,5 +1,5 @@
 {
-  "name": "@vocabfirst/build-word-packs",
+  "name": "@chapterzero/build-word-packs",
   "private": true,
   "type": "module",
   "scripts": {

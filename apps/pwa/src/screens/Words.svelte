@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Words (Epic D): not in the lists / active / known / removed / skipped, search, chapter filter, add by hand. */
   import { onMount, untrack } from 'svelte';
-  import { headword, type ChapterProgress, type WordRow, type WordsTab, type WordSuggestion } from '@vocabfirst/core';
+  import { headword, type ChapterProgress, type WordRow, type WordsTab, type WordSuggestion } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { dataChanged, fmt, toast, ui } from '../lib/ui.svelte';

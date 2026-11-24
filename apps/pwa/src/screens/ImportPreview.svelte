@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Import preview (B7, B11, B12): works and chapters with ticks; counts update live. */
   import { onMount } from 'svelte';
-  import type { ImportPreview } from '@vocabfirst/core';
+  import type { ImportPreview } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { fmt, pct, ui } from '../lib/ui.svelte';

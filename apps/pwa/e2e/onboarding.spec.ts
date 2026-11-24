@@ -4,7 +4,7 @@ import { firstRun, swipeLeft, swipeRight, tap, tapCard } from './helpers';
 test.describe('first run (A1, A2, H1–H3)', () => {
   test('install guide → download with progress → vocabulary check → level → library @android', async ({ page }) => {
     await page.goto('/?packs=test');
-    await expect(page.getByRole('heading', { name: 'Install VocabFirst first' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Install Chapter 0 first' })).toBeVisible();
     await expect(page.getByText('Add to Home Screen')).toBeVisible();
     const packRequests: string[] = [];
     page.on('request', (r) => { if (r.url().includes('.json.gz')) packRequests.push(r.url()); });

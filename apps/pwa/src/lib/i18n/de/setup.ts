@@ -1,7 +1,7 @@
 /** German texts: see ./index.ts */
 export const setup: Record<string, string> = {
   // InstallGuide
-  'Install VocabFirst first': 'Installiere zuerst VocabFirst',
+  'Install Chapter 0 first': 'Installiere zuerst Chapter 0',
   'Add the app to your Home Screen {before} you import a book.': 'Füge die App zu deinem Home-Bildschirm hinzu, {before} du ein Buch importierst.',
   before: 'bevor',
   'Installed, it works offline and iOS keeps your progress; data entered in a Safari tab does not carry over to the installed app.':
@@ -20,8 +20,8 @@ export const setup: Record<string, string> = {
 
   // Download
   'Word lists': 'Wortlisten',
-  'VocabFirst ships graded lists of rare {source} words with {target} translations, built from Wiktionary, FreeDict and wordfreq.':
-    'VocabFirst nutzt gestufte Listen seltener Wörter auf {source} mit Übersetzungen auf {target}, erstellt aus Wiktionary, FreeDict und wordfreq.',
+  'Chapter 0 ships graded lists of rare {source} words with {target} translations, built from Wiktionary, FreeDict and wordfreq.':
+    'Chapter 0 nutzt gestufte Listen seltener Wörter auf {source} mit Übersetzungen auf {target}, erstellt aus Wiktionary, FreeDict und wordfreq.',
   'They are downloaded once and then work offline.': 'Sie werden einmal geladen und funktionieren dann offline.',
   'Best done on Wi-Fi.': 'Am besten im WLAN.',
   'Installing…': 'Wird installiert …',
@@ -111,8 +111,8 @@ export const setup: Record<string, string> = {
     'Du hast seit deiner letzten Sicherung an 7 Tagen gelernt. Exportiere eine, damit dein Fortschritt sicher ist.',
   'Back up': 'Sichern',
   'Import your first book': 'Importiere dein erstes Buch',
-  'Pick an EPUB from the Files app. VocabFirst finds its rare words and turns them into cards, chapter by chapter, so you can read without stopping.':
-    'Wähle ein EPUB aus der Dateien-App. VocabFirst findet die seltenen Wörter darin und macht Kapitel für Kapitel Karten daraus, damit du ohne Unterbrechung lesen kannst.',
+  'Pick an EPUB from the Files app. Chapter 0 finds its rare words and turns them into cards, chapter by chapter, so you can read without stopping.':
+    'Wähle ein EPUB aus der Dateien-App. Chapter 0 findet die seltenen Wörter darin und macht Kapitel für Kapitel Karten daraus, damit du ohne Unterbrechung lesen kannst.',
   'Open {title}': '{title} öffnen',
   'Ready to read': 'Bereit zum Lesen',
   'Level {level}': 'Stufe {level}',

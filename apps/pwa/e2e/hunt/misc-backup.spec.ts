@@ -147,7 +147,7 @@ test.describe('backup hunt', () => {
     const dir = test.info().outputPath();
     const bad1 = `${dir}/bad1.json`; writeFileSync(bad1, '{not json');
     const bad2 = `${dir}/bad2.json`; writeFileSync(bad2, JSON.stringify({ format: 'something-else', version: 1 }));
-    const bad3 = `${dir}/bad3.json`; writeFileSync(bad3, JSON.stringify({ format: 'vocabfirst-backup', version: 1 }));   // right header, no data
+    const bad3 = `${dir}/bad3.json`; writeFileSync(bad3, JSON.stringify({ format: 'chapterzero-backup', version: 1 }));   // right header, no data
     for (const f of [bad1, bad2, bad3]) {
       await importBackup(page, f);
       await expect(page.getByTestId('toast')).toBeVisible();

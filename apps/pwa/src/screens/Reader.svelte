@@ -2,7 +2,7 @@
   /** Reader (Epic R): one chapter at a time in the app's serif; card words underlined, tap one for its card.
       Names are marked too: a tap shows the first sentences of the book in which they appear. */
   import { onDestroy, onMount, tick, untrack } from 'svelte';
-  import { headword, type ReaderBook, type ReaderCard, type ReaderChapter, type ReaderName } from '@vocabfirst/core';
+  import { headword, type ReaderBook, type ReaderCard, type ReaderChapter, type ReaderName } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import Sheet from '../components/Sheet.svelte';

@@ -1,5 +1,5 @@
 /** Toasts, banners and achievement pop-ups (G4): app-wide, queued. */
-import { LEGACY_PAIR, type AchievementUnlock, type LanguagePair } from '@vocabfirst/core';
+import { LEGACY_PAIR, type AchievementUnlock, type LanguagePair } from '@chapterzero/core';
 import { t } from './i18n/index.svelte';
 export { fmt, pct } from './i18n/index.svelte';
 

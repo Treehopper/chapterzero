@@ -82,7 +82,7 @@ export const common: Record<string, string> = {
   'Lookup links must be https and contain {word}': 'Nachschlage-Links müssen https verwenden und {word} enthalten',
   'No current card': 'Keine aktuelle Karte',
   'No vocabulary check in progress': 'Kein Wortschatztest im Gange',
-  'Not a VocabFirst backup file': 'Keine VocabFirst-Sicherungsdatei',
+  'Not a Chapter 0 backup file': 'Keine Chapter-0-Sicherungsdatei',
   'Session not found': 'Sitzung nicht gefunden',
   'This book was imported before the reader existed; import it again to read it here':
     'Dieses Buch wurde importiert, bevor es die Lesefunktion gab; importiere es noch mal, um es hier zu lesen',

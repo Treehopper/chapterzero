@@ -1,4 +1,4 @@
-# VocabFirst — implementation notes
+# Chapter 0 — implementation notes
 
 `README.md` is the specification. This file says how to run the implementation, what was
 verified, and where (and why) the implementation deviates from the spec.

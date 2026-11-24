@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { createReadStream, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** BASE_PATH=/vocabfirst/ for GitHub Pages project sites. */
+/** BASE_PATH=/chapterzero/ for GitHub Pages project sites. */
 const base = process.env.BASE_PATH ?? '/';
 
 /** Serves fixtures/mini-pack at /test-packs/ in dev and preview (e2e tests only, never built). */
@@ -36,8 +36,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icons/*.png', 'favicon.svg'],
       manifest: {
-        name: 'VocabFirst',
-        short_name: 'VocabFirst',
+        name: 'Chapter 0',
+        short_name: 'Chapter 0',
         description: "Learn a book's rare words before you read it.",
         display: 'standalone',
         orientation: 'portrait',

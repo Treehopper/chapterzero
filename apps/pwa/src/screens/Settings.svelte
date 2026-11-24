@@ -2,7 +2,7 @@
   /** Settings (§8.1): language, level (H3), limits, behaviour toggles, lookup links (C17), backup (F1), word lists (A3), about.
       Settings that are hard to guess have an (i) with the details. */
   import { onMount } from 'svelte';
-  import { DEFAULT_LOOKUP_PROVIDERS, isValidTemplate, startLevel, type BackupV1, type LookupProvider, type PackStatus, type Settings, type VocabularyProfile } from '@vocabfirst/core';
+  import { DEFAULT_LOOKUP_PROVIDERS, isValidTemplate, startLevel, type BackupV1, type LookupProvider, type PackStatus, type Settings, type VocabularyProfile } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { download } from '../lib/platform';
@@ -47,7 +47,7 @@
   }
   async function exportBackup() {
     const data = await api.backup.export();
-    download(`vocabfirst-backup-${data.exportedAt.slice(0, 10)}.json`, JSON.stringify(data));
+    download(`chapterzero-backup-${data.exportedAt.slice(0, 10)}.json`, JSON.stringify(data));
     toast(t('Backup exported'));
   }
   async function importBackup(e: Event) {
@@ -215,7 +215,7 @@
 
     <div class="section-title">{t('About')}</div>
     <div class="card-box small stack about">
-      <p><strong>VocabFirst</strong> — {t('learn a book’s rare words before you read it.')}</p>
+      <p><strong>Chapter 0</strong> — {t('learn a book’s rare words before you read it.')}</p>
       <p>{t('Word data:')} <a href="https://en.wiktionary.org/" target="_blank" rel="noopener noreferrer">Wiktionary</a> {t('contributors (CC BY-SA 4.0), extracted with')}
         <a href="https://kaikki.org/" target="_blank" rel="noopener noreferrer">Wiktextract / kaikki.org</a>;
         {t('German supplement from')} <a href="https://freedict.org/" target="_blank" rel="noopener noreferrer">FreeDict eng-deu</a> {t('(GPL, derived from TU Chemnitz “Ding”);')}

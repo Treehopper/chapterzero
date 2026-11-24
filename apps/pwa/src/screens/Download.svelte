@@ -2,7 +2,7 @@
   /** A2: first-run word-list download with bytes / percent; resumes after a failure. Starts on a tap only, so nobody
       downloads over mobile data by accident. */
   import { onMount } from 'svelte';
-  import type { PackStatus } from '@vocabfirst/core';
+  import type { PackStatus } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { requestPersistence } from '../lib/platform';
@@ -39,7 +39,7 @@
 
 <main class="screen stack">
   <h1 class="title">{t('Word lists')}</h1>
-  <p>{t('VocabFirst ships graded lists of rare {source} words with {target} translations, built from Wiktionary, FreeDict and wordfreq.', langs)}
+  <p>{t('Chapter 0 ships graded lists of rare {source} words with {target} translations, built from Wiktionary, FreeDict and wordfreq.', langs)}
     {t('They are downloaded once and then work offline.')}</p>
   <p class="muted small" data-testid="wifi-hint">📶 {t('Best done on Wi-Fi.')}</p>
   <div class="card-box stack">

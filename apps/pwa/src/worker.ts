@@ -1,9 +1,9 @@
 /// <reference lib="webworker" />
 /** Hosts core + adapters off the main thread (README §7.1); the UI talks to it by RPC. */
-import { createApp, type Ports } from '@vocabfirst/core';
-import { IdbUnitOfWork, VocabDb } from '@vocabfirst/storage-idb';
-import { HttpPackInstaller, IdbWordList } from '@vocabfirst/word-packs';
-import { ZipEpubReader } from '@vocabfirst/epub-browser';
+import { createApp, type Ports } from '@chapterzero/core';
+import { IdbUnitOfWork, VocabDb } from '@chapterzero/storage-idb';
+import { HttpPackInstaller, IdbWordList } from '@chapterzero/word-packs';
+import { ZipEpubReader } from '@chapterzero/epub-browser';
 import type { RpcRequest, RpcResponse } from './lib/rpc';
 
 declare const self: DedicatedWorkerGlobalScope;

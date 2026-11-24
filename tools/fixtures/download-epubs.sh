@@ -3,7 +3,7 @@
 set -e
 dir="$(dirname "$0")/../../fixtures/epub/downloaded"
 mkdir -p "$dir"
-ua="Mozilla/5.0 (VocabFirst test fixtures)"
+ua="Mozilla/5.0 (Chapter 0 test fixtures)"
 for id in 1342 1661 829 2701 84 1232; do
   [ -f "$dir/pg$id.epub" ] || curl -fsSL -A "$ua" -o "$dir/pg$id.epub" "https://www.gutenberg.org/ebooks/$id.epub3.images"
 done

@@ -417,7 +417,7 @@ export interface EpubContent {
 }
 
 export interface BackupV1 {
-  format: 'vocabfirst-backup';
+  format: 'chapterzero-backup';
   version: 1;
   exportedAt: string;
   books: Book[];

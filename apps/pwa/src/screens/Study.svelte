@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Full-screen study (C1–C18, §8.1 "Study"). Every action is persisted before the next card animates in. */
   import { onDestroy, onMount } from 'svelte';
-  import { headword, type SenseOption, type SessionView, type Settings } from '@vocabfirst/core';
+  import { headword, type SenseOption, type SessionView, type Settings } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';

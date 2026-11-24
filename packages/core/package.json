@@ -1,5 +1,5 @@
 {
-  "name": "@vocabfirst/core",
+  "name": "@chapterzero/core",
   "private": true,
   "type": "module",
   "exports": {

@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { analyseContent } from '@vocabfirst/core';
-import { fixtureWordList } from '@vocabfirst/core/testing';
+import { analyseContent } from '@chapterzero/core';
+import { fixtureWordList } from '@chapterzero/core/testing';
 import { ZipEpubReader } from './index.ts';
 
 const root = join(import.meta.dirname, '../../../fixtures/epub');

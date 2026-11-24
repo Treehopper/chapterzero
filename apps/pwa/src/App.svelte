@@ -76,7 +76,7 @@
     {/if}
   {/key}
 {:else}
-  <main class="screen boot" aria-busy="true"><div class="logo">VocabFirst</div></main>
+  <main class="screen boot" aria-busy="true"><div class="logo">Chapter 0</div></main>
 {/if}
 <Overlays />
 

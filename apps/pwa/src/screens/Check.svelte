@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Vocabulary check (H1–H3): 60 words in the study card UI, then the result screen. */
   import { onMount } from 'svelte';
-  import { headword, LEVELS, startLevel, type CalibrationView } from '@vocabfirst/core';
+  import { headword, LEVELS, startLevel, type CalibrationView } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';

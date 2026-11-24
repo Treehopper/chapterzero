@@ -437,6 +437,10 @@ describe('backup (F1)', () => {
     expect({ ...again, exportedAt: '' }).toEqual({ ...data, exportedAt: '' });
     expect((await fresh.app.books.list()).map((b) => b.title)).toEqual(['Two Chapters']);
     await expect(fresh.app.backup.import({ nope: 1 } as never)).rejects.toThrow(/backup/);
+    // a backup from before the rename
+    const old = setup();
+    await old.app.backup.import({ ...JSON.parse(JSON.stringify(data)), format: 'vocabfirst-backup' });
+    expect((await old.app.books.list()).map((b) => b.title)).toEqual(['Two Chapters']);
   });
 });
 

@@ -5,7 +5,7 @@
 import JSZip from 'jszip';
 import { parseDocument } from 'htmlparser2';
 import type { ChildNode, Element } from 'domhandler';
-import type { EpubContent, EpubReader } from '@vocabfirst/core';
+import type { EpubContent, EpubReader } from '@chapterzero/core';
 
 type Block = EpubContent['sections'][number]['blocks'][number];
 

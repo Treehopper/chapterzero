@@ -1,7 +1,7 @@
 <script lang="ts">
   /** Book overview: coverage (E1, I2), works and chapters (I1–I6), boxes (E2), streak and goal (E4). */
   import { onMount, untrack } from 'svelte';
-  import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@vocabfirst/core';
+  import { LEVELS, startLevel, type BookOverview, type BookProgress, type ChapterProgress } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { duration, fmt, pct, toast, ui } from '../lib/ui.svelte';

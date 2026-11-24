@@ -3,10 +3,10 @@ import Dexie from 'dexie';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '@vocabfirst/core';
-import { SeededRandom, SeqIds, FixedClock } from '@vocabfirst/core/testing';
-import { IdbUnitOfWork, VocabDb } from '@vocabfirst/storage-idb';
-import { ZipEpubReader } from '@vocabfirst/epub-browser';
+import { createApp } from '@chapterzero/core';
+import { SeededRandom, SeqIds, FixedClock } from '@chapterzero/core/testing';
+import { IdbUnitOfWork, VocabDb } from '@chapterzero/storage-idb';
+import { ZipEpubReader } from '@chapterzero/epub-browser';
 import { HttpPackInstaller, IdbWordList } from './index.ts';
 
 const packDir = join(import.meta.dirname, '../../../fixtures/mini-pack');

@@ -1,5 +1,5 @@
 /** postMessage RPC: every VocabApp call is a plain-JSON request (README §4.2). */
-import type { VocabApp } from '@vocabfirst/core';
+import type { VocabApp } from '@chapterzero/core';
 
 export type RpcRequest =
   | { type: 'init'; packsUrl: string; dbName: string }

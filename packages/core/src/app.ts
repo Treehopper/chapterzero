@@ -134,11 +134,12 @@ export function createApp(ports: Ports) {
           const data = await tx.backup.dump();
           const exportedAt = clock.now().toISOString();
           await tx.appState.save({ ...(await tx.appState.get()), lastExportAt: exportedAt });
-          return { format: 'vocabfirst-backup', version: 1, exportedAt, ...data };
+          return { format: 'chapterzero-backup', version: 1, exportedAt, ...data };
         }),
       import: (data: BackupV1) =>
         uow.run(async (tx) => {
-          if (data?.format !== 'vocabfirst-backup' || data.version !== 1) throw new Error('Not a VocabFirst backup file');
+          // backups made before the rename (VocabFirst) restore too
+          if (!['chapterzero-backup', 'vocabfirst-backup'].includes(data?.format) || data.version !== 1) throw new Error('Not a Chapter 0 backup file');
           await tx.backup.replace(data);
         }),
     },

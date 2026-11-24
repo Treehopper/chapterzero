@@ -5,7 +5,7 @@ import {
   type AchievementUnlock, type AppState, type BackupV1, type Book, type BookLemma, type BookText, type Card, type ImportDraft,
   type LearnerStats, type ReadingPosition, type Repositories, type ReviewLogEntry, type Settings, type StudySession, type UnitOfWork,
   type VocabularyProfile,
-} from '@vocabfirst/core';
+} from '@chapterzero/core';
 
 /** a word-list row: translations into the target language (`tr`), a definition in the source language */
 export type WordRow = { lemma: string; rank: number; pos: string[]; tr: string[]; def: string | null; flags: number;
@@ -35,6 +35,7 @@ export class VocabDb extends Dexie {
   bookTexts!: Table<BookText, string>;
   readingPositions!: Table<ReadingPosition, string>;
 
+  /** the database keeps the app's first name (VocabFirst): renaming it would lose everyone's data */
   constructor(name = 'vocabfirst') {
     super(name);
     this.version(1).stores({

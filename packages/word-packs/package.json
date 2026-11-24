@@ -1,5 +1,5 @@
 {
-  "name": "@vocabfirst/word-packs",
+  "name": "@chapterzero/word-packs",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" }
