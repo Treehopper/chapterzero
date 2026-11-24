@@ -1,0 +1,22 @@
+Copyright (c) 2026 Max Hohenegger. All rights reserved.
+
+This repository is public so its source can be read. No licence is granted:
+you may not copy, modify, distribute, sublicense or sell this software or any
+part of it, or use it to provide a product or service, without the prior
+written permission of the copyright holder.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Third-party material keeps its own licence and is not covered by the notice
+above: the word packs in apps/pwa/public/packs and the test word lists in
+fixtures/ are derived from Wiktionary (CC BY-SA 4.0), FreeDict (GPL-2.0-or-later)
+and wordfreq (CC BY-SA 4.0); bundled libraries are under their own permissive
+licences. See LICENSES.md.

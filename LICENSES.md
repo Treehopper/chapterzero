@@ -22,5 +22,9 @@ and are in the public domain in the USA.
 
 ## Code dependencies
 
-Svelte, Vite, vite-plugin-pwa / Workbox, Dexie, JSZip (MIT or dual MIT/GPL), htmlparser2 and
-domhandler (BSD-2-Clause), @msgpack/msgpack (ISC). See each package's licence in `node_modules`.
+Bundled into the app: Svelte, Workbox, JSZip (dual MIT or GPL-3.0; used under MIT), pako
+(MIT and Zlib), htmlparser2 and dom-serializer (MIT), domhandler, domutils, domelementtype
+and entities (BSD-2-Clause), Dexie (Apache-2.0), @msgpack/msgpack (ISC). Build tools: Vite,
+vite-plugin-pwa (MIT). See each package's licence in `node_modules`.
+
+The app's own code is not open source; see `LICENSE`.

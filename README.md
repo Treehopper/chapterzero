@@ -2,6 +2,10 @@
 
 A Progressive Web App (iOS first, Android second) that turns an EPUB into a deck of flash cards. The app ships with **graded lists of rare English words** (levels 1–10, each word with its German translation). On import, the book is matched against these lists: listed words above your personal level become cards, everything else is ignored but stays available for adding by hand. A Leitner-style spaced-repetition scheduler (inspired by jMemorize) then drills you chapter by chapter until you can read without stopping.
 
+**Use it:** https://www.hohenegger.eu/chapterzero/. Open it in Safari on the iPhone (or Chrome on Android) and add it to the Home Screen.
+
+**Licence:** © 2026 Max Hohenegger, all rights reserved. The source is public to read, not licensed for reuse; see `LICENSE`. The word data keeps its own licences (`LICENSES.md`).
+
 The target user is an advanced non-native reader (roughly C1/C2). Three design rules follow from that:
 1. **Cards must be worth studying.** Only curated list words above your level become cards (Epic H), and a word that turns out to be known is retired after one swipe (C18).
 2. **Nothing is lost.** Words that are not in the lists never become cards on their own, but they are counted and can be added by hand at any time (Epic D).
@@ -1481,3 +1485,7 @@ This section is for whoever (human or coding agent) implements the app.
 - Which frequency list to use for ranking (licence vs. quality)? Default proposal: one built from `wordfreq` data.
 - Invented words of a fictional setting ("lasgun") are never in the lists. They show up at the top of *Not in the lists* because they are frequent; is that enough, or should the most frequent ones be offered at import?
 - Later improvements that were assessed but not included yet: learning the cutoff continuously from swipes, hiding derived forms of easy words ("unhappiness"), choosing the sense that fits the sentence, prioritising recurring words within a chapter, a compressed schedule before a planned reading date, and multi-word expressions.
+
+## 15. Deployment
+
+Every push to `main` runs `.github/workflows/pages.yml`: tests, typecheck, `npm run build` with `BASE_PATH=/<repo>/`, then deploys `apps/pwa/dist` to GitHub Pages. The user site's custom domain serves project sites under it, so the app is at https://www.hohenegger.eu/chapterzero/. All asset, manifest and service-worker paths follow `BASE_PATH`; the service worker's scope is `/chapterzero/`.

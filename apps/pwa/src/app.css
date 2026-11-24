@@ -222,7 +222,8 @@ input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent);
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
 .sheet { background: var(--bg); width: 100%; max-width: 640px; max-height: 92dvh; overflow: auto; border-radius: 20px 20px 0 0;
   padding: 16px 16px calc(var(--safe-bottom) + 16px); animation: sheet-in 0.22s ease-out; }
-.sheet.full { height: 100dvh; max-height: 100dvh; border-radius: 0; padding-top: calc(var(--safe-top) + 12px); }
+/* pinned to the screen edges, not 100dvh: in an iOS home-screen app with a translucent status bar 100dvh is short by the status bar */
+.sheet.full { align-self: stretch; max-height: none; border-radius: 0; padding-top: calc(var(--safe-top) + 12px); }
 @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 .progressbar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .progressbar > div { height: 100%; background: var(--accent); transition: width 0.2s; }
