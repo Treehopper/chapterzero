@@ -19,9 +19,10 @@ test.describe('real packs and books', () => {
     await page.goto('/?packs=real');
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
     await tap(page.getByTestId('download-start'));
-    await expect(page.getByTestId('check-word')).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByTestId('check-intro')).toBeVisible({ timeout: 120_000 });
     const tInstall = Date.now() - t0;
-    await tap(page.getByRole('button', { name: 'Skip' }));
+    await tap(page.getByTestId('check-own-level'));
+    await tap(page.getByTestId('level-use'));
     const report: string[] = [`packs installed in ${(tInstall / 1000).toFixed(1)} s`];
     for (const b of books) {
       const t1 = Date.now();

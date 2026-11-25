@@ -1,7 +1,7 @@
 <script lang="ts">
-  /** Vocabulary check (H1–H3): 60 words in the study card UI, then the result screen. */
+  /** Vocabulary check (H1–H3): why it is asked, 60 words in the study card UI, then the result screen; or the level picked by hand. */
   import { onMount } from 'svelte';
-  import { headword, LEVELS, startLevel, type CalibrationView } from '@chapterzero/core';
+  import { DEFAULT_CUTOFF, headword, levelCutoff, LEVELS, startLevel, type CalibrationView } from '@chapterzero/core';
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
@@ -21,6 +21,10 @@
   let adjust = $state(false);
   let cutoff = $state(8000);
   let books = $state(0);
+  /** before the first word: what the check is for, or skip it and pick the level by hand */
+  let intro = $state(false);
+  let pick = $state(false);
+  let picked = $state(startLevel(DEFAULT_CUTOFF));
   // the check is the first place a learner swipes, so it shows the gesture hints until each gesture was used
   let hints = $state(false);
   let used = $state<Set<string>>(new Set());
@@ -43,6 +47,7 @@
       const restart = location.hash.endsWith('/restart');
       view = restart ? await api.calibration.restart() : await api.calibration.startOrResume();
       if (restart) history.replaceState(null, '', '#/check');
+      intro = !restart && view.position === 0;
       books = (await api.books.list()).length;
       const [settings, app] = await Promise.all([api.settings.get(), api.appState.get()]);
       hints = settings.gestureHints === 'everySession';
@@ -93,8 +98,10 @@
     } finally { busy = false; }
   }
 
-  async function skip() {
+  function skip() { picked = startLevel(result?.cutoffRank ?? DEFAULT_CUTOFF); pick = true; }
+  async function useLevel() {
     await api.calibration.skip();
+    await api.calibration.setCutoff(levelCutoff(picked));
     go('library');
   }
   async function use() {
@@ -106,7 +113,7 @@
     view = await api.calibration.restart();
   }
   function key(e: KeyboardEvent) {
-    if (result) return;
+    if (result || intro || pick) return;
     if (e.key === ' ') { e.preventDefault(); flip(); }
     else if (e.key === 'ArrowRight') void answer(true);
     else if (e.key === 'ArrowLeft') void answer(false);
@@ -117,7 +124,33 @@
 
 <svelte:window onkeydown={key} />
 
-{#if result}
+{#if pick}
+  <main class="screen stack" data-testid="level-pick">
+    <h1>{t('Choose your level')}</h1>
+    <p>{t('Words above your level become cards; the more common ones count as known. Not sure? Start with 5.')}</p>
+    <div class="levels pickable" role="radiogroup" aria-label={t('Level')}>
+      {#each LEVELS as l (l.level)}
+        <button role="radio" aria-checked={l.level === picked} aria-label={t('Level {n}', { n: l.level })}
+          class:skip={l.level < picked} class:here={l.level === picked} onclick={() => (picked = l.level)}>{l.level}</button>
+      {/each}
+    </div>
+    <p class="center">{rankParts[0]}<strong data-testid="pick-cutoff">{fmt(levelCutoff(picked))}</strong>{rankParts[1] ?? ''}</p>
+    <p class="small muted center">{t('Too many easy cards, or too many hard ones? Change the level for a book on its page, or take the check later from Settings.')}</p>
+    <div class="spacer"></div>
+    <button class="btn primary block" data-testid="level-use" onclick={useLevel}>{t('Use level {n}', { n: picked })}</button>
+    {#if view?.word}<button class="btn block" onclick={() => (pick = false)}>{t('Back to the check')}</button>{/if}
+  </main>
+{:else if intro && view?.word}
+  <main class="screen stack" data-testid="check-intro">
+    <h1>{t('Your level first')}</h1>
+    <p>{t('Chapter 0 makes cards only for the words of a book you don’t know yet. To leave out the ones you know, it needs your level.')}</p>
+    <p>{t('The check shows 60 words, from very common to rare. For each, say whether you knew it. That takes about two minutes and saves you flipping hundreds of cards you would only swipe away.')}</p>
+    <p class="small muted">{t('You can change your level any time.')}</p>
+    <div class="spacer"></div>
+    <button class="btn primary block" data-testid="check-start" onclick={() => (intro = false)}>{t('Start the check')}</button>
+    <button class="btn block" data-testid="check-own-level" onclick={skip}>{t('Set my level myself')}</button>
+  </main>
+{:else if result}
   <main class="screen stack result" data-testid="check-result">
     <h1 class="muted center small up">{t('Your {language} level', { language: languageName(ui.pair.source) })}</h1>
     <div class="big center">{t('You start at level')} <span data-testid="start-level">{level}</span></div>
@@ -213,4 +246,7 @@
   .levels span { width: 28px; height: 28px; border-radius: 14px; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); }
   .levels .skip { opacity: 0.35; text-decoration: line-through; }
   .levels .here { background: var(--accent); color: var(--accent-ink); transform: scale(1.2); }
+  .levels.pickable { flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+  .levels.pickable button { width: 40px; height: 40px; border-radius: 20px; border: 0; font: inherit; font-weight: 700; color: inherit; background: var(--surface-2); }
+  .levels.pickable .here { color: var(--accent-ink); background: var(--accent); }
 </style>

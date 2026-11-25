@@ -41,14 +41,15 @@ export async function tapCard(page: Page) {
   await page.touchscreen.tap(vp.width / 2, vp.height / 2);
 }
 
-/** First run with the miniature test pack: install guide → download → (skip) check → library. */
+/** First run with the miniature test pack: install guide → download → check intro → (level 5 by hand | the check) → library. */
 export async function firstRun(page: Page, opts: { check?: 'skip' | 'none' } = { check: 'skip' }) {
   await page.goto('/?packs=test');
   await tap(page.getByRole('button', { name: 'Continue in the browser' }));
   await tap(page.getByTestId('download-start'));
-  if (opts.check === 'none') return;
-  await expect(page.getByTestId('check-word')).toBeVisible();
-  await tap(page.getByRole('button', { name: 'Skip' }));
+  await expect(page.getByTestId('check-intro')).toBeVisible();
+  if (opts.check === 'none') return void (await tap(page.getByTestId('check-start')));
+  await tap(page.getByTestId('check-own-level'));
+  await tap(page.getByTestId('level-use'));
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
 }
 

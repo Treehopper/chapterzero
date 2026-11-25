@@ -358,7 +358,6 @@ export interface AppState {
   lastBookId?: BookId;
   lastRoute?: string;
   installGuideDismissed?: boolean;
-  levelHintDismissed?: boolean;
   /** the one-time question "grade without flipping?" was answered */
   frontSwipeAsked?: boolean;
   /** the spoiler notice about the book's sentences was shown when a book was first got ready */

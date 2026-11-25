@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fit, shuffle } from '../domain/calibration.ts';
 import { grade, DEFAULT_SCHEDULER } from '../domain/scheduler.ts';
 import { onGrade, newUnlocks, ACHIEVEMENTS } from '../domain/achievements.ts';
-import { levelOfRank, startLevel } from '../domain/levels.ts';
+import { DEFAULT_CUTOFF, LEVELS, levelCutoff, levelOfRank, startLevel } from '../domain/levels.ts';
 import { lookupLinks, isValidTemplate, DEFAULT_LOOKUP_PROVIDERS } from '../domain/lookup.ts';
 import { headword, resolveCardContent, senseOptions } from '../domain/cardContent.ts';
 import { nearestLevels } from '../services/calibrationService.ts';
@@ -30,6 +30,10 @@ describe('calibration fit (§7.8 test vectors)', () => {
     const r = fit(RANKS.map((rank) => ({ rank, known: false })));
     expect(r).toEqual({ r50: 500, k: 6, cutoffRank: 2000 });
     expect(startLevel(r.cutoffRank)).toBe(1);
+  });
+  it('a level picked by hand maps to a cutoff inside it; level 5 is the default', () => {
+    for (const l of LEVELS) expect(startLevel(levelCutoff(l.level))).toBe(l.level);
+    expect(levelCutoff(5)).toBe(DEFAULT_CUTOFF);
   });
   it('stage 2 picks the four levels nearest to r50', () => {
     expect(nearestLevels(17667)).toEqual([5, 6, 7, 8]); // ln-distances: L7 .02, L8 .33, L6 .37, L5 .71 < L9 .73

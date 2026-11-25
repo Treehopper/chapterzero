@@ -59,6 +59,23 @@ export const setup: Record<string, string> = {
     'Zwei Minuten, 60 Wörter, damit deine Karten die Wörter auslassen, die du schon kennst.',
   "Tap, then swipe right = knew it, left = didn't.": 'Tippen, dann nach rechts wischen = gewusst, nach links = nicht gewusst.',
   'Skip the check': 'Test überspringen',
+  'Choose your level': 'Wähle deine Stufe',
+  'Words above your level become cards; the more common ones count as known. Not sure? Start with 5.':
+    'Wörter über deiner Stufe werden zu Karten, die häufigeren gelten als bekannt. Unsicher? Fang mit 5 an.',
+  Level: 'Stufe',
+  'Level {n}': 'Stufe {n}',
+  'Too many easy cards, or too many hard ones? Change the level for a book on its page, or take the check later from Settings.':
+    'Zu viele leichte oder zu viele schwere Karten? Ändere die Stufe eines Buchs auf seiner Seite oder mach den Test später in den Einstellungen.',
+  'Use level {n}': 'Stufe {n} übernehmen',
+  'Back to the check': 'Zurück zum Test',
+  'Your level first': 'Zuerst deine Stufe',
+  'Chapter 0 makes cards only for the words of a book you don’t know yet. To leave out the ones you know, it needs your level.':
+    'Chapter 0 macht nur aus den Wörtern eines Buchs Karten, die du noch nicht kennst. Um die bekannten wegzulassen, braucht es deine Stufe.',
+  'The check shows 60 words, from very common to rare. For each, say whether you knew it. That takes about two minutes and saves you flipping hundreds of cards you would only swipe away.':
+    'Der Test zeigt 60 Wörter, von sehr häufig bis selten. Sag bei jedem, ob du es kanntest. Das dauert etwa zwei Minuten und erspart dir Hunderte Karten, die du nur wegwischen würdest.',
+  'You can change your level any time.': 'Deine Stufe kannst du jederzeit ändern.',
+  'Start the check': 'Test starten',
+  'Set my level myself': 'Stufe selbst wählen',
   'Preparing the vocabulary check…': 'Wortschatztest wird vorbereitet …',
 
   // ImportPreview
@@ -98,9 +115,6 @@ export const setup: Record<string, string> = {
   Library: 'Bibliothek',
   Achievements: 'Erfolge',
   Settings: 'Einstellungen',
-  'Check your level for better word selection.': 'Teste dein Niveau für eine bessere Wortauswahl.',
-  Check: 'Testen',
-  Dismiss: 'Schließen',
   'Your level changed': 'Dein Niveau hat sich geändert',
   'Re-filter your books to the new cutoff (rank {rank})? Cards you studied, edited or added stay.':
     'Deine Bücher mit der neuen Grenze (Rang {rank}) neu filtern? Gelernte, bearbeitete und hinzugefügte Karten bleiben.',

@@ -24,8 +24,9 @@ test.describe('on a German device', () => {
     await page.goto('/?packs=test');
     await tap(page.getByRole('button', { name: 'Im Browser fortfahren' }));
     await tap(page.getByTestId('download-start'));
-    await expect(page.getByTestId('check-word')).toBeVisible();
-    await tap(page.getByRole('button', { name: 'Überspringen', exact: true }));
+    await expect(page.getByTestId('check-intro')).toContainText('60 Wörter');
+    await tap(page.getByRole('button', { name: 'Stufe selbst wählen' }));
+    await tap(page.getByRole('button', { name: 'Stufe 5 übernehmen' }));
     await expect(page.getByRole('heading', { name: 'Bibliothek' })).toBeVisible();
     await importAndOpen(page);
     await expect(page.getByTestId('study-now')).toHaveText('Fürs Lesen vorbereiten');

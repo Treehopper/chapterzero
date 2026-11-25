@@ -15,6 +15,10 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await page.waitForTimeout(500);
     expect(packRequests).toEqual([]);
     await tap(page.getByTestId('download-start'));
+    // first, why the check: it can be started or skipped for a level picked by hand
+    await expect(page.getByTestId('check-intro')).toContainText('60 words');
+    await expect(page.getByTestId('check-own-level')).toBeVisible();
+    await tap(page.getByTestId('check-start'));
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     await expect(page.getByTestId('check-why')).toContainText('skip the words you already know');
 
@@ -77,6 +81,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await page.goto('/?packs=test');
     await tap(page.getByRole('button', { name: 'Continue in the browser' }));
     await tap(page.getByTestId('download-start'));
+    await tap(page.getByTestId('check-start'));
     await expect(page.getByTestId('check-counter')).toHaveText('1 / 60');
     for (let i = 0; i < 60; i++) {
       await page.keyboard.press('Space');
@@ -140,6 +145,7 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('check-counter')).toHaveText('3 / 60');
     await expect(page.getByTestId('front-swipe-confirm')).toHaveCount(0);
     await tap(page.getByRole('button', { name: 'Skip' }));
+    await tap(page.getByTestId('level-use'));
     await tap(page.getByRole('button', { name: 'Settings' }));
     await expect(page.getByRole('checkbox', { name: 'Vocabulary check: flip before answering' })).not.toBeChecked();
   });
@@ -159,14 +165,27 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByTestId('front-swipe-confirm')).toBeVisible();
   });
 
-  test('skipping the check sets level 5 and shows a dismissible hint', async ({ page }) => {
-    await firstRun(page);
-    await expect(page.getByTestId('level-hint')).toBeVisible();
-    await tap(page.getByTestId('level-hint').getByRole('button', { name: 'Dismiss' }));
+  test('skipping the check picks the level by hand: 5 preselected, another one is kept as manual', async ({ page }) => {
+    await firstRun(page, { check: 'none' });
+    await swipeLeft(page);
+    await tap(page.getByRole('button', { name: "Yes, count it as “didn't know”" }));
+    await tap(page.getByRole('button', { name: 'Skip' }));
+    await expect(page.getByRole('radio', { name: 'Level 5' })).toBeChecked();
+    await expect(page.getByTestId('pick-cutoff')).toHaveText('8,000');
+    // back: the check goes on where it was
+    await tap(page.getByRole('button', { name: 'Back to the check' }));
+    await expect(page.getByTestId('check-counter')).toHaveText('2 / 60');
+    await tap(page.getByRole('button', { name: 'Skip' }));
+    await tap(page.getByRole('radio', { name: 'Level 7' }));
+    await expect(page.getByTestId('pick-cutoff')).toHaveText('15,500');
+    await tap(page.getByTestId('level-use'));
+    await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
     await expect(page.getByTestId('level-hint')).toHaveCount(0);
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
-    await expect(page.getByTestId('level-hint')).toHaveCount(0);
+    await tap(page.getByRole('button', { name: 'Settings' }));
+    await expect(page.getByText('Level 7 · cutoff rank 15,500')).toBeVisible();
+    await expect(page.getByText('manual')).toBeVisible();
   });
 
   test('a failed download can be retried and resumes', async ({ page }) => {
@@ -178,6 +197,6 @@ test.describe('first run (A1, A2, H1–H3)', () => {
     await expect(page.getByRole('alert')).toContainText('Download failed');
     fail = false;
     await tap(page.getByRole('button', { name: 'Try again' }));
-    await expect(page.getByTestId('check-word')).toBeVisible();
+    await expect(page.getByTestId('check-intro')).toBeVisible();
   });
 });

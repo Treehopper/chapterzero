@@ -26,3 +26,9 @@ export function levelOfRank(rank: number): number {
 export function startLevel(cutoffRank: number): number {
   return Math.max(1, levelOfRank(cutoffRank));
 }
+
+/** The cutoff for a level picked by hand: 500 ranks into its band, so level 5 is the default cutoff. */
+export function levelCutoff(level: number): number {
+  const l = LEVELS.find((x) => x.level === level) ?? LEVELS[4];
+  return Math.max(2000, l.from + 499);
+}

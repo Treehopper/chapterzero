@@ -4,7 +4,7 @@ export { createApp, type VocabApp, type AchievementView } from './app.ts';
 export { DEFAULT_SETTINGS, EMPTY_STATS, migrateSettings } from './domain/settings.ts';
 export { LEGACY_PAIR, isRtl, languageRules, primary, type LanguagePair, type LanguageRules } from './domain/language.ts';
 export { DEFAULT_LOOKUP_PROVIDERS, isValidTemplate, lookupLinks } from './domain/lookup.ts';
-export { LEVELS, levelOfRank, startLevel, DEFAULT_CUTOFF, COMMON_MAX_RANK } from './domain/levels.ts';
+export { LEVELS, levelOfRank, startLevel, levelCutoff, DEFAULT_CUTOFF, COMMON_MAX_RANK } from './domain/levels.ts';
 export { ACHIEVEMENTS } from './domain/achievements.ts';
 export type { SessionView, SessionOptions, CardEdit } from './services/studyService.ts';
 export type { CardView, BookOverview } from './services/context.ts';

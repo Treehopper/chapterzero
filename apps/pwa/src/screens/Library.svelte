@@ -13,7 +13,6 @@
   let books = $state<BookOverview[]>([]);
   let loaded = $state(false);
   let profile = $state<VocabularyProfile>();
-  let hintDismissed = $state(true);
   let backupDue = $state(false);
   let refilterHidden = $state(false);
   let analysing = $state<{ name: string; phase: string; loaded: number; total: number }>();
@@ -26,7 +25,7 @@
     books = await api.books.list();
     loaded = true;
     const [p, s, daily] = await rest;
-    profile = p; hintDismissed = !!s.levelHintDismissed;
+    profile = p;
     const since = s.lastExportAt ? new Date(s.lastExportAt) : undefined;
     const studyDays = daily.days.filter((d) => d.reviews > 0 && (!since || new Date(d.day) > since)).length;
     backupDue = studyDays >= 7;
@@ -62,10 +61,6 @@
     } finally { refiltering = ''; }
   }
 
-  async function dismissHint() {
-    hintDismissed = true;
-    await api.appState.update({ levelHintDismissed: true });
-  }
   const phaseLabel: Record<string, string> = { reading: 'Reading the book…', tokenising: 'Finding the words…', matching: 'Matching the word lists…', done: 'Preparing preview…' };
   const ringLabel = (x: number) => (x * 100).toLocaleString(i18n.locale === 'de' ? 'de-DE' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   let starting = $state<{ bookId: string; due: number }>();
@@ -81,14 +76,6 @@
     {#if ui.achievements}<button class="iconbtn" aria-label={t('Achievements')} onclick={() => go('achievements')}><Icon name="trophy" /></button>{/if}
     <button class="iconbtn" aria-label={t('Settings')} onclick={() => go('settings')}><Icon name="settings" /></button>
   </header>
-
-  {#if profile?.source === 'default' && !hintDismissed}
-    <div class="note card-box row" data-testid="level-hint">
-      <span class="spacer">{t('Check your level for better word selection.')}</span>
-      <button class="linkbtn" onclick={() => go('check')}>{t('Check')}</button>
-      <button class="iconbtn" aria-label={t('Dismiss')} onclick={dismissHint}>×</button>
-    </div>
-  {/if}
 
   {#if mismatched.length && !refilterHidden}
     <div class="note card-box stack" data-testid="refilter-offer">
