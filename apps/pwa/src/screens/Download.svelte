@@ -8,6 +8,7 @@
   import { requestPersistence } from '../lib/platform';
   import { ui } from '../lib/ui.svelte';
   import { i18n, languageName, t } from '../lib/i18n/index.svelte';
+  import Icon from '../components/Icon.svelte';
 
   let status = $state<PackStatus>();
   let progress = $state<{ loaded: number; total: number; phase: string }>();
@@ -41,7 +42,7 @@
   <h1 class="title">{t('Word lists')}</h1>
   <p>{t('Chapter 0 ships graded lists of rare {source} words with {target} translations, built from Wiktionary, FreeDict and wordfreq.', langs)}
     {t('They are downloaded once and then work offline.')}</p>
-  <p class="muted small" data-testid="wifi-hint">📶 {t('Best done on Wi-Fi.')}</p>
+  <p class="muted small wifi" data-testid="wifi-hint"><Icon name="wifi" size={16} />{t('Best done on Wi-Fi.')}</p>
   <div class="card-box stack">
     <div class="row"><strong>{status?.name ?? `${langs.source} → ${langs.target}`}</strong><span class="spacer"></span><span class="muted small">{total ? `${mb(total)}` : ''}</span></div>
     <div class="progressbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress && progress.total ? Math.round((progress.loaded / progress.total) * 100) : 0}>
@@ -64,5 +65,6 @@
 </main>
 
 <style>
+  .wifi { display: flex; align-items: center; gap: 6px; }
   .title { font-family: var(--serif); font-size: 30px; margin-top: 24px; }
 </style>
