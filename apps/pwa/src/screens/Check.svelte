@@ -200,7 +200,7 @@
       </FlipCard>
     {/key}
     </div>
-    {#if showHints}<GestureHints {flipped} {used} />{/if}
+    {#if showHints}<GestureHints {flipped} {used} swipeOnFront />{/if}
     <div class="sr-only">
       <button onclick={() => (flipped = !flipped)}>{t('Flip')}</button>
       <button onclick={() => answer(true)} disabled={!flipped && !seen}>{t('Knew it')}</button>
