@@ -173,9 +173,12 @@
   --stage: #f1dde0;
 }
 * { box-sizing: border-box; }
+/* the background on html and body, not only on the screens: an iOS home-screen app shows it below the home indicator,
+   on overscroll and in any gap a viewport change leaves (lib/theme.ts keeps theme-color on it) */
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font);
-  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
-body { overscroll-behavior: none; }
+  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+body { min-height: 100dvh; }
+html.on-stage, html.on-stage body { background: var(--stage); }
 #app { min-height: 100%; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }

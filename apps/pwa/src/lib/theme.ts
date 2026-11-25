@@ -7,13 +7,25 @@ const dark = () => matchMedia('(prefers-color-scheme: dark)');
 let current: Theme = 'auto';
 let listening = false;
 
+/** Safari tints its bars and the strip outside a home-screen app from theme-color: keep it on the page's background. */
+function syncThemeColor() {
+  const root = document.documentElement;
+  const bg = getComputedStyle(root).getPropertyValue(root.classList.contains('on-stage') ? '--stage' : '--bg').trim();
+  if (bg) for (const m of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) m.content = bg;
+}
+
+/** Action for a full-screen stage: while it is shown, the page background around it (html, body) is the stage colour. */
+export function stage(_node: HTMLElement) {
+  document.documentElement.classList.add('on-stage');
+  syncThemeColor();
+  return { destroy() { document.documentElement.classList.remove('on-stage'); syncThemeColor(); } };
+}
+
 export function applyTheme(theme: Theme | undefined) {
   current = theme ?? 'auto';
   const resolved = current === 'auto' ? (dark().matches ? 'dark' : 'light') : current;
   document.documentElement.dataset.theme = resolved;
-  // Safari tints its bars from theme-color
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-  if (bg) for (const m of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) m.content = bg;
+  syncThemeColor();
   try { localStorage.setItem('c0:theme', current); } catch { /* private mode: the first paint follows the device */ }
   if (!listening) {
     listening = true;

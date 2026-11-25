@@ -5,6 +5,7 @@
   import { api } from '../lib/api';
   import { go } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
+  import { stage } from '../lib/theme';
   import { fmt, ui } from '../lib/ui.svelte';
   import FlipCard from '../components/FlipCard.svelte';
   import LookupLinks from '../components/LookupLinks.svelte';
@@ -177,7 +178,7 @@
     {#if books}<p class="small muted center">{t('Your existing books can be re-filtered from the library.')}</p>{/if}
   </main>
 {:else if view?.word}
-  <main class="stage" use:gestures={{ onTap: flip, onDragX: (x) => (dx = swipeable ? x : 0), onSwipeX: swipe,
+  <main class="stage" use:stage use:gestures={{ onTap: flip, onDragX: (x) => (dx = swipeable ? x : 0), onSwipeX: swipe,
     onCancel: () => (dx = 0), width: () => Math.min(innerWidth * 0.88, 440) }}>
     <header class="top">
       <span class="counter" data-testid="check-counter">{view.position + 1} / {view.total}</span>

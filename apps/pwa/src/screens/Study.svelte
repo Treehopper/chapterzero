@@ -5,6 +5,7 @@
   import { api } from '../lib/api';
   import { go, replace } from '../lib/router.svelte';
   import { gestures } from '../lib/gestures';
+  import { stage } from '../lib/theme';
   import { announceUnlocks, banner, hideToast, pct, toast, ui } from '../lib/ui.svelte';
   import { vibrate } from '../lib/platform';
   import Toast from '../components/Toast.svelte';
@@ -337,7 +338,7 @@
   </main>
 {:else if view?.card}
   {@const card = view.card}
-  <main class="stage" aria-label={t('Study')} data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
+  <main class="stage" use:stage aria-label={t('Study')} data-testid="study-stage" data-word={card.lemma} data-phase={view.phase} data-busy={busy}
     use:gestures={{ onTap: () => (panel ? (panel = false) : flip()), onDragX: (x) => { if (!fly && !panel) dx = x; },
       onDragY: (y) => { if (!fly) dy = panel ? Math.max(0, y) : Math.min(0, y); },
       onSwipeX: (d) => grade(d), onSwipeY: vertical, onCancel: () => { dx = 0; dy = 0; }, width: () => Math.min(innerWidth * 0.88, 440) }}>
