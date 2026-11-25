@@ -26,6 +26,24 @@ function testPacks(): Plugin {
   };
 }
 
+/**
+ * The manifest link as an inline head script, the way the home-screen app that runs without browser controls on
+ * the iPhone has it. Rewritten in generateBundle: vite-plugin-pwa injects the link after transformIndexHtml, and
+ * this runs before the service worker precaches the page.
+ */
+function manifestByHeadScript(): Plugin {
+  return {
+    name: 'manifest-by-head-script',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const page = bundle['index.html'];
+      if (page?.type !== 'asset' || typeof page.source !== 'string') return;
+      page.source = page.source.replace(/<link rel="manifest" href="([^"]+)">/, (_m, href: string) =>
+        `<script>(function () { var l = document.createElement('link'); l.rel = 'manifest'; l.href = ${JSON.stringify(href)}; document.head.appendChild(l); })();</script>`);
+    },
+  };
+}
+
 export default defineConfig({
   base,
   plugins: [
@@ -41,8 +59,8 @@ export default defineConfig({
         description: "Learn a book's rare words before you read it.",
         display: 'standalone',
         orientation: 'portrait',
-        start_url: base,
-        scope: base,
+        start_url: '.',
+        scope: '.',
         background_color: '#101014',
         theme_color: '#101014',
         icons: [
@@ -59,6 +77,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),
+    manifestByHeadScript(),
   ],
   worker: { format: 'es' },
   build: { target: ['es2022', 'safari16'] },
