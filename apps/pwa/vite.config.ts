@@ -34,7 +34,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,
-      includeAssets: ['icons/*.png', 'favicon.svg'],
+      includeAssets: ['icons/*.png', 'favicon.svg', 'favicon.ico'],
       manifest: {
         name: 'Chapter 0',
         short_name: 'Chapter 0',
